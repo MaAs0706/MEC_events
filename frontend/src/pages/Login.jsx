@@ -28,6 +28,7 @@ function Login() {
     else if (userRole ==='approver') {
       navigate('/dashboard/approver')
     }
+    
     else {
       navigate('/dashboard/admin')
     }
