@@ -118,7 +118,7 @@ function StudentDashboard() {
           <Link to="/" className="logo">NEXUS.</Link>
           <input type="text" className="search-bar" placeholder="Search events..." />
           <div className="nav-actions">
-            <button className="user-menu">👤 Profile</button>
+            <Link to="/profile" className="user-menu">👤 Profile</Link>
             <Link to="/" className="logout">Sign out</Link>
           </div>
         </div>
@@ -239,12 +239,17 @@ function StudentDashboard() {
                         />
                       </div>
                       <p className="attendance-text">{event.attendees}/{event.capacity} attending</p>
-                      <button 
-                        className={`btn-rsvp ${myRsvps.includes(event.id) ? 'rsvped' : ''}`}
-                        onClick={() => handleRsvp(event.id)}
-                      >
-                        {myRsvps.includes(event.id) ? '✓ RSVPED' : 'RSVP'}
-                      </button>
+                      <div className="event-card-actions">
+                        <Link to={`/event/${event.id}`} className="btn-view-details">
+                          View Details
+                        </Link>
+                        <button 
+                          className={`btn-rsvp ${myRsvps.includes(event.id) ? 'rsvped' : ''}`}
+                          onClick={() => handleRsvp(event.id)}
+                        >
+                          {myRsvps.includes(event.id) ? '✓ RSVPED' : 'RSVP'}
+                        </button>
+                      </div>
                     </div>
                   </motion.div>
                 ))}
