@@ -1,177 +1,178 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import './Login.css';
+import React, { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import './Login.css'
 
 function Login() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('signin')
-  const [signInEmail, setSignInEmail] = useState('')
-  const [signInPassword, setSignInPassword] = useState('')
-  const [signUpEmail, setSignUpEmail] = useState('')
-  const [signUpPassword, setSignUpPassword] = useState('')
-  const [signUpName, setSignUpName] = useState('')
-  const [userRole, setUserRole] = useState('student')
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    name: '',
+    role: 'student'
+  })
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+  }
 
   const handleSignIn = (e) => {
     e.preventDefault()
-    navigate('/dashboard/student')
+    if (formData.email && formData.password) {
+      localStorage.setItem('userEmail', formData.email)
+      localStorage.setItem('userName', formData.name || 'User')
+      localStorage.setItem('userRole', formData.role)
+      navigate('/dashboard/student')
+    }
   }
 
   const handleSignUp = (e) => {
     e.preventDefault()
-    if (userRole === 'student') {
+    if (formData.name && formData.email && formData.password) {
+      localStorage.setItem('userEmail', formData.email)
+      localStorage.setItem('userName', formData.name)
+      localStorage.setItem('userRole', formData.role)
       navigate('/dashboard/student')
-    } else if (userRole === 'coordinator') {
-      navigate('/dashboard/coordinator')
-    } 
-    else if (userRole ==='approver') {
-      navigate('/dashboard/approver')
-    }
-    
-    else {
-      navigate('/dashboard/admin')
     }
   }
 
   return (
     <div className="login-container">
-      {/* Back to home */}
-      <div className="login-header">
-        <Link to="/" className="logo">NEXUS</Link>
-      </div>
-
-      {/* Main Card */}
       <motion.div 
-        className="login-card"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        className="login-box"
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
       >
-        {/* Tabs */}
+        <div className="login-header">
+          <Link to="/" className="login-logo">NEXUS.</Link>
+          <h1>Campus Events</h1>
+          <p>Sign in or create an account</p>
+        </div>
+
         <div className="login-tabs">
           <button 
-            className={`tab ${activeTab === 'signin' ? 'active' : ''}`}
+            className={`login-tab ${activeTab === 'signin' ? 'active' : ''}`}
             onClick={() => setActiveTab('signin')}
           >
             Sign In
           </button>
           <button 
-            className={`tab ${activeTab === 'signup' ? 'active' : ''}`}
+            className={`login-tab ${activeTab === 'signup' ? 'active' : ''}`}
             onClick={() => setActiveTab('signup')}
           >
             Sign Up
           </button>
         </div>
 
-        {/* Sign In Form */}
         {activeTab === 'signin' && (
-          <motion.form
+          <motion.form 
             className="login-form"
+            onSubmit={handleSignIn}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-            onSubmit={handleSignIn}
           >
             <div className="form-group">
-              <label htmlFor="signin-email">Email</label>
+              <label>Email Address</label>
               <input
-                id="signin-email"
                 type="email"
-                placeholder="your@email.com"
-                value={signInEmail}
-                onChange={(e) => setSignInEmail(e.target.value)}
+                name="email"
+                placeholder="you@example.com"
+                value={formData.email}
+                onChange={handleInputChange}
                 required
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="signin-password">Password</label>
+              <label>Password</label>
               <input
-                id="signin-password"
                 type="password"
+                name="password"
                 placeholder="••••••••"
-                value={signInPassword}
-                onChange={(e) => setSignInPassword(e.target.value)}
+                value={formData.password}
+                onChange={handleInputChange}
                 required
               />
             </div>
 
             <button type="submit" className="btn-submit">Sign In</button>
-            
-            <p className="form-help">
-              Don't have an account? <a href="#" onClick={() => setActiveTab('signup')}>Sign up</a>
-            </p>
+
+            <div className="form-footer">
+              <p>Don't have an account? <button type="button" onClick={() => setActiveTab('signup')} className="link">Sign up here</button></p>
+              <a href="#forgot" className="forgot-link">Forgot password?</a>
+            </div>
           </motion.form>
         )}
 
-        {/* Sign Up Form */}
         {activeTab === 'signup' && (
-          <motion.form
+          <motion.form 
             className="login-form"
+            onSubmit={handleSignUp}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-            onSubmit={handleSignUp}
           >
             <div className="form-group">
-              <label htmlFor="signup-name">Full Name</label>
+              <label>Full Name</label>
               <input
-                id="signup-name"
                 type="text"
+                name="name"
                 placeholder="John Doe"
-                value={signUpName}
-                onChange={(e) => setSignUpName(e.target.value)}
+                value={formData.name}
+                onChange={handleInputChange}
                 required
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="signup-email">Email</label>
+              <label>Email Address</label>
               <input
-                id="signup-email"
                 type="email"
-                placeholder="your@email.com"
-                value={signUpEmail}
-                onChange={(e) => setSignUpEmail(e.target.value)}
+                name="email"
+                placeholder="you@example.com"
+                value={formData.email}
+                onChange={handleInputChange}
                 required
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="signup-password">Password</label>
+              <label>Password</label>
               <input
-                id="signup-password"
                 type="password"
+                name="password"
                 placeholder="••••••••"
-                value={signUpPassword}
-                onChange={(e) => setSignUpPassword(e.target.value)}
+                value={formData.password}
+                onChange={handleInputChange}
                 required
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="user-role">I am a</label>
-              <select
-                id="user-role"
-                value={userRole}
-                onChange={(e) => setUserRole(e.target.value)}
-              >
+              <label>I am a:</label>
+              <select name="role" value={formData.role} onChange={handleInputChange}>
                 <option value="student">Student</option>
                 <option value="coordinator">Event Coordinator</option>
-                <option value="admin">Admin</option>
                 <option value="approver">Approver</option>
+                <option value="admin">Administrator</option>
               </select>
             </div>
 
-            <button type="submit" className="btn-submit">Sign Up</button>
-            
-            <p className="form-help">
-              Already have an account? <a href="#" onClick={() => setActiveTab('signin')}>Sign in</a>
-            </p>
+            <button type="submit" className="btn-submit">Create Account</button>
+
+            <div className="form-footer">
+              <p>Already have an account? <button type="button" onClick={() => setActiveTab('signin')} className="link">Sign in here</button></p>
+            </div>
           </motion.form>
         )}
       </motion.div>
+
+      <div className="login-background">
+        <div className="bg-circle bg-1"></div>
+        <div className="bg-circle bg-2"></div>
+        <div className="bg-circle bg-3"></div>
+      </div>
     </div>
   )
 }
