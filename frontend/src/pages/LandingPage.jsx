@@ -1,122 +1,257 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import './LandingPage.css';
+import React from 'react'
+import { Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import './LandingPage.css'
 
 function LandingPage() {
+  const featuredEvents = [
+    {
+      title: 'TechHack 2026',
+      category: 'TECH',
+      description: 'Build products with developers across campus.',
+      date: '25 APR',
+      venue: 'Main Auditorium',
+      image:
+        'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?q=80&w=1200&auto=format&fit=crop'
+    },
+    {
+      title: 'Spring Concert',
+      category: 'CULTURE',
+      description: 'Live performances from artists and bands.',
+      date: '27 APR',
+      venue: 'Open Grounds',
+      image:
+        'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1200&auto=format&fit=crop'
+    }
+  ]
+
   return (
     <div className="landing-wrapper">
-      {/* Navigation */}
+
+      {/* NAVIGATION */}
+
       <nav className="landing-nav">
         <div className="nav-inner">
-          <div className="logo">NEXUS.</div>
+
+          <div className="logo">
+            NEXUS.
+          </div>
+
           <div className="nav-search">
-            <input type="text" placeholder="Search events, venues, hosts..." />
+            <input
+              type="text"
+              placeholder="Search hackathons, clubs, concerts..."
+            />
           </div>
+
           <div className="nav-right">
-            <Link to="/login" className="nav-signin">Sign in</Link>
-            <Link to="/login" className="nav-join">Join NEXUS</Link>
+            <Link to="/login" className="nav-signin">
+              Sign in
+            </Link>
+
+            <Link to="/login" className="nav-join">
+              Join NEXUS
+            </Link>
           </div>
+
         </div>
       </nav>
 
-      {/* Hero Section */}
+      {/* HERO */}
+
       <section className="hero-section">
         <div className="hero-inner">
-          <motion.div
-            className="hero-badge"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-          >
-            <span className="badge-dot">●</span> CAMPUS CALENDAR • LIVE
-          </motion.div>
 
-          <motion.h1
-            className="hero-title"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            Every event<br />
-            Our campus <span className="accent-text">runs on.</span>
-          </motion.h1>
+          <div className="hero-grid">
 
-          <motion.p
-            className="hero-description"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            Hackathons, gigs, game-nights, meetups — discover what's happening this week, RSVP in one tap, and never miss your crowd again.
-          </motion.p>
+            {/* LEFT */}
 
-          <motion.div
-            className="hero-buttons"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Link to="/login" className="btn-browse">Browse events →</Link>
-            <Link to="/login" className="btn-join"> Join NEXUS </Link>
-          </motion.div>
+            <div className="hero-left">
 
-          <div className="hero-stats">
-            <div className="stat">
-              <div className="stat-number">0</div>
-              <div className="stat-label">Events live</div>
+              <motion.div
+                className="hero-badge"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                <span className="badge-dot"></span>
+                CAMPUS CULTURE • LIVE
+              </motion.div>
+
+              <motion.h1
+                className="hero-title"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                Every event.
+                <br />
+                Every crowd.
+                <br />
+                <span className="accent-text">
+                  One campus.
+                </span>
+              </motion.h1>
+
+              <motion.p
+                className="hero-description"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                Discover hackathons, concerts, workshops,
+                game nights, meetups and everything
+                happening around you — all in one place.
+              </motion.p>
+
+              <motion.div
+                className="hero-buttons"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <Link to="/login" className="btn-primary">
+                  Explore Events
+                </Link>
+
+                <Link to="/login" className="btn-secondary">
+                  Join NEXUS
+                </Link>
+              </motion.div>
+
+              <div className="hero-stats">
+
+                <motion.div
+                  className="stat"
+                  whileHover={{ y: -3 }}
+                >
+                  <div className="stat-number">120+</div>
+                  <div className="stat-label">Events hosted</div>
+                </motion.div>
+
+                <motion.div
+                  className="stat"
+                  whileHover={{ y: -3 }}
+                >
+                  <div className="stat-number">24</div>
+                  <div className="stat-label">Live now</div>
+                </motion.div>
+
+                <motion.div
+                  className="stat"
+                  whileHover={{ y: -3 }}
+                >
+                  <div className="stat-number">7</div>
+                  <div className="stat-label">Categories</div>
+                </motion.div>
+
+                <motion.div
+                  className="stat"
+                  whileHover={{ y: -3 }}
+                >
+                  <div className="stat-number">∞</div>
+                  <div className="stat-label">Stories made</div>
+                </motion.div>
+
+              </div>
+
             </div>
-            <div className="stat">
-              <div className="stat-number">0</div>
-              <div className="stat-label">Campus venues</div>
+
+            {/* RIGHT */}
+
+            <div className="hero-right">
+
+              <motion.div
+                className="live-card"
+                initial={{ opacity: 0, x: 30 }}
+                animate={{ opacity: 1, x: 0 }}
+              >
+
+                <div className="live-header">
+                  <span className="live-dot"></span>
+                  LIVE THIS WEEK
+                </div>
+
+                <div className="live-event">
+                  <h4>TechHack 2026</h4>
+                  <p>240 students attending</p>
+                </div>
+
+                <div className="live-event">
+                  <h4>Spring Concert</h4>
+                  <p>Starts in 2 hours</p>
+                </div>
+
+                <div className="live-event">
+                  <h4>Football Finals</h4>
+                  <p>Almost full</p>
+                </div>
+
+                <div className="live-event">
+                  <h4>Startup Meetup</h4>
+                  <p>Networking tonight</p>
+                </div>
+
+              </motion.div>
+
             </div>
-            <div className="stat">
-              <div className="stat-number">7</div>
-              <div className="stat-label">Categories</div>
-            </div>
-            <div className="stat">
-              <div className="stat-number">∞</div>
-              <div className="stat-label">Stories made</div>
-            </div>
+
           </div>
+
         </div>
       </section>
 
-      {/* All Events Section */}
-      <section className="events-section">
+      {/* FEATURED EVENTS */}
+
+      <section className="featured-section">
+
         <div className="section-inner">
-          <div className="section-header">
-            <h2>All events</h2>
-            <span className="result-count">0 RESULTS</span>
+
+          <div className="section-heading">
+            <span>TRENDING THIS WEEK</span>
+            <h2>Featured events</h2>
           </div>
 
-          <div className="events-layout">
-            <aside className="filter-sidebar">
-              <h3>FILTER EVENTS</h3>
-              
-              <div className="filter-group">
-                <label>START DATE</label>
-                <input type="text" placeholder="DD/MM/YYYY" />
-              </div>
+          <div className="events-grid">
 
-              <div className="filter-group">
-                <label>END DATE</label>
-                <input type="text" placeholder="DD/MM/YYYY" />
-              </div>
-            </aside>
+            {featuredEvents.map((event, index) => (
+              <motion.div
+                className="event-card"
+                key={index}
+                whileHover={{ y: -6 }}
+              >
 
-            <main className="events-grid-area">
-              <div className="empty-state">
-                <div className="empty-heading">NOTHING HERE</div>
-                <p>No events match your filters.</p>
-                <p className="empty-hint">Try resetting filters or searching something else.</p>
-              </div>
-            </main>
+                <div
+                  className="event-image"
+                  style={{
+                    backgroundImage: `url(${event.image})`
+                  }}
+                ></div>
+
+                <div className="event-content">
+
+                  <span className="event-category">
+                    {event.category}
+                  </span>
+
+                  <h3>{event.title}</h3>
+
+                  <p>{event.description}</p>
+
+                  <div className="event-meta">
+                    <span>{event.date}</span>
+                    <span>{event.venue}</span>
+                  </div>
+
+                </div>
+
+              </motion.div>
+            ))}
+
           </div>
+
         </div>
+
       </section>
 
-      
-      
     </div>
   )
 }
