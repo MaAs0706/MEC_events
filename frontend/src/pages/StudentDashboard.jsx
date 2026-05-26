@@ -1,56 +1,50 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   Search,
-  Calendar,
-  MapPin,
-  Clock3,
   Bell,
-  LogOut,
   User,
-  TrendingUp
+  LogOut
 } from 'lucide-react'
 
 import './StudentDashboard.css'
 
 function StudentDashboard() {
-  const [selectedCategory, setSelectedCategory] = useState('all')
 
   const events = [
     {
       id: 1,
       title: 'TechHack 2026',
-      description: 'Build amazing projects in 24 hours with developers across campus.',
-      date: '25 Apr 2026',
-      time: '09:00 AM',
+      category: 'TECH',
+      description:
+        'Build products with developers across campus.',
+      date: '25 APR',
       venue: 'Main Auditorium',
-      attendees: 234,
-      category: 'tech',
       image:
         'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?q=80&w=1200&auto=format&fit=crop'
     },
+
     {
       id: 2,
       title: 'Spring Concert',
-      description: 'Experience music performances by talented campus artists.',
-      date: '27 Apr 2026',
-      time: '06:00 PM',
+      category: 'CULTURAL',
+      description:
+        'Live performances from artists and bands.',
+      date: '27 APR',
       venue: 'Open Grounds',
-      attendees: 450,
-      category: 'cultural',
       image:
         'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1200&auto=format&fit=crop'
     },
+
     {
       id: 3,
       title: 'Football Finals',
-      description: 'Inter-college football championship with top teams.',
-      date: '01 May 2026',
-      time: '03:00 PM',
+      category: 'SPORTS',
+      description:
+        'Inter-college football championship.',
+      date: '01 MAY',
       venue: 'Sports Complex',
-      attendees: 320,
-      category: 'sports',
       image:
         'https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=1200&auto=format&fit=crop'
     }
@@ -58,16 +52,28 @@ function StudentDashboard() {
 
   return (
     <div className="dashboard">
+
       {/* NAVBAR */}
+
       <nav className="navbar">
-        <div className="logo">NEXUS.</div>
+
+        <div className="logo">
+          NEXUS.
+        </div>
 
         <div className="search-box">
+
           <Search size={18} />
-          <input type="text" placeholder="Search events..." />
+
+          <input
+            type="text"
+            placeholder="Search events..."
+          />
+
         </div>
 
         <div className="nav-right">
+
           <button className="icon-btn">
             <Bell size={18} />
           </button>
@@ -77,110 +83,209 @@ function StudentDashboard() {
             Profile
           </button>
 
-          <button className="logout-btn">
-            <LogOut size={16} />
+          <button className="icon-btn">
+            <LogOut size={18} />
           </button>
+
         </div>
+
       </nav>
 
-      {/* HERO SECTION */}
+      {/* HERO */}
+
       <section className="hero">
+
+        {/* LEFT */}
+
         <div className="hero-left">
-          <p className="hero-tag">WELCOME BACK</p>
 
-          <h1>
-            Discover Amazing
+          <motion.p
+            className="hero-tag"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            CAMPUS CULTURE • LIVE
+          </motion.p>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            Good evening,
             <br />
-            Campus Events
-          </h1>
+            Aswanth.
+          </motion.h1>
 
-          <p className="hero-description">
-            Join hackathons, concerts, workshops and competitions happening
-            around your campus.
-          </p>
+          <motion.p
+            className="hero-description"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            Your campus is active tonight.
+            Discover events, manage RSVPs,
+            and keep track of everything
+            happening around you.
+          </motion.p>
 
-          <div className="hero-buttons">
-            <button className="primary-btn">Explore Events</button>
-            <button className="secondary-btn">My RSVPs</button>
+          <motion.div
+            className="hero-buttons"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+
+            <button className="primary-btn">
+              Explore Events
+            </button>
+
+            <button className="secondary-btn">
+              My Calendar
+            </button>
+
+          </motion.div>
+
+          {/* QUICK ACTIONS */}
+
+          <div className="quick-actions">
+
+            <button>Saved Events</button>
+
+            <button>My RSVPs</button>
+
+            <button>Create Reminder</button>
+
+            <button>Tickets</button>
+
           </div>
+
         </div>
+
+        {/* RIGHT */}
 
         <div className="hero-right">
-          <div className="stat-card">
-            <TrendingUp size={20} />
-            <h2>24</h2>
-            <p>Upcoming Events</p>
+
+          <div className="dashboard-panel">
+
+            <div className="panel-section">
+
+              <span className="panel-label">
+                THIS WEEK
+              </span>
+
+              <h2>24</h2>
+
+              <p>Events happening around campus</p>
+
+            </div>
+
+            <div className="panel-section">
+
+              <span className="panel-label">
+                YOUR RSVPS
+              </span>
+
+              <h2>8</h2>
+
+              <p>You joined 8 events this week</p>
+
+            </div>
+
+            <div className="panel-section">
+
+              <span className="panel-label">
+                TRENDING
+              </span>
+
+              <h3>Tech events ↑</h3>
+
+              <p>Most students are joining hackathons</p>
+
+            </div>
+
           </div>
 
-          <div className="stat-card">
-            <Calendar size={20} />
-            <h2>8</h2>
-            <p>Events Joined</p>
-          </div>
         </div>
+
       </section>
 
-      {/* MAIN CONTENT */}
-      <div className="content-wrapper">
-        {/* SIDEBAR */}
+      {/* DASHBOARD GRID */}
+
+      <section className="dashboard-grid">
+
+        {/* LEFT SIDEBAR */}
+
         <aside className="sidebar">
+
           <h3>Filters</h3>
 
           <div className="filter-group">
+
             <label>Category</label>
 
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-            >
-              <option value="all">All Categories</option>
-              <option value="tech">Tech</option>
-              <option value="sports">Sports</option>
-              <option value="cultural">Cultural</option>
+            <select>
+              <option>All Categories</option>
+              <option>Tech</option>
+              <option>Sports</option>
+              <option>Cultural</option>
             </select>
+
           </div>
 
           <div className="filter-group">
+
             <label>Start Date</label>
+
             <input type="date" />
+
           </div>
 
           <div className="filter-group">
+
             <label>End Date</label>
+
             <input type="date" />
+
           </div>
 
-          <button className="clear-btn">Clear Filters</button>
+          <button className="clear-btn">
+            Clear Filters
+          </button>
+
         </aside>
 
-        {/* EVENTS */}
-        <main className="main-content">
+        {/* CENTER */}
+
+        <main className="events-area">
+
           <div className="section-header">
+
             <h2>Trending Events</h2>
-            <Link to="/">View All</Link>
+
+            <Link to="/">
+              View All
+            </Link>
+
           </div>
 
           <div className="events-grid">
-            {events.map((event, index) => (
+
+            {events.map((event) => (
               <motion.div
                 className="event-card"
                 key={event.id}
-                initial={{ opacity: 0, y: 40 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                whileHover={{ y: -10 }}
+                whileHover={{ y: -4 }}
               >
+
                 <div
                   className="event-image"
                   style={{
-                    backgroundImage: `url(${event.image})`
+                    backgroundImage:
+                      `url(${event.image})`
                   }}
-                >
-                  <div className="overlay" />
-                </div>
+                ></div>
 
                 <div className="event-content">
-                  <span className={`badge ${event.category}`}>
+
+                  <span className="badge">
                     {event.category}
                   </span>
 
@@ -189,33 +294,91 @@ function StudentDashboard() {
                   <p>{event.description}</p>
 
                   <div className="event-meta">
-                    <div>
-                      <Calendar size={14} />
-                      {event.date}
-                    </div>
 
-                    <div>
-                      <Clock3 size={14} />
-                      {event.time}
-                    </div>
+                    <span>{event.date}</span>
 
-                    <div>
-                      <MapPin size={14} />
-                      {event.venue}
-                    </div>
+                    <span>{event.venue}</span>
+
                   </div>
 
-                  <div className="card-footer">
-                    <span>{event.attendees}+ attending</span>
+                  <button className="join-btn">
+                    Join Event
+                  </button>
 
-                    <button className="join-btn">Join Event</button>
-                  </div>
                 </div>
+
               </motion.div>
             ))}
+
           </div>
+
         </main>
-      </div>
+
+        {/* RIGHT SIDEBAR */}
+
+        <aside className="activity-sidebar">
+
+          <div className="activity-card">
+
+            <h3>Recent Activity</h3>
+
+            <div className="activity-item">
+              <span className="activity-dot"></span>
+              You joined TechHack 2026
+            </div>
+
+            <div className="activity-item">
+              <span className="activity-dot"></span>
+              Spring Concert starts tomorrow
+            </div>
+
+            <div className="activity-item">
+              <span className="activity-dot"></span>
+              3 new tech events added
+            </div>
+
+          </div>
+
+          <div className="schedule-card">
+
+            <h3>Upcoming Schedule</h3>
+
+            <div className="schedule-item">
+
+              <span className="schedule-date">
+                TODAY
+              </span>
+
+              <p>6PM — Spring Concert</p>
+
+            </div>
+
+            <div className="schedule-item">
+
+              <span className="schedule-date">
+                TOMORROW
+              </span>
+
+              <p>9AM — AI Workshop</p>
+
+            </div>
+
+            <div className="schedule-item">
+
+              <span className="schedule-date">
+                FRIDAY
+              </span>
+
+              <p>Hackathon registration closes</p>
+
+            </div>
+
+          </div>
+
+        </aside>
+
+      </section>
+
     </div>
   )
 }
