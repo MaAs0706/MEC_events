@@ -10,6 +10,16 @@ import {
 
 import './StudentDashboard.css'
 
+const hours = new Date().getHours()
+let greeting ; 
+if (hours >= 5 && hours <= 12 ){
+  greeting = 'Good Morning'
+} else if (hours >= 12 && hours <= 17 ) {
+  greeting = 'Good Afternoon'
+} else {
+  greeting = 'Good Evening'
+}
+
 function StudentDashboard() {
 
   const events = [
@@ -90,7 +100,7 @@ function StudentDashboard() {
         </div>
 
       </nav>
-
+      
       {/* HERO */}
 
       <section className="hero">
@@ -111,7 +121,7 @@ function StudentDashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            Good evening,
+            {greeting},
             <br />
             Aswanth.
           </motion.h1>
