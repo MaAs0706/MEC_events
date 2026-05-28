@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
+import {useNavigate} from 'react-router-dom'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import UserProfile from './UserProfile'
 import {
   Search,
   Bell,
@@ -23,6 +25,8 @@ if (hours >= 5 && hours <= 12) {
 }
 
 function StudentDashboard() {
+
+  const navigate = useNavigate()
 
   /* STATES */
 
@@ -156,7 +160,8 @@ function StudentDashboard() {
           <button
             className="profile-btn"
             onClick={() =>
-              alert('Profile clicked')
+              navigate('/UserProfile'
+              )
             }
           >
             <User size={16} />
