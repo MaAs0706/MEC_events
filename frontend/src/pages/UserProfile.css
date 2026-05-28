@@ -162,12 +162,7 @@ body {
   margin-bottom: 14px;
 }
 
-.header-info h1 {
-  font-size: 3rem;
-  font-weight: 900;
 
-  margin-bottom: 10px;
-}
 
 .header-email {
   color: rgba(255,255,255,0.55);
