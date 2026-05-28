@@ -533,6 +533,49 @@ body {
   background: #ff3131;
 }
 
+.avatar {
+  position: relative;
+}
+
+.avatar::before {
+  content: '';
+
+  position: absolute;
+
+  inset: -6px;
+
+  border-radius: 50%;
+
+  background:
+    conic-gradient(
+      from 0deg,
+      transparent,
+      rgba(255,49,49,0.9),
+      transparent
+    );
+
+  animation: rotateRing 6s linear infinite;
+
+  opacity: 0.7;
+}
+
+.avatar-ring {
+  position: relative;
+  z-index: 2;
+}
+
+@keyframes rotateRing {
+
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+
+}
+
 /* RESPONSIVE */
 
 @media(max-width: 1200px) {
