@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -11,16 +11,31 @@ import {
 import './StudentDashboard.css'
 
 const hours = new Date().getHours()
-let greeting ; 
-if (hours >= 5 && hours <= 12 ){
+
+let greeting
+
+if (hours >= 5 && hours <= 12) {
   greeting = 'Good Morning'
-} else if (hours >= 12 && hours <= 16 ) {
+} else if (hours >= 12 && hours <= 16) {
   greeting = 'Good Afternoon'
 } else {
   greeting = 'Good Evening'
 }
 
 function StudentDashboard() {
+
+  /* STATES */
+
+  const [joinedEvents, setJoinedEvents] =
+    useState([])
+
+  const [selectedCategory, setSelectedCategory] =
+    useState('All Categories')
+
+  const [searchTerm, setSearchTerm] =
+    useState('')
+
+  /* EVENTS */
 
   const events = [
     {
@@ -60,6 +75,47 @@ function StudentDashboard() {
     }
   ]
 
+  /* FILTER EVENTS */
+
+  const filteredEvents = events.filter(
+    (event) => {
+
+      const matchesCategory =
+        selectedCategory === 'All Categories' ||
+        event.category ===
+          selectedCategory.toUpperCase()
+
+      const matchesSearch =
+        event.title
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase())
+
+      return (
+        matchesCategory &&
+        matchesSearch
+      )
+
+    }
+  )
+
+  /* JOIN EVENT */
+
+  const toggleJoinEvent = (eventId) => {
+
+    setJoinedEvents((prev) => {
+
+      if (prev.includes(eventId)) {
+        return prev.filter(
+          (id) => id !== eventId
+        )
+      }
+
+      return [...prev, eventId]
+
+    })
+
+  }
+
   return (
     <div className="dashboard">
 
@@ -78,29 +134,48 @@ function StudentDashboard() {
           <input
             type="text"
             placeholder="Search events..."
+            value={searchTerm}
+            onChange={(e) =>
+              setSearchTerm(e.target.value)
+            }
           />
 
         </div>
 
         <div className="nav-right">
 
-          <button className="icon-btn">
+          <button
+            className="icon-btn"
+            onClick={() =>
+              alert('Notifications clicked')
+            }
+          >
             <Bell size={18} />
           </button>
 
-          <button className="profile-btn">
+          <button
+            className="profile-btn"
+            onClick={() =>
+              alert('Profile clicked')
+            }
+          >
             <User size={16} />
             Profile
           </button>
 
-          <button className="icon-btn">
+          <button
+            className="icon-btn"
+            onClick={() =>
+              alert('Logout clicked')
+            }
+          >
             <LogOut size={18} />
           </button>
 
         </div>
 
       </nav>
-      
+
       {/* HERO */}
 
       <section className="hero">
@@ -143,11 +218,21 @@ function StudentDashboard() {
             animate={{ opacity: 1, y: 0 }}
           >
 
-            <button className="primary-btn">
+            <button
+              className="primary-btn"
+              onClick={() =>
+                alert('Explore Events clicked')
+              }
+            >
               Explore Events
             </button>
 
-            <button className="secondary-btn">
+            <button
+              className="secondary-btn"
+              onClick={() =>
+                alert('Calendar clicked')
+              }
+            >
               My Calendar
             </button>
 
@@ -157,13 +242,37 @@ function StudentDashboard() {
 
           <div className="quick-actions">
 
-            <button>Saved Events</button>
+            <button
+              onClick={() =>
+                alert('Saved Events clicked')
+              }
+            >
+              Saved Events
+            </button>
 
-            <button>My RSVPs</button>
+            <button
+              onClick={() =>
+                alert('My RSVPs clicked')
+              }
+            >
+              My RSVPs
+            </button>
 
-            <button>Create Reminder</button>
+            <button
+              onClick={() =>
+                alert('Reminder created')
+              }
+            >
+              Create Reminder
+            </button>
 
-            <button>Tickets</button>
+            <button
+              onClick={() =>
+                alert('Tickets clicked')
+              }
+            >
+              Tickets
+            </button>
 
           </div>
 
@@ -183,7 +292,9 @@ function StudentDashboard() {
 
               <h2>24</h2>
 
-              <p>Events happening around campus</p>
+              <p>
+                Events happening around campus
+              </p>
 
             </div>
 
@@ -193,9 +304,13 @@ function StudentDashboard() {
                 YOUR RSVPS
               </span>
 
-              <h2>8</h2>
+              <h2>
+                {joinedEvents.length}
+              </h2>
 
-              <p>You joined 8 events this week</p>
+              <p>
+                You joined events this week
+              </p>
 
             </div>
 
@@ -207,7 +322,10 @@ function StudentDashboard() {
 
               <h3>Tech events ↑</h3>
 
-              <p>Most students are joining hackathons</p>
+              <p>
+                Most students are joining
+                hackathons
+              </p>
 
             </div>
 
@@ -221,7 +339,7 @@ function StudentDashboard() {
 
       <section className="dashboard-grid">
 
-        {/* LEFT SIDEBAR */}
+        {/* SIDEBAR */}
 
         <aside className="sidebar">
 
@@ -231,11 +349,31 @@ function StudentDashboard() {
 
             <label>Category</label>
 
-            <select>
-              <option>All Categories</option>
-              <option>Tech</option>
-              <option>Sports</option>
-              <option>Cultural</option>
+            <select
+              value={selectedCategory}
+              onChange={(e) =>
+                setSelectedCategory(
+                  e.target.value
+                )
+              }
+            >
+
+              <option>
+                All Categories
+              </option>
+
+              <option>
+                Tech
+              </option>
+
+              <option>
+                Sports
+              </option>
+
+              <option>
+                Cultural
+              </option>
+
             </select>
 
           </div>
@@ -256,13 +394,24 @@ function StudentDashboard() {
 
           </div>
 
-          <button className="clear-btn">
+          <button
+            className="clear-btn"
+            onClick={() => {
+
+              setSelectedCategory(
+                'All Categories'
+              )
+
+              setSearchTerm('')
+
+            }}
+          >
             Clear Filters
           </button>
 
         </aside>
 
-        {/* CENTER */}
+        {/* EVENTS */}
 
         <main className="events-area">
 
@@ -276,9 +425,25 @@ function StudentDashboard() {
 
           </div>
 
+          {filteredEvents.length === 0 && (
+
+            <div className="empty-state">
+
+              <h3>No events found.</h3>
+
+              <p>
+                Try changing your filters
+                or search query.
+              </p>
+
+            </div>
+
+          )}
+
           <div className="events-grid">
 
-            {events.map((event) => (
+            {filteredEvents.map((event) => (
+
               <motion.div
                 className="event-card"
                 key={event.id}
@@ -301,30 +466,54 @@ function StudentDashboard() {
 
                   <h3>{event.title}</h3>
 
-                  <p>{event.description}</p>
+                  <p>
+                    {event.description}
+                  </p>
 
                   <div className="event-meta">
 
-                    <span>{event.date}</span>
+                    <span>
+                      {event.date}
+                    </span>
 
-                    <span>{event.venue}</span>
+                    <span>
+                      {event.venue}
+                    </span>
 
                   </div>
 
-                  <button className="join-btn">
-                    Join Event
+                  <button
+                    className={`join-btn ${
+                      joinedEvents.includes(
+                        event.id
+                      )
+                        ? 'joined'
+                        : ''
+                    }`}
+                    onClick={() =>
+                      toggleJoinEvent(event.id)
+                    }
+                  >
+
+                    {joinedEvents.includes(
+                      event.id
+                    )
+                      ? 'Joined'
+                      : 'Join Event'}
+
                   </button>
 
                 </div>
 
               </motion.div>
+
             ))}
 
           </div>
 
         </main>
 
-        {/* RIGHT SIDEBAR */}
+        {/* ACTIVITY */}
 
         <aside className="activity-sidebar">
 
@@ -359,7 +548,9 @@ function StudentDashboard() {
                 TODAY
               </span>
 
-              <p>6PM — Spring Concert</p>
+              <p>
+                6PM — Spring Concert
+              </p>
 
             </div>
 
@@ -369,7 +560,9 @@ function StudentDashboard() {
                 TOMORROW
               </span>
 
-              <p>9AM — AI Workshop</p>
+              <p>
+                9AM — AI Workshop
+              </p>
 
             </div>
 
@@ -379,7 +572,9 @@ function StudentDashboard() {
                 FRIDAY
               </span>
 
-              <p>Hackathon registration closes</p>
+              <p>
+                Hackathon registration closes
+              </p>
 
             </div>
 
