@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import {useNavigate} from 'react-router-dom'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import UserProfile from './UserProfile'
 import {
   Search,
   Bell,
@@ -150,9 +149,7 @@ function StudentDashboard() {
 
           <button
             className="icon-btn"
-            onClick={() =>
-              alert('Notifications clicked')
-            }
+            title="Notifications"
           >
             <Bell size={18} />
           </button>
@@ -160,8 +157,7 @@ function StudentDashboard() {
           <button
             className="profile-btn"
             onClick={() =>
-              navigate('/UserProfile'
-              )
+              navigate('/profile')
             }
           >
             <User size={16} />
@@ -171,8 +167,9 @@ function StudentDashboard() {
           <button
             className="icon-btn"
             onClick={() =>
-              alert('Logout clicked')
+              navigate('/')
             }
+            title="Logout"
           >
             <LogOut size={18} />
           </button>
@@ -225,9 +222,9 @@ function StudentDashboard() {
 
             <button
               className="primary-btn"
-              onClick={() =>
-                alert('Explore Events clicked')
-              }
+              onClick={() => {
+                document.querySelector('.events-area').scrollIntoView({ behavior: 'smooth' })
+              }}
             >
               Explore Events
             </button>
@@ -235,7 +232,7 @@ function StudentDashboard() {
             <button
               className="secondary-btn"
               onClick={() =>
-                alert('Calendar clicked')
+                alert('Calendar feature coming soon')
               }
             >
               My Calendar
@@ -249,7 +246,7 @@ function StudentDashboard() {
 
             <button
               onClick={() =>
-                alert('Saved Events clicked')
+                alert('Saved Events feature coming soon')
               }
             >
               Saved Events
@@ -257,7 +254,7 @@ function StudentDashboard() {
 
             <button
               onClick={() =>
-                alert('My RSVPs clicked')
+                alert('My RSVPs: ' + joinedEvents.length + ' events joined')
               }
             >
               My RSVPs
@@ -265,7 +262,7 @@ function StudentDashboard() {
 
             <button
               onClick={() =>
-                alert('Reminder created')
+                alert('Reminder feature coming soon')
               }
             >
               Create Reminder
@@ -273,7 +270,7 @@ function StudentDashboard() {
 
             <button
               onClick={() =>
-                alert('Tickets clicked')
+                alert('Tickets feature coming soon')
               }
             >
               Tickets
