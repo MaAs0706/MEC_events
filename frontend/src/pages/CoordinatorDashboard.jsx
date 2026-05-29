@@ -76,7 +76,22 @@ function CoordinatorDashboard() {
       { length: 30 },
       (_, i) => i + 1
     )
+  let selectedDateStatus = 'available'
 
+if (
+  bookedDates[selectedVenue]?.includes(
+    selectedDate
+  )
+) {
+  selectedDateStatus = 'booked'
+}
+else if (
+  pendingDates[selectedVenue]?.includes(
+    selectedDate
+  )
+) {
+  selectedDateStatus = 'pending'
+}
   return (
 
     <div className="coordinator-container">
@@ -370,30 +385,47 @@ function CoordinatorDashboard() {
                   </div>
 
                   <div
-                    className="status-card"
-                  >
+  className={`status-card ${selectedDateStatus}`}
+>
 
-                    <h4>
-                      Availability
-                    </h4>
+  <h4>
+    Availability
+  </h4>
 
-                    <p>
-                      Available for
-                      booking
-                    </p>
+  <p>
 
-                  </div>
+    {selectedDateStatus === 'available' &&
+      'Available for booking'}
+
+    {selectedDateStatus === 'pending' &&
+      'Pending approval request'}
+
+    {selectedDateStatus === 'booked' &&
+      'Venue already booked'}
+
+  </p>
+
+</div>
 
                   <button
-                    className="btn-create"
-                    onClick={() =>
-                      setShowCreateForm(
-                        !showCreateForm
-                      )
-                    }
-                  >
-                    Create Event Request
-                  </button>
+  className="btn-create"
+  disabled={
+    selectedDateStatus ===
+    'booked'
+  }
+  onClick={() =>
+    setShowCreateForm(
+      !showCreateForm
+    )
+  }
+>
+
+  {selectedDateStatus ===
+  'booked'
+    ? 'Date Unavailable'
+    : 'Create Event Request'}
+
+</button>
 
                 </div>
 
