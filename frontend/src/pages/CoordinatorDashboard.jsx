@@ -1,281 +1,697 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import './CoordinatorDashboard.css';
+
+import {
+  Calendar,
+  Building2,
+  FileText,
+  Users,
+  BarChart3,
+  Download
+} from 'lucide-react'
+
+import './CoordinatorDashboard.css'
 
 function CoordinatorDashboard() {
-  const [activeTab, setActiveTab] = useState('events')
-  const [showCreateForm, setShowCreateForm] = useState(false)
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    date: '',
-    time: '',
-    venue: '',
-    category: 'tech',
-    capacity: ''
-  })
 
-  const [myEvents, setMyEvents] = useState([
-    {
-      id: 1,
-      title: 'TechHack 2026',
-      date: '2026-04-25',
-      status: 'approved',
-      attendees: 234,
-      capacity: 500,
-      image: '🖥️'
-    },
-    {
-      id: 2,
-      title: 'AI Workshop',
-      date: '2026-04-28',
-      status: 'pending',
-      attendees: 120,
-      capacity: 200,
-      image: '🤖'
-    },
-  ])
+  const [activeTab, setActiveTab] =
+    useState('calendar')
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+  const [selectedDate, setSelectedDate] =
+    useState(24)
+
+  const [selectedVenue, setSelectedVenue] =
+    useState('Main Auditorium')
+
+  const [showCreateForm, setShowCreateForm] =
+    useState(false)
+
+  const venues = [
+    'Main Auditorium',
+    'Seminar Hall',
+    'Tech Lab',
+    'Sports Complex'
+  ]
+
+  const bookedDates = {
+    'Main Auditorium': [16, 22, 28],
+    'Seminar Hall': [12, 18],
+    'Tech Lab': [8, 14, 25],
+    'Sports Complex': [20, 27]
   }
 
-  const handleCreateEvent = (e) => {
-    e.preventDefault()
-    const newEvent = {
-      id: myEvents.length + 1,
-      title: formData.title,
-      date: formData.date,
-      status: 'pending',
-      attendees: 0,
-      capacity: parseInt(formData.capacity),
-      image: '📅'
-    }
-    setMyEvents([...myEvents, newEvent])
-    setFormData({
-      title: '',
-      description: '',
-      date: '',
-      time: '',
-      venue: '',
-      category: 'tech',
-      capacity: ''
-    })
-    setShowCreateForm(false)
+  const pendingDates = {
+    'Main Auditorium': [24],
+    'Seminar Hall': [26],
+    'Tech Lab': [10],
+    'Sports Complex': []
   }
+
+  const [myEvents] =
+    useState([
+      {
+        id: 1,
+        title: 'TechHack 2026',
+        status: 'approved',
+        venue: 'Main Auditorium',
+        attendees: 234,
+        capacity: 500,
+        permissionLetter: true
+      },
+
+      {
+        id: 2,
+        title: 'AI Workshop',
+        status: 'pending',
+        venue: 'Tech Lab',
+        attendees: 120,
+        capacity: 200,
+        permissionLetter: false
+      }
+    ])
+
+  const days =
+    Array.from(
+      { length: 30 },
+      (_, i) => i + 1
+    )
 
   return (
+
     <div className="coordinator-container">
-      {/* Navigation */}
+
+      {/* NAVBAR */}
+
       <nav className="coordinator-nav">
+
         <div className="nav-content">
-          <Link to="/" className="logo">NEXUS.</Link>
-          <h2>Event Coordinator</h2>
-          <div className="nav-actions">
-            <button className="user-menu">👤 {localStorage.getItem('userName') || 'Profile'}</button>
-            <Link to="/" className="logout">Sign out</Link>
+
+          <Link
+            to="/"
+            className="logo"
+          >
+            NEXUS.
+          </Link>
+
+          <div className="dashboard-title">
+
+            <p>
+              EVENT OPERATIONS CENTER
+            </p>
+
           </div>
+
+          <div className="nav-actions">
+
+            <button
+              className="user-menu"
+            >
+              {
+                localStorage.getItem(
+                  'userName'
+                ) || 'Coordinator'
+              }
+            </button>
+
+          </div>
+
         </div>
+
       </nav>
 
-      {/* Main Content */}
+      {/* MAIN */}
+
       <div className="coordinator-content">
-        {/* Sidebar */}
-        <aside className="coordinator-sidebar">
-          <div className="sidebar-section">
-            <h3>Navigation</h3>
-            <div className="nav-tabs">
-              <button 
-                className={`nav-tab ${activeTab === 'events' ? 'active' : ''}`}
-                onClick={() => setActiveTab('events')}
-              >
-                My Events
-              </button>
-              <button 
-                className={`nav-tab ${activeTab === 'analytics' ? 'active' : ''}`}
-                onClick={() => setActiveTab('analytics')}
-              >
-                Analytics
-              </button>
-            </div>
-          </div>
+
+        {/* SIDEBAR */}
+
+        <aside
+          className="coordinator-sidebar"
+        >
+
+          <button
+            className={`nav-tab ${
+              activeTab === 'calendar'
+                ? 'active'
+                : ''
+            }`}
+            onClick={() =>
+              setActiveTab(
+                'calendar'
+              )
+            }
+          >
+            <Calendar size={18}/>
+            Calendar
+          </button>
+
+          <button
+            className={`nav-tab ${
+              activeTab === 'events'
+                ? 'active'
+                : ''
+            }`}
+            onClick={() =>
+              setActiveTab(
+                'events'
+              )
+            }
+          >
+            <FileText size={18}/>
+            My Events
+          </button>
+
+          <button
+            className={`nav-tab ${
+              activeTab === 'analytics'
+                ? 'active'
+                : ''
+            }`}
+            onClick={() =>
+              setActiveTab(
+                'analytics'
+              )
+            }
+          >
+            <BarChart3 size={18}/>
+            Analytics
+          </button>
+
         </aside>
 
-        {/* Main Area */}
+        {/* MAIN PANEL */}
+
         <main className="coordinator-main">
-          {activeTab === 'events' && (
-            <section className="events-section">
-              <div className="section-header">
-                <h2>My Events</h2>
-                <button 
-                  className="btn-create"
-                  onClick={() => setShowCreateForm(!showCreateForm)}
+
+          {activeTab === 'calendar' && (
+
+            <section
+              className="calendar-section"
+            >
+
+              <div
+                className="calendar-header"
+              >
+
+                <div>
+
+                  <h1>
+                    Shared Venue Calendar
+                  </h1>
+
+                  <p>
+                    Check availability
+                    before submitting an
+                    event request.
+                  </p>
+
+                </div>
+
+                <select
+                  value={selectedVenue}
+                  onChange={(e) =>
+                    setSelectedVenue(
+                      e.target.value
+                    )
+                  }
+                  className="venue-selector"
                 >
-                  {showCreateForm ? '✕ Cancel' : '+ Create Event'}
-                </button>
+
+                  {venues.map(
+                    venue => (
+
+                      <option
+                        key={venue}
+                        value={venue}
+                      >
+                        {venue}
+                      </option>
+
+                    )
+                  )}
+
+                </select>
+
               </div>
 
-              {showCreateForm && (
-                <motion.div 
-                  className="create-form"
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
+              <div
+                className="calendar-layout"
+              >
+
+                {/* CALENDAR */}
+
+                <div
+                  className="calendar-card"
                 >
-                  <h3>Create New Event</h3>
-                  <form onSubmit={handleCreateEvent}>
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label>Event Title *</label>
-                        <input
-                          type="text"
-                          name="title"
-                          placeholder="Enter event title"
-                          value={formData.title}
-                          onChange={handleInputChange}
-                          required
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Category *</label>
-                        <select name="category" value={formData.category} onChange={handleInputChange}>
-                          <option value="tech">Tech</option>
-                          <option value="sports">Sports</option>
-                          <option value="cultural">Cultural</option>
-                        </select>
-                      </div>
-                    </div>
 
-                    <div className="form-group">
-                      <label>Description *</label>
-                      <textarea
-                        name="description"
-                        placeholder="Event description"
-                        value={formData.description}
-                        onChange={handleInputChange}
-                        rows="3"
-                        required
-                      />
-                    </div>
+                  <h2>
+                    April 2026
+                  </h2>
 
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label>Date *</label>
-                        <input
-                          type="date"
-                          name="date"
-                          value={formData.date}
-                          onChange={handleInputChange}
-                          required
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Time *</label>
-                        <input
-                          type="time"
-                          name="time"
-                          value={formData.time}
-                          onChange={handleInputChange}
-                          required
-                        />
-                      </div>
-                    </div>
+                  <div
+                    className="weekdays"
+                  >
 
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label>Venue *</label>
-                        <input
-                          type="text"
-                          name="venue"
-                          placeholder="Event venue"
-                          value={formData.venue}
-                          onChange={handleInputChange}
-                          required
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Capacity *</label>
-                        <input
-                          type="number"
-                          name="capacity"
-                          placeholder="Max attendees"
-                          value={formData.capacity}
-                          onChange={handleInputChange}
-                          required
-                        />
-                      </div>
-                    </div>
+                    <span>MON</span>
+                    <span>TUE</span>
+                    <span>WED</span>
+                    <span>THU</span>
+                    <span>FRI</span>
+                    <span>SAT</span>
+                    <span>SUN</span>
 
-                    <button type="submit" className="btn-submit">Create Event</button>
-                  </form>
-                </motion.div>
-              )}
-
-              <div className="events-list">
-                {myEvents.length === 0 ? (
-                  <div className="empty-state">
-                    <p>No events created yet</p>
                   </div>
-                ) : (
-                  myEvents.map((event, index) => (
-                    <motion.div 
-                      key={event.id}
-                      className="event-item"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                    >
-                      <div className="event-image">{event.image}</div>
-                      <div className="event-info">
-                        <h3>{event.title}</h3>
-                        <p className="event-date">📅 {new Date(event.date).toLocaleDateString()}</p>
-                        <div className="event-meta">
-                          <span className={`status ${event.status}`}>
-                            {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
-                          </span>
-                          <span className="attendees">{event.attendees}/{event.capacity} attending</span>
-                        </div>
-                      </div>
-                      <div className="event-actions">
-                        <button className="btn-view">View</button>
-                        <button className="btn-edit">Edit</button>
-                        <button className="btn-delete">Delete</button>
-                      </div>
-                    </motion.div>
-                  ))
-                )}
+
+                  <div
+                    className="calendar-grid"
+                  >
+
+                    {days.map(day => {
+
+                      let status =
+                        'available'
+
+                      if (
+                        bookedDates[
+                          selectedVenue
+                        ]?.includes(day)
+                      ) {
+                        status =
+                          'booked'
+                      }
+
+                      else if (
+                        pendingDates[
+                          selectedVenue
+                        ]?.includes(day)
+                      ) {
+                        status =
+                          'pending'
+                      }
+
+                      return (
+
+                        <motion.div
+
+                          key={day}
+
+                          whileHover={{
+                            scale: 1.05
+                          }}
+
+                          className={`calendar-day ${status}`}
+
+                          onClick={() =>
+                            setSelectedDate(
+                              day
+                            )
+                          }
+                        >
+
+                          {day}
+
+                        </motion.div>
+
+                      )
+
+                    })}
+
+                  </div>
+
+                  <div
+                    className="calendar-legend"
+                  >
+
+                    <span>
+                      🟢 Available
+                    </span>
+
+                    <span>
+                      🟡 Pending
+                    </span>
+
+                    <span>
+                      🔴 Booked
+                    </span>
+
+                  </div>
+
+                </div>
+
+                {/* DETAILS */}
+
+                <div
+                  className="date-panel"
+                >
+
+                  <h3>
+                    Selected Date
+                  </h3>
+
+                  <h2>
+                    April {selectedDate}
+                  </h2>
+
+                  <div
+                    className="detail-row"
+                  >
+
+                    <Building2
+                      size={16}
+                    />
+
+                    <span>
+                      {
+                        selectedVenue
+                      }
+                    </span>
+
+                  </div>
+
+                  <div
+                    className="status-card"
+                  >
+
+                    <h4>
+                      Availability
+                    </h4>
+
+                    <p>
+                      Available for
+                      booking
+                    </p>
+
+                  </div>
+
+                  <button
+                    className="btn-create"
+                    onClick={() =>
+                      setShowCreateForm(
+                        !showCreateForm
+                      )
+                    }
+                  >
+                    Create Event Request
+                  </button>
+
+                </div>
+
               </div>
+
             </section>
+
+          )}
+          {activeTab === 'events' && (
+
+            <section className="events-section">
+
+              <div className="events-header">
+
+                <h1>
+                  My Events
+                </h1>
+
+                <p>
+                  Track approvals,
+                  registrations and
+                  permission letters.
+                </p>
+
+              </div>
+
+              <div className="event-cards">
+
+                {myEvents.map(event => (
+
+                  <motion.div
+
+                    key={event.id}
+
+                    className="event-card"
+
+                    initial={{
+                      opacity: 0,
+                      y: 20
+                    }}
+
+                    animate={{
+                      opacity: 1,
+                      y: 0
+                    }}
+
+                  >
+
+                    <div className="event-top">
+
+                      <div>
+
+                        <h2>
+                          {event.title}
+                        </h2>
+
+                        <p>
+                          {event.venue}
+                        </p>
+
+                      </div>
+
+                      <span
+                        className={`status-badge ${event.status}`}
+                      >
+                        {event.status}
+                      </span>
+
+                    </div>
+
+                    {/* Workflow */}
+
+                    <div className="workflow">
+
+                      <div className="workflow-step done">
+                        Submitted
+                      </div>
+
+                      <div className="workflow-step done">
+                        Review
+                      </div>
+
+                      <div
+                        className={`workflow-step ${
+                          event.status === 'approved'
+                            ? 'done'
+                            : 'active'
+                        }`}
+                      >
+                        Approval
+                      </div>
+
+                      <div
+                        className={`workflow-step ${
+                          event.permissionLetter
+                            ? 'done'
+                            : ''
+                        }`}
+                      >
+                        Letter
+                      </div>
+
+                    </div>
+
+                    {/* Registration */}
+
+                    <div className="registration-card">
+
+                      <div className="registration-header">
+
+                        <span>
+                          Registrations
+                        </span>
+
+                        <span>
+                          {event.attendees}/
+                          {event.capacity}
+                        </span>
+
+                      </div>
+
+                      <div className="progress-bar">
+
+                        <div
+                          className="progress-fill"
+                          style={{
+                            width: `${
+                              (event.attendees /
+                                event.capacity) *
+                              100
+                            }%`
+                          }}
+                        />
+
+                      </div>
+
+                    </div>
+
+                    {/* Permission Letter */}
+
+                    {event.permissionLetter && (
+
+                      <div className="permission-card">
+
+                        <div>
+
+                          <h4>
+                            Permission Letter
+                          </h4>
+
+                          <p>
+                            Generated &
+                            Ready
+                          </p>
+
+                        </div>
+
+                        <button className="download-btn">
+
+                          <Download
+                            size={16}
+                          />
+
+                          Download
+
+                        </button>
+
+                      </div>
+
+                    )}
+
+                  </motion.div>
+
+                ))}
+
+              </div>
+
+            </section>
+
           )}
 
           {activeTab === 'analytics' && (
+
             <section className="analytics-section">
-              <h2>Event Analytics</h2>
-              <div className="analytics-grid">
-                <div className="analytics-card">
-                  <h3>Total Events</h3>
-                  <p className="analytics-number">{myEvents.length}</p>
-                </div>
-                <div className="analytics-card">
-                  <h3>Total Attendees</h3>
-                  <p className="analytics-number">{myEvents.reduce((acc, e) => acc + e.attendees, 0)}</p>
-                </div>
-                <div className="analytics-card">
-                  <h3>Approved Events</h3>
-                  <p className="analytics-number">{myEvents.filter(e => e.status === 'approved').length}</p>
-                </div>
-                <div className="analytics-card">
-                  <h3>Pending Approval</h3>
-                  <p className="analytics-number">{myEvents.filter(e => e.status === 'pending').length}</p>
-                </div>
+
+              <div className="analytics-header">
+
+                <h1>
+                  Analytics
+                </h1>
+
+                <p>
+                  Overview of your
+                  event performance.
+                </p>
+
               </div>
+
+              <div className="analytics-grid">
+
+                <div className="analytics-card">
+
+                  <FileText
+                    size={26}
+                  />
+
+                  <h3>
+                    Total Events
+                  </h3>
+
+                  <h2>
+                    {myEvents.length}
+                  </h2>
+
+                </div>
+
+                <div className="analytics-card">
+
+                  <Users
+                    size={26}
+                  />
+
+                  <h3>
+                    Total Registrations
+                  </h3>
+
+                  <h2>
+
+                    {
+                      myEvents.reduce(
+                        (
+                          total,
+                          event
+                        ) =>
+                          total +
+                          event.attendees,
+                        0
+                      )
+                    }
+
+                  </h2>
+
+                </div>
+
+                <div className="analytics-card">
+
+                  <Calendar
+                    size={26}
+                  />
+
+                  <h3>
+                    Pending Requests
+                  </h3>
+
+                  <h2>
+
+                    {
+                      myEvents.filter(
+                        e =>
+                          e.status ===
+                          'pending'
+                      ).length
+                    }
+
+                  </h2>
+
+                </div>
+
+                <div className="analytics-card">
+
+                  <BarChart3
+                    size={26}
+                  />
+
+                  <h3>
+                    Approval Rate
+                  </h3>
+
+                  <h2>
+                    87%
+                  </h2>
+
+                </div>
+
+              </div>
+
             </section>
+
           )}
+
         </main>
+
       </div>
+
     </div>
+
   )
+
 }
 
 export default CoordinatorDashboard
