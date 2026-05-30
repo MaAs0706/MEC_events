@@ -425,6 +425,19 @@
 
   color: #eab308;
 }
+.booked-info {
+  margin-top: 10px;
+}
+
+.booked-info h3 {
+  margin-bottom: 12px;
+  color: #ef4444;
+}
+
+.booked-info p {
+  margin-bottom: 8px;
+  color: rgba(255,255,255,0.7);
+}
 
 /* =========================
    WORKFLOW
