@@ -41,43 +41,7 @@ function StudentDashboard() {
 
   /* EVENTS */
 
-  const events = [
-    {
-      id: 1,
-      title: 'TechHack 2026',
-      category: 'TECH',
-      description:
-        'Build products with developers across campus.',
-      date: '25 APR',
-      venue: 'Main Auditorium',
-      image:
-        'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?q=80&w=1200&auto=format&fit=crop'
-    },
-
-    {
-      id: 2,
-      title: 'Spring Concert',
-      category: 'CULTURAL',
-      description:
-        'Live performances from artists and bands.',
-      date: '27 APR',
-      venue: 'Open Grounds',
-      image:
-        'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1200&auto=format&fit=crop'
-    },
-
-    {
-      id: 3,
-      title: 'Football Finals',
-      category: 'SPORTS',
-      description:
-        'Inter-college football championship.',
-      date: '01 MAY',
-      venue: 'Sports Complex',
-      image:
-        'https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=1200&auto=format&fit=crop'
-    }
-  ]
+  
 
   /* FILTER EVENTS */
 
