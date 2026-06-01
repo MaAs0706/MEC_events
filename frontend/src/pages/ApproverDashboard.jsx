@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import events from '../data/events'
 import {
   ShieldCheck,
   Clock3,

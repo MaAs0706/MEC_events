@@ -2,6 +2,7 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import './LandingPage.css'
+import events from '../data/events'
 
 function LandingPage() {
   const featuredEvents = [
