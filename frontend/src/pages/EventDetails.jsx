@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import './EventDetails.css'
 
-import { events } from '../data/events'
+import  events  from '../data/events'
 
 function EventDetails() {
 

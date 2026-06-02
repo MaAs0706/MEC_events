@@ -718,4 +718,4 @@ else if (
   )
 
 }
-
+ export default CoordinatorDashboard
