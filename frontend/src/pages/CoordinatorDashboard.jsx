@@ -457,24 +457,15 @@ else if (
 
                 {myEvents.map(event => (
 
-                  <motion.div
-
-                    key={event.id}
-
-                    className="event-card"
-
-                    initial={{
-                      opacity: 0,
-                      y: 20
-                    }}
-
-                    animate={{
-                      opacity: 1,
-                      y: 0
-                    }}
-
+                  <Link
+                    to={`/events/${event.id}`}
+                    className="event-link"
                   >
 
+                 <motion.div
+                  className="event-card"
+                  key={event.id}
+                 >
                     <div className="event-top">
 
                       <div>
@@ -599,6 +590,7 @@ else if (
                     )}
 
                   </motion.div>
+                  </Link>
 
                 ))}
 

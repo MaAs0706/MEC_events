@@ -411,11 +411,16 @@ function StudentDashboard() {
 
             {filteredEvents.map((event) => (
 
-              <motion.div
-                className="event-card"
-                key={event.id}
-                whileHover={{ y: -4 }}
-              >
+              <Link
+  to={`/events/${event.id}`}
+  className="event-link"
+>
+
+  <motion.div
+    className="event-card"
+    key={event.id}
+    whileHover={{ y: -4 }}
+  >
 
                 <div
                   className="event-image"
@@ -473,6 +478,7 @@ function StudentDashboard() {
                 </div>
 
               </motion.div>
+              </Link>
 
             ))}
 
