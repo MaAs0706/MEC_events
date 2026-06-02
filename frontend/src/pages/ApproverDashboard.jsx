@@ -23,42 +23,28 @@ function ApproverDashboard() {
     useState('')
 
   const [pendingEvents, setPendingEvents] =
-    useState([
-      {
-        id: 1,
-        title: 'AI Workshop',
-        coordinator: 'John Doe',
-        date: '2026-04-28',
-        venue: 'Tech Lab',
-        capacity: 200,
-        priority: 'HIGH',
-        description:
-          'Learn machine learning basics with hands-on coding.',
-        image:
-          'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?q=80&w=1200&auto=format&fit=crop'
-      },
-
-      {
-        id: 2,
-        title: 'Spring Sports Meet',
-        coordinator: 'Jane Smith',
-        date: '2026-05-01',
-        venue: 'Sports Complex',
-        capacity: 500,
-        priority: 'MEDIUM',
-        description:
-          'Inter-college sports championship.',
-        image:
-          'https://images.unsplash.com/photo-1517466787929-bc90951d0974?q=80&w=1200&auto=format&fit=crop'
-      }
-    ])
+  useState(
+    events.filter(
+      event =>
+        event.status === 'pending'
+    )
+  )
 
   const [approvedEvents, setApprovedEvents] =
-    useState([])
+  useState(
+    events.filter(
+      event =>
+        event.status === 'approved'
+    )
+  )
 
-  const [rejectedEvents, setRejectedEvents] =
-    useState([])
-
+const [rejectedEvents, setRejectedEvents] =
+  useState(
+    events.filter(
+      event =>
+        event.status === 'rejected'
+    )
+  )
   const handleApprove = (eventId) => {
 
     const event = pendingEvents.find(
@@ -86,6 +72,7 @@ function ApproverDashboard() {
     }
 
   }
+  
 
   const handleReject = (eventId) => {
 
@@ -121,6 +108,7 @@ function ApproverDashboard() {
   }
 
   return (
+    
 
     <div className="approver-container">
 
@@ -369,12 +357,120 @@ function ApproverDashboard() {
             </div>
 
           )}
+          {activeTab === 'approved' && (
+
+    <div className="review-grid">
+
+      {approvedEvents.map(
+        (event, index) => (
+
+          <motion.div
+            key={event.id}
+            className={`review-card ${
+              selectedEvent?.id ===
+              event.id
+                ? 'selected'
+                : ''
+              }`}
+              onClick={() =>
+                setSelectedEvent(event)
+            }
+            initial={{
+              opacity: 0,
+              y: 20
+            }}
+            animate={{
+              opacity: 1,
+              y: 0
+            }}
+          >
+
+            <div className="review-content">
+
+              <span className="approved-badge">
+                APPROVED
+              </span>
+
+              <h3>
+                {event.title}
+              </h3>
+
+              <p>
+                {event.organizer}
+              </p>
+
+            </div>
+
+          </motion.div>
+
+        )
+      )}
+
+    </div>
+
+  )}
+
+  {/* REJECTED */}
+
+  {activeTab === 'rejected' && (
+
+    <div className="review-grid">
+
+      {rejectedEvents.map(
+        (event, index) => (
+
+          <motion.div
+            key={event.id}
+            className={`review-card ${
+              selectedEvent?.id ===
+              event.id
+                ? 'selected'
+                : ''
+              }`}
+              onClick={() =>
+                setSelectedEvent(event)
+            }
+            initial={{
+              opacity: 0,
+              y: 20
+            }}
+            animate={{
+              opacity: 1,
+              y: 0
+            }}
+          >
+
+            <div className="review-content">
+
+              <span className="rejected-badge">
+                REJECTED
+              </span>
+
+              <h3>
+                {event.title}
+              </h3>
+
+              <p>
+                {event.organizer}
+              </p>
+
+            </div>
+
+          </motion.div>
+
+        )
+      )}
+
+    </div>
+
+  )}
 
         </main>
 
         {/* RIGHT PANEL */}
 
         <aside className="inspection-panel">
+          
 
           {selectedEvent ? (
 
@@ -406,34 +502,47 @@ function ApproverDashboard() {
 
                 <div className="inspection-details">
 
-                  <div>
-                    <span>
-                      Coordinator
-                    </span>
+  <div>
+    <span>
+      Organizer
+    </span>
 
-                    <strong>
-                      {
-                        selectedEvent.coordinator
-                      }
-                    </strong>
+    <strong>
+      {selectedEvent.organizer}
+    </strong>
+  </div>
 
-                  </div>
+  <div>
+    <span>
+      Venue
+    </span>
 
-                  <div>
-                    <span>
-                      Venue
-                    </span>
+    <strong>
+      {selectedEvent.venue}
+    </strong>
+  </div>
 
-                    <strong>
-                      {
-                        selectedEvent.venue
-                      }
-                    </strong>
+  <div>
+    <span>
+      Date
+    </span>
 
-                  </div>
+    <strong>
+      {selectedEvent.date}
+    </strong>
+  </div>
 
-                </div>
+  <div>
+    <span>
+      Capacity
+    </span>
 
+    <strong>
+      {selectedEvent.capacity}
+    </strong>
+  </div>
+
+</div>
                 <textarea
                   placeholder="Add rejection feedback..."
                   value={feedbackText}
@@ -445,6 +554,12 @@ function ApproverDashboard() {
                 />
 
                 <div className="inspection-actions">
+                  <Link
+                     to={`/events/${selectedEvent.id}`}
+                     className="details-btn"
+                  >
+                     View Full Details →
+                   </Link>
 
                   <button
                     className="approve-btn"
