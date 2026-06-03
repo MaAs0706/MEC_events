@@ -486,8 +486,13 @@ const [rejectedEvents, setRejectedEvents] =
 
               <div className="inspection-content">
 
-                <span className="inspection-tag">
-                  UNDER REVIEW
+                <span
+                  className={`inspection-tag ${
+                    selectedEvent.status
+
+                  }`}
+                >
+                  {selectedEvent.status?.toUpperCase()}
                 </span>
 
                 <h2>
