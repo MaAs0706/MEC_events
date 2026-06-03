@@ -323,9 +323,11 @@ const [rejectedEvents, setRejectedEvents] =
 
                       </div>
 
-                      <h3>
-                        {event.title}
-                      </h3>
+                      <Link to={`/events/${event.id}`} className="event-title-link">
+                        <h3>
+                          {event.title}
+                        </h3>
+                      </Link>
 
                       <p className="coordinator">
                         by {event.coordinator}
