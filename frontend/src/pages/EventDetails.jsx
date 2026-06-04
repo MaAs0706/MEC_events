@@ -75,7 +75,7 @@ function EventDetails() {
           </Link>
 
           <h2>
-            Event Details
+            {event.title}
           </h2>
 
           <Link
@@ -95,64 +95,120 @@ function EventDetails() {
 
       <div className="event-details-content">
 
-        <motion.div
-          className="event-header"
-          initial={{
-            opacity: 0,
-            y: -20
-          }}
-          animate={{
-            opacity: 1,
-            y: 0
-          }}
-        >
+        <motion.section
+  className="event-hero"
+  initial={{
+    opacity: 0,
+    y: -20
+  }}
+  animate={{
+    opacity: 1,
+    y: 0
+  }}
+>
 
-          <div
-            className="event-image-large"
-          >
-            <img src={event.image} alt={event.title} />
+  <img
+    src={event.image}
+    alt={event.title}
+    className="hero-image"
+  />
 
-          </div>
+  <div className="hero-overlay">
 
-          <div
-            className="event-header-info"
-          >
+    <div className="hero-content">
 
-            <h1>
-              {event.title}
-            </h1>
+      <span className="hero-category">
+        {event.category}
+      </span>
 
-            <p
-              className="event-organizer"
+      <h1>
+        {event.title}
+      </h1>
+
+      <p className="hero-organizer">
+        Organized by {event.organizer}
+      </p>
+
+      <div className="hero-tags">
+
+        {event.tags?.map(
+          (
+            tag,
+            index
+          ) => (
+
+            <span
+              key={index}
+              className="hero-tag"
             >
-              by {event.organizer}
-            </p>
+              #{tag}
+            </span>
 
-            <div
-              className="event-tags"
-            >
+          )
+        )}
 
-              {event.tags?.map(
-                (
-                  tag,
-                  index
-                ) => (
+      </div>
 
-                  <span
-                    key={index}
-                    className="tag"
-                  >
-                    #{tag}
-                  </span>
+    </div>
 
-                )
-              )}
+  </div>
 
-            </div>
+</motion.section>
+<section className="stats-row">
 
-          </div>
+  <div className="stat-card">
 
-        </motion.div>
+    <span>
+      DATE
+    </span>
+
+    <strong>
+      {new Date(
+        event.date
+      ).toLocaleDateString()}
+    </strong>
+
+  </div>
+
+  <div className="stat-card">
+
+    <span>
+      TIME
+    </span>
+
+    <strong>
+      {event.time}
+    </strong>
+
+  </div>
+
+  <div className="stat-card">
+
+    <span>
+      VENUE
+    </span>
+
+    <strong>
+      {event.venue}
+    </strong>
+
+  </div>
+
+  <div className="stat-card">
+
+    <span>
+      CAPACITY
+    </span>
+
+    <strong>
+      {event.attendees}
+      /
+      {event.capacity}
+    </strong>
+
+  </div>
+
+</section>
 
         <div
           className="event-details-grid"
@@ -493,25 +549,45 @@ function EventDetails() {
               </div>
 
             )}
+             <div
+                 className="contact-card"
+             >
 
-            <div
-              className="contact-card"
-            >
+  <div
+    className={`status-badge ${event.status}`}
+  >
+    {event.status.toUpperCase()}
+  </div>
 
-              <h3>
-                Organizer
-              </h3>
+  <h3>
+    Organizer
+  </h3>
 
-              <p>
-                {event.organizer}
-              </p>
+  <p>
+    {event.organizer}
+  </p>
 
-              <p>
-                {event.contact}
-              </p>
+  <p>
+    {event.contact}
+  </p>
 
-            </div>
+  <hr />
 
+  <div className="approval-info">
+
+    <span>
+      Approved By
+    </span>
+
+    <strong>
+      {event.approvedBy ||
+        'Pending Review'}
+    </strong>
+
+  </div>
+
+</div>
+            
           </aside>
 
         </div>
