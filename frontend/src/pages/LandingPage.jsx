@@ -5,26 +5,22 @@ import './LandingPage.css'
 import events from '../data/events'
 
 function LandingPage() {
-  const featuredEvents = [
-    {
-      title: 'TechHack 2026',
-      category: 'TECH',
-      description: 'Build products with developers across campus.',
-      date: '25 APR',
-      venue: 'Main Auditorium',
-      image:
-        'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?q=80&w=1200&auto=format&fit=crop'
-    },
-    {
-      title: 'Spring Concert',
-      category: 'CULTURE',
-      description: 'Live performances from artists and bands.',
-      date: '27 APR',
-      venue: 'Open Grounds',
-      image:
-        'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1200&auto=format&fit=crop'
-    }
-  ]
+  const featuredEvents =
+  events
+    .filter(
+      event =>
+        event.status ===
+        'approved'
+    )
+    .slice(0, 3)
+
+    const liveEvents =
+  events
+    .filter(
+      event =>
+        event.status === 'approved'
+    )
+    .slice(0, 4)
 
   return (
     <div className="landing-wrapper">
@@ -159,39 +155,47 @@ function LandingPage() {
             {/* RIGHT */}
 
             <div className="hero-right">
+<motion.div
+  className="live-card"
+  initial={{ opacity: 0, x: 30 }}
+  animate={{ opacity: 1, x: 0 }}
+>
 
-              <motion.div
-                className="live-card"
-                initial={{ opacity: 0, x: 30 }}
-                animate={{ opacity: 1, x: 0 }}
-              >
+  <div className="live-header">
 
-                <div className="live-header">
-                  <span className="live-dot"></span>
-                  LIVE THIS WEEK
-                </div>
+    <span className="live-dot"></span>
 
-                <div className="live-event">
-                  <h4>TechHack 2026</h4>
-                  <p>240 students attending</p>
-                </div>
+     UPCOMING EVENTS
 
-                <div className="live-event">
-                  <h4>Spring Concert</h4>
-                  <p>Starts in 2 hours</p>
-                </div>
+  </div>
 
-                <div className="live-event">
-                  <h4>Football Finals</h4>
-                  <p>Almost full</p>
-                </div>
+  {liveEvents.map((event) => (
 
-                <div className="live-event">
-                  <h4>Startup Meetup</h4>
-                  <p>Networking tonight</p>
-                </div>
+    <Link
+      key={event.id}
+      to={`/events/${event.id}`}
+      className="live-event-link"
+    >
 
-              </motion.div>
+      <div className="live-event">
+
+        <h4>
+          {event.title}
+        </h4>
+
+        <p>
+          {event.attendees}
+          {' '}
+          students attending
+        </p>
+
+      </div>
+
+    </Link>
+
+  ))}
+
+</motion.div>
 
             </div>
 
@@ -213,38 +217,52 @@ function LandingPage() {
 
           <div className="events-grid">
 
-            {featuredEvents.map((event, index) => (
-              <motion.div
-                className="event-card"
-                key={index}
-                whileHover={{ y: -6 }}
-              >
+            {featuredEvents.map((event) => (
+              <Link
+  to={`/events/${event.id}`}
+  className="event-link"
+  key={event.id}
+>
 
-                <div
-                  className="event-image"
-                  style={{
-                    backgroundImage: `url(${event.image})`
-                  }}
-                ></div>
+  <motion.div
+    className="event-card"
+    whileHover={{ y: -6 }}
+  >
 
-                <div className="event-content">
+    <div
+      className="event-image"
+      style={{
+        backgroundImage: `url(${event.image})`
+      }}
+    ></div>
 
-                  <span className="event-category">
-                    {event.category}
-                  </span>
+    <div className="event-content">
 
-                  <h3>{event.title}</h3>
+      <span className="event-category">
+        {event.category}
+      </span>
 
-                  <p>{event.description}</p>
+      <h3>{event.title}</h3>
 
-                  <div className="event-meta">
-                    <span>{event.date}</span>
-                    <span>{event.venue}</span>
-                  </div>
+      <p>{event.description}</p>
 
-                </div>
+      <div className="event-meta">
 
-              </motion.div>
+        <span>
+          {new Date(event.date).toLocaleDateString()}
+        </span>
+
+        <span>
+          {event.venue}
+        </span>
+
+      </div>
+
+    </div>
+
+  </motion.div>
+
+</Link>
             ))}
 
           </div>

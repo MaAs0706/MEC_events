@@ -413,6 +413,29 @@ body {
 
   font-size: 12px;
 }
+.live-event-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.live-event-link:hover .live-event {
+  border-color: var(--accent);
+  transform: translateX(4px);
+}
+
+.live-event {
+  transition: all 0.3s ease;
+}
+.event-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.event-link:hover {
+  text-decoration: none;
+}
 
 @keyframes pulse {
   0% {
