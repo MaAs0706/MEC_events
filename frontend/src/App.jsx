@@ -8,6 +8,7 @@ import ApproverDashboard from './pages/ApproverDashboard'
 import AdminDashboard from './pages/AdminDashboard'
 import EventDetails from './pages/EventDetails'
 import UserProfile from './pages/UserProfile'
+
 import './index.css'
 
 function App() {
@@ -20,7 +21,7 @@ function App() {
         <Route path="/dashboard/coordinator" element={<CoordinatorDashboard />} />
         <Route path="/dashboard/approver" element={<ApproverDashboard />} />
         <Route path="/dashboard/admin" element={<AdminDashboard />} />
-        <Route path="/event/:id" element={<EventDetails />} />
+        <Route path="/events/:id" element={<EventDetails />} />
         <Route path="/profile" element={<UserProfile />} />
       </Routes>
     </Router>
