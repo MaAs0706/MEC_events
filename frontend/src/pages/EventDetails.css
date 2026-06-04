@@ -424,6 +424,24 @@ section h2 {
   border-color: var(--accent);
   color: var(--accent);
 }
+.event-image-large {
+  width: 100%;
+  height: 350px;
+
+  border-radius: 20px;
+  overflow: hidden;
+
+  margin-bottom: 24px;
+}
+
+.event-image-large img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+
+  display: block;
+}
 
 /* Responsive */
 @media (max-width: 1024px) {

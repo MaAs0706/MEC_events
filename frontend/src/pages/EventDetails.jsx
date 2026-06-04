@@ -110,7 +110,8 @@ function EventDetails() {
           <div
             className="event-image-large"
           >
-            {event.image}
+            <img src={event.image} alt={event.title} />
+
           </div>
 
           <div
