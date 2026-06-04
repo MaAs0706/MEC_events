@@ -61,61 +61,22 @@ function EventDetails() {
 
     <div className="event-details-container">
 
-      {/* NAVBAR */}
+      {/* HERO */}
 
-      <nav className="event-nav">
+<section className="event-hero">
 
-        <div className="nav-content">
+  <div className="hero-background">
 
-          <Link
-            to="/"
-            className="logo"
-          >
-            NEXUS.
-          </Link>
+    <img
+      src={event.image}
+      alt={event.title}
+    />
 
-          <h2>
-            {event.title}
-          </h2>
-
-          <Link
-            to={
-              dashboardRoutes[role]
-            }
-            className="back-btn"
-          >
-            ← Back
-          </Link>
-
-        </div>
-
-      </nav>
-
-      {/* CONTENT */}
-
-      <div className="event-details-content">
-
-        <motion.section
-  className="event-hero"
-  initial={{
-    opacity: 0,
-    y: -20
-  }}
-  animate={{
-    opacity: 1,
-    y: 0
-  }}
->
-
-  <img
-    src={event.image}
-    alt={event.title}
-    className="hero-image"
-  />
+  </div>
 
   <div className="hero-overlay">
 
-    <div className="hero-content">
+    <div className="hero-left">
 
       <span className="hero-category">
         {event.category}
@@ -129,82 +90,114 @@ function EventDetails() {
         Organized by {event.organizer}
       </p>
 
-      <div className="hero-tags">
+      <div className="hero-meta">
 
-        {event.tags?.map(
-          (
-            tag,
-            index
-          ) => (
+        <div className="hero-meta-item">
+          <span>📅</span>
+          <div>
+            <small>Date</small>
+            <strong>
+              {new Date(event.date)
+                .toLocaleDateString()}
+            </strong>
+          </div>
+        </div>
 
-            <span
-              key={index}
-              className="hero-tag"
-            >
-              #{tag}
-            </span>
+        <div className="hero-meta-item">
+          <span>🕐</span>
+          <div>
+            <small>Time</small>
+            <strong>
+              {event.time}
+            </strong>
+          </div>
+        </div>
 
-          )
-        )}
+        <div className="hero-meta-item">
+          <span>📍</span>
+          <div>
+            <small>Venue</small>
+            <strong>
+              {event.venue}
+            </strong>
+          </div>
+        </div>
 
       </div>
 
     </div>
 
-  </div>
+    <div className="hero-right">
 
-</motion.section>
-<section className="stats-row">
+      <div className="hero-status-card">
 
-  <div className="stat-card">
+        <div
+          className={`status-pill ${event.status}`}
+        >
+          {event.status}
+        </div>
 
-    <span>
-      DATE
-    </span>
+        <h3>
+          Registrations
+        </h3>
 
-    <strong>
-      {new Date(
-        event.date
-      ).toLocaleDateString()}
-    </strong>
+        <div className="registration-count">
+          {event.attendees}
+          <span>
+            /{event.capacity}
+          </span>
+        </div>
 
-  </div>
+        {role === 'student' && (
 
-  <div className="stat-card">
+          <button
+            className="hero-action-btn"
+            onClick={() =>
+              setIsRsvped(!isRsvped)
+            }
+          >
 
-    <span>
-      TIME
-    </span>
+            {isRsvped
+              ? "✓ Registered"
+              : "Register Now"}
 
-    <strong>
-      {event.time}
-    </strong>
+          </button>
 
-  </div>
+        )}
 
-  <div className="stat-card">
+        {role === 'coordinator' && (
 
-    <span>
-      VENUE
-    </span>
+          <button
+            className="hero-action-btn"
+          >
+            Download Letter
+          </button>
 
-    <strong>
-      {event.venue}
-    </strong>
+        )}
 
-  </div>
+        {role === 'approver' && (
 
-  <div className="stat-card">
+          <div className="approver-actions">
 
-    <span>
-      CAPACITY
-    </span>
+            <button
+              className="approve-btn"
+            >
+              Approve
+            </button>
 
-    <strong>
-      {event.attendees}
-      /
-      {event.capacity}
-    </strong>
+            <button
+              className="reject-btn"
+            >
+              Reject
+            </button>
+
+          </div>
+
+        )}
+
+      </div>
+
+    </div>
 
   </div>
 
@@ -594,7 +587,7 @@ function EventDetails() {
 
       </div>
 
-    </div>
+    
 
   )
 
