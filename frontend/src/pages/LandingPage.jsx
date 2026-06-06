@@ -22,6 +22,29 @@ function LandingPage() {
     )
     .slice(0, 4)
 
+    const totalEvents = events.length
+
+const approvedEvents =
+  events.filter(
+    event =>
+      event.status === 'approved'
+  )
+
+const totalCategories =
+  new Set(
+    events.map(
+      event =>
+        event.category
+    )
+  ).size
+
+const totalRegistrations =
+  events.reduce(
+    (sum, event) =>
+      sum + event.attendees,
+    0
+  )
+
   return (
     <div className="landing-wrapper">
 
@@ -114,41 +137,61 @@ function LandingPage() {
                 </Link>
               </motion.div>
 
-              <div className="hero-stats">
+                         <div className="hero-stats">
 
-                <motion.div
-                  className="stat"
-                  whileHover={{ y: -3 }}
-                >
-                  <div className="stat-number">120+</div>
-                  <div className="stat-label">Events hosted</div>
-                </motion.div>
+  <motion.div
+    className="stat"
+    whileHover={{ y: -3 }}
+  >
+    <div className="stat-number">
+      {totalEvents}
+    </div>
 
-                <motion.div
-                  className="stat"
-                  whileHover={{ y: -3 }}
-                >
-                  <div className="stat-number">24</div>
-                  <div className="stat-label">Live now</div>
-                </motion.div>
+    <div className="stat-label">
+      Events Hosted
+    </div>
+  </motion.div>
 
-                <motion.div
-                  className="stat"
-                  whileHover={{ y: -3 }}
-                >
-                  <div className="stat-number">7</div>
-                  <div className="stat-label">Categories</div>
-                </motion.div>
+  <motion.div
+    className="stat"
+    whileHover={{ y: -3 }}
+  >
+    <div className="stat-number">
+      {approvedEvents.length}
+    </div>
 
-                <motion.div
-                  className="stat"
-                  whileHover={{ y: -3 }}
-                >
-                  <div className="stat-number">∞</div>
-                  <div className="stat-label">Stories made</div>
-                </motion.div>
+    <div className="stat-label">
+      Upcoming
+    </div>
+  </motion.div>
 
-              </div>
+  <motion.div
+    className="stat"
+    whileHover={{ y: -3 }}
+  >
+    <div className="stat-number">
+      {totalCategories}
+    </div>
+
+    <div className="stat-label">
+      Categories
+    </div>
+  </motion.div>
+
+  <motion.div
+    className="stat"
+    whileHover={{ y: -3 }}
+  >
+    <div className="stat-number">
+      {totalRegistrations}
+    </div>
+
+    <div className="stat-label">
+      Registrations
+    </div>
+  </motion.div>
+
+</div>
 
             </div>
 
@@ -184,9 +227,7 @@ function LandingPage() {
         </h4>
 
         <p>
-          {event.attendees}
-          {' '}
-          students attending
+          {new Date(event.date).toLocaleDateString()} {' • '} {event.venue}
         </p>
 
       </div>
