@@ -332,6 +332,7 @@ const [rejectedEvents, setRejectedEvents] =
                       <p className="coordinator">
                         by {event.coordinator}
                       </p>
+                      
 
                       <div className="review-meta">
 
