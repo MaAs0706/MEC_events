@@ -362,6 +362,7 @@ function Login() {
                     Student
                   </option>
 
+
                   <option value="coordinator">
                     Event Coordinator
                   </option>
