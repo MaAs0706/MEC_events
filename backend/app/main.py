@@ -1,11 +1,14 @@
 from fastapi import FastAPI
 
 from app.database import engine, Base
-from app.models.event import Event
+
+from app.routes.events import router as event_router
+
+app = FastAPI()
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI()
+app.include_router(event_router)
 
 
 @app.get("/")
