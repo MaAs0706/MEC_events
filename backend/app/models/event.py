@@ -3,10 +3,10 @@ from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import Text
 
-from app.database import base
+from app.database import Base
 
 
-class Event(base):
+class Event(Base):
 
     __tablename__ = "events"
 

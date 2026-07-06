@@ -1,12 +1,15 @@
 from fastapi import FastAPI
-from app.database import engine, base
-from models.event import Event
 
+from app.database import engine, Base
+from app.models.event import Event
 
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
-Event.metadata.create_all(bind=engine)
+
 
 @app.get("/")
 def home():
-    return {"message": "Welcome to the NEXUS!"}
+    return {
+        "message": "Welcome to NEXUS!"
+    }
