@@ -1,10 +1,43 @@
-import React from 'react'
+
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import './LandingPage.css'
-import events from '../data/events'
+import React, { useEffect, useState } from 'react'
+import api from '../services/api'
 
 function LandingPage() {
+  const [events, setEvents] = useState([])
+ const [loading, setLoading] = useState(true)
+
+ useEffect(() => {
+
+  const fetchEvents = async () => {
+
+    try {
+
+      const response =
+        await api.get('/events')
+
+      setEvents(response.data)
+
+    } catch (error) {
+
+      console.error(
+        'Error fetching events:',
+        error
+      )
+
+    } finally {
+
+      setLoading(false)
+
+    }
+
+  }
+
+  fetchEvents()
+
+}, [])
   const featuredEvents =
   events
     .filter(
@@ -44,6 +77,14 @@ const totalRegistrations =
       sum + event.attendees,
     0
   )
+
+  if (loading) {
+  return (
+    <div className="loading-screen">
+      Loading Events...
+    </div>
+  )
+}
 
   return (
     <div className="landing-wrapper">
