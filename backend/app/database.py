@@ -16,4 +16,4 @@ SessionLocal = sessionmaker(
     bind=engine
 )
 
-Base = declarative_base()
+Base = declarative_base() ## This is the base class for all the models in the application. All the models will inherit from this class.(For eg this tells python that it is not just a normal method , we are referring to a database and all the tables should inherit from it . )
