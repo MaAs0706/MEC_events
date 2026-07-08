@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import engine, Base
+from app.models.user import User
+from app.models.event import Event
 
 from app.routes.events import router as event_router
 
