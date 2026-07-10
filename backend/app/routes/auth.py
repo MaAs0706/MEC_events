@@ -23,6 +23,7 @@ def register_user(
         .filter(User.email == user.email)
         .first()
     )
+    
 
     if existing_user:
         raise HTTPException(
