@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
 from app.models.user import User
 from app.models.event import Event
+from app.routes.users import router as user_router
 
 from app.routes.events import router as event_router
 
@@ -23,6 +24,7 @@ app.add_middleware(
 
 
 app.include_router(event_router)
+app.include_router(auth_router)
 
 
 @app.get("/")
