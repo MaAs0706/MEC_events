@@ -3,6 +3,7 @@ from fastapi import Depends
 from fastapi import HTTPException
 
 from sqlalchemy.orm import Session
+from app.utils.jwt import create_access_token
 
 from app.dependencies import get_db
 from app.models.user import User
@@ -40,12 +41,17 @@ def login_user(
             detail="Invalid email or password"
         )
 
+    access_token = create_access_token(
+        {
+            "user_id": existing_user.id,
+            "role": existing_user.role
+        }
+    )
     return {
-        "message": "Login successful",
-        "user_id": existing_user.id,
+        "access_token": access_token,
+        "token_type": "bearer",
+        "role": existing_user.role,
         "full_name": existing_user.full_name,
-        "email": existing_user.email,
-        "role": existing_user.role
     }
 
 
