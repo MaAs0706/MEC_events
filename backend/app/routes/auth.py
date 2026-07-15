@@ -12,7 +12,22 @@ from app.utils.security import hash_password
 from app.schemas.user import UserLogin
 from app.utils.security import verify_password
 
+from app.dependencies import get_current_user
 router = APIRouter(prefix="/auth")
+
+@router.get("/me")
+def get_me(
+    current_user: User = Depends(
+        get_current_user
+    )
+):
+
+    return {
+        "id": current_user.id,
+        "name": current_user.full_name,
+        "email": current_user.email,
+        "role": current_user.role
+    }
 
 @router.post("/login")
 def login_user(
