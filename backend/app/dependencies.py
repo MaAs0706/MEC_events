@@ -47,9 +47,9 @@ def get_current_user(
             SECRET_KEY,
             algorithms=[ALGORITHM]
         )
-        print(token.credentials)
+        
 
-        print("PAYLOAD:", payload)
+     
 
         user_id = payload.get("user_id")
 
