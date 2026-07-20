@@ -59,7 +59,7 @@ def get_current_user(
 
     except JWTError as e :
 
-        print("JWT Error:", e)
+        
         raise credentials_exception
 
     user = (
