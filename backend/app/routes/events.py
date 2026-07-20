@@ -24,9 +24,9 @@ def create_event(
         category=event.category,
         venue=event.venue,
         date=event.date,
-        status=event.status,
+        status="pending",
         organizer=event.organizer,
-        attendees=event.attendees,
+        attendees=0,
         capacity=event.capacity,
         image=event.image
     )
@@ -38,8 +38,11 @@ def create_event(
 
 @router.get("/events")
 def get_events(db: Session = Depends(get_db)):
-
-    return db.query(Event).all()
+    return (
+        db.query(Event)
+        .filter(Event.status == "approved")
+        .all()
+    )
 
 @router.get("/events/{event_id}")    
 def get_event(
@@ -79,9 +82,9 @@ def update_event(
     event.category = updated_event.category
     event.venue = updated_event.venue
     event.date = updated_event.date
-    event.status = updated_event.status
+    event.status = "pending"
     event.organizer = updated_event.organizer
-    event.attendees = updated_event.attendees
+    event.attendees = 0
     event.capacity = updated_event.capacity
     event.image = updated_event.image
 
