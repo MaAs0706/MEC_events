@@ -5,13 +5,17 @@ from app.models.event import Event
 
 from app.schemas.event import EventUpdate
 
-from app.dependencies import get_db
+from app.dependencies import get_db, require_role
 from app.schemas.event import EventCreate
 router = APIRouter()
 
 @router.post("/events")
 def create_event(
+    
     event: EventCreate,
+    current_user = Depends(
+        require_role(["coordinator", "admin"])
+    ),
     db: Session = Depends(get_db)
 ):
     new_event = Event(
@@ -40,7 +44,7 @@ def get_events(db: Session = Depends(get_db)):
 @router.get("/events/{event_id}")    
 def get_event(
     event_id:int ,
-    db:session = Depends(get_db)
+    db:Session = Depends(get_db)
 
 ):
     event = db.query(Event).filter(Event.id == event_id).first()
@@ -50,8 +54,11 @@ def get_event(
 
 @router.put("/events/{event_id}")
 def update_event(
-    event_id: int,
+     event_id: int,
     updated_event: EventCreate,
+    current_user = Depends(
+        require_role(["coordinator", "admin"])
+    ),
     db: Session = Depends(get_db)
 ):
 
@@ -86,8 +93,11 @@ def update_event(
 
 @router.patch("/events/{event_id}")
 def update_event(
-    event_id: int,
+   event_id: int,
     updates: EventUpdate,
+    current_user = Depends(
+        require_role(["coordinator", "admin"])
+    ),
     db: Session = Depends(get_db)
 ):
 
