@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.models.event import Event 
+from app.models.user import User 
 
 from app.schemas.event import EventUpdate
 
@@ -119,12 +120,29 @@ def update_event(
     update_data = updates.model_dump(
         exclude_unset=True
     )
+    update_data.pop("status",None)
+    update_data.pop("attendees",None)
 
     for key, value in update_data.items():
         setattr(event, key, value)
+    event.status="pending"    
 
     db.commit()
 
     db.refresh(event)
 
     return event
+
+
+@router.get("/events/pending")
+def get_pending_events(
+    current_user: User = Depends(
+        require_role(["coordinator", "admin"])
+    ),
+    db: Session = Depends(get_db)
+):
+    return (
+        db.query(Event)
+        .filter(Event.status == "pending")
+        .all()
+    )
