@@ -137,7 +137,7 @@ def update_event(
 @router.get("/events/pending")
 def get_pending_events(
     current_user: User = Depends(
-        require_role(["coordinator", "admin"])
+        require_role(["approver", "admin"])
     ),
     db: Session = Depends(get_db)
 ):
