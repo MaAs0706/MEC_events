@@ -8,6 +8,7 @@ from app.schemas.event import EventUpdate
 
 from app.dependencies import get_db, require_role
 from app.schemas.event import EventCreate
+from backend.app.schemas import event
 router = APIRouter()
 
 @router.post("/events")
@@ -146,3 +147,30 @@ def get_pending_events(
         .filter(Event.status == "pending")
         .all()
     )
+
+@router.patch("/events/{event_id}/approve")
+def approve_event(
+    event_id: int,
+    current_user: User = Depends(
+        require_role(["approver", "admin"])
+    ),
+    db: Session = Depends(get_db)
+):
+    event = (
+        db.query(Event)
+        .filter(Event.id == event_id)
+        .first()
+    )
+
+    if not event:
+        raise HTTPException(
+            status_code=404,
+            detail="Event not found"
+        )
+
+    event.status = "approved"
+
+    db.commit()
+    db.refresh(event)
+
+    return event
