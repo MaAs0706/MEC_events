@@ -170,6 +170,7 @@ def approve_event(
 
     event.status = "approved"
 
+
     db.commit()
     db.refresh(event)
 
