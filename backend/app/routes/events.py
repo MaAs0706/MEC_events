@@ -523,3 +523,70 @@ def register_for_event(
         "message": "Registered successfully",
         "event": event
     }
+
+@router.get("/events/{event_id}/registration-status")
+def get_registration_status(
+    event_id: int,
+    current_user: User = Depends(
+        require_role(["student"])
+    ),
+    db: Session = Depends(get_db)
+):
+    registration = (
+        db.query(Registration)
+        .filter(Registration.event_id == event_id)
+        .filter(Registration.student_id == current_user.id)
+        .first()
+    )
+
+    return {
+        "registered": registration is not None
+    }
+
+@router.get("/events/{event_id}/attendees")
+def get_event_attendees(
+    event_id: int,
+    current_user: User = Depends(
+        require_role(["coordinator", "admin"])
+    ),
+    db: Session = Depends(get_db)
+):
+    event = (
+        db.query(Event)
+        .filter(Event.id == event_id)
+        .first()
+    )
+
+    if not event:
+        raise HTTPException(
+            status_code=404,
+            detail="Event not found"
+        )
+
+    if (
+        current_user.role != "admin"
+        and event.created_by != current_user.id
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="You can only view attendees for your own events"
+        )
+
+    attendees = (
+        db.query(User)
+        .join(
+            Registration,
+            Registration.student_id == User.id
+        )
+        .filter(Registration.event_id == event_id)
+        .all()
+    )
+
+    return [
+        {
+            "id": attendee.id,
+            "full_name": attendee.full_name,
+            "email": attendee.email
+        }
+        for attendee in attendees
+    ]

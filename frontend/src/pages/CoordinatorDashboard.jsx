@@ -34,6 +34,9 @@ function CoordinatorDashboard() {
   const [formError, setFormError] =
     useState('')
 
+  const [attendeesByEvent, setAttendeesByEvent] =
+    useState({})
+
   const [formData, setFormData] =
     useState({
       title: '',
@@ -178,6 +181,33 @@ function CoordinatorDashboard() {
     }
     catch {
       setFormError('Unable to submit event request')
+    }
+
+  }
+
+  const toggleAttendees = async (eventId) => {
+
+    if (attendeesByEvent[eventId]) {
+      setAttendeesByEvent((current) => ({
+        ...current,
+        [eventId]: null
+      }))
+
+      return
+    }
+
+    try {
+      const response = await api.get(
+        `/events/${eventId}/attendees`
+      )
+
+      setAttendeesByEvent((current) => ({
+        ...current,
+        [eventId]: response.data
+      }))
+    }
+    catch {
+      setFormError('Unable to load attendees')
     }
 
   }
@@ -713,9 +743,8 @@ function CoordinatorDashboard() {
 
                 {myEvents.map(event => (
 
-                  <Link
+                  <div
                     key={event.id}
-                    to={`/events/${event.id}`}
                     className="event-link"
                   >
 
@@ -815,6 +844,53 @@ function CoordinatorDashboard() {
 
                     </div>
 
+                    <button
+                      className="attendees-toggle"
+                      type="button"
+                      onClick={() =>
+                        toggleAttendees(event.id)
+                      }
+                    >
+                      {attendeesByEvent[event.id]
+                        ? 'Hide attendees'
+                        : 'View attendees'}
+                    </button>
+
+                    {attendeesByEvent[event.id] && (
+
+                      <div className="attendees-list">
+
+                        {attendeesByEvent[event.id].length ? (
+                          attendeesByEvent[event.id].map(
+                            attendee => (
+                              <div key={attendee.id}>
+                                <strong>
+                                  {attendee.full_name}
+                                </strong>
+
+                                <span>
+                                  {attendee.email}
+                                </span>
+                              </div>
+                            )
+                          )
+                        ) : (
+                          <p>
+                            No registrations yet.
+                          </p>
+                        )}
+
+                      </div>
+
+                    )}
+
+                    <Link
+                      to={`/events/${event.id}`}
+                      className="details-link"
+                    >
+                      View details
+                    </Link>
+
                     {/* Permission Letter */}
 
                     {event.status === 'approved' && (
@@ -849,7 +925,7 @@ function CoordinatorDashboard() {
                     )}
 
                   </motion.div>
-                  </Link>
+                  </div>
 
                 ))}
 

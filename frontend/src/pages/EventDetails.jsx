@@ -32,6 +32,15 @@ function EventDetails() {
           await api.get(`/events/${id}`)
 
         setEvent(response.data)
+
+        if (role === 'student') {
+          const statusResponse =
+            await api.get(
+              `/events/${id}/registration-status`
+            )
+
+          setIsRsvped(statusResponse.data.registered)
+        }
       }
       catch {
         setEvent(null)
@@ -44,7 +53,7 @@ function EventDetails() {
 
     fetchEvent()
 
-  }, [id])
+  }, [id, role])
 
   const handleRegister = async () => {
 

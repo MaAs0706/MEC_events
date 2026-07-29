@@ -613,6 +613,50 @@
   border-radius: 999px;
 }
 
+.attendees-toggle,
+.details-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-top: 14px;
+  margin-right: 10px;
+  padding: 10px 14px;
+
+  border: none;
+  border-radius: 10px;
+
+  background: #171717;
+  color: white;
+
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.attendees-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 14px;
+
+  background: #080808;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+}
+
+.attendees-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.attendees-list span,
+.attendees-list p {
+  color: rgba(255,255,255,0.55);
+}
+
 /* =========================
    LETTER
 ========================= */
