@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 
 from app.database import engine, Base
 from app.models.user import User
@@ -11,11 +12,73 @@ from app.routes.venues import router as venue_router
 
 from app.routes.events import router as event_router
 
-app = FastAPI()
+fastapi_app = FastAPI()
 
 Base.metadata.create_all(bind=engine)
-app.add_middleware(
-    CORSMiddleware,
+
+with engine.begin() as connection:
+    connection.execute(
+        text(
+            "ALTER TABLE events "
+            "ADD COLUMN IF NOT EXISTS created_by INTEGER REFERENCES users(id)"
+        )
+    )
+    connection.execute(
+        text(
+            "ALTER TABLE events "
+            "ADD COLUMN IF NOT EXISTS start_time VARCHAR"
+        )
+    )
+    connection.execute(
+        text(
+            "ALTER TABLE events "
+            "ADD COLUMN IF NOT EXISTS end_time VARCHAR"
+        )
+    )
+    connection.execute(
+        text(
+            "ALTER TABLE events "
+            "ADD COLUMN IF NOT EXISTS rejection_reason TEXT"
+        )
+    )
+    connection.execute(
+        text(
+            "ALTER TABLE events "
+            "ADD COLUMN IF NOT EXISTS reviewed_by INTEGER REFERENCES users(id)"
+        )
+    )
+    connection.execute(
+        text(
+            "ALTER TABLE events "
+            "ADD COLUMN IF NOT EXISTS reviewed_at VARCHAR"
+        )
+    )
+    connection.execute(
+        text(
+            "INSERT INTO venues (name, capacity) "
+            "VALUES "
+            "('Main Auditorium', 500), "
+            "('Seminar Hall', 120), "
+            "('Tech Lab', 80), "
+            "('Sports Complex', 800) "
+            "ON CONFLICT (name) DO NOTHING"
+        )
+    )
+
+fastapi_app.include_router(event_router)
+fastapi_app.include_router(auth_router)
+fastapi_app.include_router(venue_router)
+
+
+@fastapi_app.get("/")
+def home():
+    return {
+        "message": "Welcome to NEXUS!"
+    }
+
+
+app = CORSMiddleware(
+    fastapi_app,
     allow_origins=[
         "http://localhost:5173",
         "http://localhost:5174",
@@ -29,14 +92,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-app.include_router(event_router)
-app.include_router(auth_router)
-app.include_router(venue_router)
-
-
-@app.get("/")
-def home():
-    return {
-        "message": "Welcome to NEXUS!"
-    }
+"""
+Wrapping FastAPI with CORSMiddleware keeps CORS headers on error responses too,
+which makes frontend debugging clearer when an endpoint returns 500.
+"""
