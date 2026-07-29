@@ -5,7 +5,9 @@ from app.database import engine, Base
 from app.models.user import User
 from app.models.event import Event
 from app.models.registration import Registration
+from app.models.venue import Venue
 from app.routes.auth import router as auth_router
+from app.routes.venues import router as venue_router
 
 from app.routes.events import router as event_router
 
@@ -26,6 +28,7 @@ app.add_middleware(
 
 app.include_router(event_router)
 app.include_router(auth_router)
+app.include_router(venue_router)
 
 
 @app.get("/")

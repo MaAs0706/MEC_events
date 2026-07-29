@@ -108,13 +108,16 @@ const [rejectedEvents, setRejectedEvents] =
 
       try {
         const response = await api.patch(
-          `/events/${eventId}/reject`
+          `/events/${eventId}/reject`,
+          {
+            rejection_reason: feedbackText
+          }
         )
 
         setRejectedEvents([
           {
             ...response.data,
-            feedback: feedbackText
+            feedback: response.data.rejection_reason
           },
           ...rejectedEvents
         ])

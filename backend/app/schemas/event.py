@@ -39,3 +39,7 @@ class EventUpdate(BaseModel):
     attendees: Optional[int] = None
     capacity: Optional[int] = None
     image: Optional[str] = None    
+
+class EventReject(BaseModel):
+
+    rejection_reason: str

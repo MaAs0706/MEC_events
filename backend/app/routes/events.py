@@ -1,11 +1,15 @@
 from fastapi import APIRouter
 from fastapi import Depends, HTTPException
+from datetime import datetime
+from datetime import timezone
 from sqlalchemy.orm import Session
 from app.models.event import Event 
 from app.models.registration import Registration
 from app.models.user import User 
+from app.models.venue import Venue
 
 from app.schemas.event import EventUpdate
+from app.schemas.event import EventReject
 
 from app.dependencies import get_db, require_role
 from app.schemas.event import EventCreate
@@ -86,6 +90,21 @@ def get_booking_load(bookings: list[Event]):
     return min(booked_minutes / (12 * 60), 1)
 
 
+def get_venues(db: Session):
+    venues = db.query(Venue).all()
+
+    if venues:
+        return [
+            {
+                "name": venue.name,
+                "capacity": venue.capacity
+            }
+            for venue in venues
+        ]
+
+    return VENUES
+
+
 @router.post("/events")
 def create_event(
     
@@ -99,6 +118,18 @@ def create_event(
         event.start_time,
         event.end_time
     )
+
+    venue = (
+        db.query(Venue)
+        .filter(Venue.name == event.venue)
+        .first()
+    )
+
+    if venue and event.capacity > venue.capacity:
+        raise HTTPException(
+            status_code=400,
+            detail="Event capacity exceeds venue capacity"
+        )
 
     if has_time_conflict(
         db,
@@ -182,7 +213,7 @@ def get_venue_availability(
 
     availability = []
 
-    for venue in VENUES:
+    for venue in get_venues(db):
         venue_bookings = [
             booking
             for booking in bookings
@@ -385,6 +416,9 @@ def approve_event(
         )
 
     event.status = "approved"
+    event.rejection_reason = None
+    event.reviewed_by = current_user.id
+    event.reviewed_at = datetime.now(timezone.utc).isoformat()
 
 
     db.commit()
@@ -395,6 +429,7 @@ def approve_event(
 @router.patch("/events/{event_id}/reject")
 def reject_event(
     event_id: int,
+    rejection: EventReject,
     current_user: User = Depends(
         require_role(["approver", "admin"])
     ),
@@ -419,6 +454,9 @@ def reject_event(
         )
 
     event.status = "rejected"
+    event.rejection_reason = rejection.rejection_reason
+    event.reviewed_by = current_user.id
+    event.reviewed_at = datetime.now(timezone.utc).isoformat()
 
     db.commit()
     db.refresh(event)

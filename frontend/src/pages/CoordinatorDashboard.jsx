@@ -46,12 +46,13 @@ function CoordinatorDashboard() {
       end_time: ''
     })
 
-  const venues = [
-    'Main Auditorium',
-    'Seminar Hall',
-    'Tech Lab',
-    'Sports Complex'
-  ]
+  const [venues, setVenues] =
+    useState([
+      'Main Auditorium',
+      'Seminar Hall',
+      'Tech Lab',
+      'Sports Complex'
+    ])
 
   const [availability, setAvailability] =
     useState([])
@@ -73,6 +74,32 @@ function CoordinatorDashboard() {
     }
 
     fetchEvents()
+
+  }, [])
+
+  useEffect(() => {
+
+    const fetchVenues = async () => {
+
+      try {
+        const response =
+          await api.get('/venues')
+
+        if (response.data.length) {
+          setVenues(
+            response.data.map(
+              venue => venue.name
+            )
+          )
+        }
+      }
+      catch {
+        setFormError('Unable to load venues')
+      }
+
+    }
+
+    fetchVenues()
 
   }, [])
 

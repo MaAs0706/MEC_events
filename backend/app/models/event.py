@@ -33,6 +33,16 @@ class Event(Base):
 
     status = Column(String)
 
+    rejection_reason = Column(Text)
+
+    reviewed_by = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=True
+    )
+
+    reviewed_at = Column(String)
+
     organizer = Column(String)
 
     created_by = Column(

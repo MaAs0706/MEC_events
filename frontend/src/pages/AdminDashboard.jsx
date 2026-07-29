@@ -1,7 +1,8 @@
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import events from '../data/events'
+import api from '../services/api'
 import {
   Users,
   Building2,
@@ -22,6 +23,18 @@ function AdminDashboard() {
 
   const [activeTab, setActiveTab] =
     useState('overview')
+
+  const [venues, setVenues] =
+    useState([])
+
+  const [venueForm, setVenueForm] =
+    useState({
+      name: '',
+      capacity: ''
+    })
+
+  const [venueError, setVenueError] =
+    useState('')
 
   const analytics = {
     activeUsers: 850,
@@ -51,27 +64,6 @@ function AdminDashboard() {
     }
   ]
 
-  const venues = [
-    {
-      id: 1,
-      name: 'Main Auditorium',
-      capacity: 500,
-      usage: '92%'
-    },
-    {
-      id: 2,
-      name: 'Tech Lab',
-      capacity: 200,
-      usage: '76%'
-    },
-    {
-      id: 3,
-      name: 'Sports Complex',
-      capacity: 800,
-      usage: '63%'
-    }
-  ]
-
   const categories = [
     {
       name: 'Tech',
@@ -94,6 +86,86 @@ function AdminDashboard() {
     'Spring Sports Meet submitted',
     'Venue capacity updated'
   ]
+
+  useEffect(() => {
+
+    const fetchVenues = async () => {
+
+      try {
+        const response =
+          await api.get('/venues')
+
+        setVenues(response.data)
+      }
+      catch {
+        setVenueError('Unable to load venues')
+      }
+
+    }
+
+    fetchVenues()
+
+  }, [])
+
+  const handleVenueFormChange = (e) => {
+
+    const { name, value } = e.target
+
+    setVenueForm((currentForm) => ({
+      ...currentForm,
+      [name]: value
+    }))
+
+  }
+
+  const handleCreateVenue = async (e) => {
+
+    e.preventDefault()
+    setVenueError('')
+
+    try {
+      const response = await api.post(
+        '/venues',
+        {
+          name: venueForm.name,
+          capacity: Number(venueForm.capacity)
+        }
+      )
+
+      setVenues([
+        ...venues,
+        response.data
+      ])
+
+      setVenueForm({
+        name: '',
+        capacity: ''
+      })
+    }
+    catch {
+      setVenueError('Unable to create venue')
+    }
+
+  }
+
+  const handleDeleteVenue = async (venueId) => {
+
+    setVenueError('')
+
+    try {
+      await api.delete(`/venues/${venueId}`)
+
+      setVenues(
+        venues.filter(
+          venue => venue.id !== venueId
+        )
+      )
+    }
+    catch {
+      setVenueError('Unable to delete venue')
+    }
+
+  }
 
   return (
 
@@ -505,6 +577,41 @@ function AdminDashboard() {
               Venue Management
             </h3>
 
+            <form
+              className="venue-form"
+              onSubmit={handleCreateVenue}
+            >
+
+              {venueError && (
+                <p className="venue-error">
+                  {venueError}
+                </p>
+              )}
+
+              <input
+                name="name"
+                placeholder="Venue name"
+                value={venueForm.name}
+                onChange={handleVenueFormChange}
+                required
+              />
+
+              <input
+                name="capacity"
+                type="number"
+                min="1"
+                placeholder="Capacity"
+                value={venueForm.capacity}
+                onChange={handleVenueFormChange}
+                required
+              />
+
+              <button type="submit">
+                Add Venue
+              </button>
+
+            </form>
+
             {venues.map(
               venue => (
 
@@ -527,9 +634,14 @@ function AdminDashboard() {
 
                   </div>
 
-                  <span>
-                    {venue.usage}
-                  </span>
+                  <button
+                    className="venue-delete"
+                    onClick={() =>
+                      handleDeleteVenue(venue.id)
+                    }
+                  >
+                    Remove
+                  </button>
 
                 </div>
 
@@ -643,4 +755,3 @@ function AdminDashboard() {
 }
 
 export default AdminDashboard
-
