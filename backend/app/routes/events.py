@@ -8,7 +8,6 @@ from app.schemas.event import EventUpdate
 
 from app.dependencies import get_db, require_role
 from app.schemas.event import EventCreate
-from backend.app.schemas import event
 router = APIRouter()
 
 @router.post("/events")
@@ -43,6 +42,19 @@ def get_events(db: Session = Depends(get_db)):
     return (
         db.query(Event)
         .filter(Event.status == "approved")
+        .all()
+    )
+
+@router.get("/events/pending")
+def get_pending_events(
+    current_user: User = Depends(
+        require_role(["approver", "admin"])
+    ),
+    db: Session = Depends(get_db)
+):
+    return (
+        db.query(Event)
+        .filter(Event.status == "pending")
         .all()
     )
 
@@ -134,20 +146,6 @@ def update_event(
 
     return event
 
-
-@router.get("/events/pending")
-def get_pending_events(
-    current_user: User = Depends(
-        require_role(["approver", "admin"])
-    ),
-    db: Session = Depends(get_db)
-):
-    return (
-        db.query(Event)
-        .filter(Event.status == "pending")
-        .all()
-    )
-
 @router.patch("/events/{event_id}/approve")
 def approve_event(
     event_id: int,
@@ -168,8 +166,47 @@ def approve_event(
             detail="Event not found"
         )
 
+    if event.status != "pending":
+        raise HTTPException(
+            status_code=400,
+            detail="Only pending events can be approved"
+        )
+
     event.status = "approved"
 
+
+    db.commit()
+    db.refresh(event)
+
+    return event
+
+@router.patch("/events/{event_id}/reject")
+def reject_event(
+    event_id: int,
+    current_user: User = Depends(
+        require_role(["approver", "admin"])
+    ),
+    db: Session = Depends(get_db)
+):
+    event = (
+        db.query(Event)
+        .filter(Event.id == event_id)
+        .first()
+    )
+
+    if not event:
+        raise HTTPException(
+            status_code=404,
+            detail="Event not found"
+        )
+
+    if event.status != "pending":
+        raise HTTPException(
+            status_code=400,
+            detail="Only pending events can be rejected"
+        )
+
+    event.status = "rejected"
 
     db.commit()
     db.refresh(event)

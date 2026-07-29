@@ -380,6 +380,15 @@ body {
   color: white;
 }
 
+.auth-error {
+  margin: 18px 0 0;
+
+  color: #ff6b6b;
+
+  font-size: 13px;
+  font-weight: 600;
+}
+
 /* ANIMATION */
 
 @keyframes pulse {

@@ -18,6 +18,9 @@ load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
 
+if not SECRET_KEY or not ALGORITHM:
+    raise RuntimeError("JWT configuration is missing")
+
 def get_db():
 
     db = SessionLocal()
@@ -57,7 +60,7 @@ def get_current_user(
         if user_id is None:
             raise credentials_exception
 
-    except JWTError as e :
+    except JWTError:
 
         
         raise credentials_exception

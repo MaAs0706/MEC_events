@@ -15,11 +15,7 @@ class EventCreate(BaseModel):
 
     date: str
 
-    status: str
-
     organizer: str
-
-    attendees: int
 
     capacity: int
 

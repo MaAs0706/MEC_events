@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import api from '../services/api'
 import './Login.css'
 
 function Login() {
@@ -18,6 +19,41 @@ function Login() {
       role: 'student'
     })
 
+  const [error, setError] =
+    useState('')
+
+  const navigateByRole = (role) => {
+
+    switch (role) {
+
+      case 'student':
+
+        navigate('/dashboard/student')
+        break
+
+      case 'coordinator':
+
+        navigate('/dashboard/coordinator')
+        break
+
+      case 'approver':
+
+        navigate('/dashboard/approver')
+        break
+
+      case 'admin':
+
+        navigate('/dashboard/admin')
+        break
+
+      default:
+
+        navigate('/dashboard/student')
+
+    }
+
+  }
+
   const handleInputChange = (e) => {
 
     const { name, value } = e.target
@@ -31,58 +67,49 @@ function Login() {
 
   /* SIGN IN */
 
-  const handleSignIn = (e) => {
+  const handleSignIn = async (e) => {
 
     e.preventDefault()
+    setError('')
 
     if (
       formData.email &&
       formData.password
     ) {
 
-      localStorage.setItem(
-        'userEmail',
-        formData.email
-      )
+      try {
+        const response = await api.post(
+          '/auth/login',
+          {
+            email: formData.email,
+            password: formData.password
+          }
+        )
 
-      localStorage.setItem(
-        'userName',
-        formData.name || 'User'
-      )
+        localStorage.setItem(
+          'accessToken',
+          response.data.access_token
+        )
 
-      localStorage.setItem(
-        'userRole',
-        formData.role
-      )
+        localStorage.setItem(
+          'userEmail',
+          formData.email
+        )
 
-      /* ROLE BASED REDIRECT */
+        localStorage.setItem(
+          'userName',
+          response.data.full_name
+        )
 
-      switch (formData.role) {
+        localStorage.setItem(
+          'userRole',
+          response.data.role
+        )
 
-        case 'student':
-
-          navigate('/dashboard/student')
-          break
-
-        case 'coordinator':
-
-          navigate('/dashboard/coordinator')
-          break
-
-        case 'approver':
-
-          navigate('/dashboard/approver')
-          break
-
-        case 'admin':
-
-          navigate('/dashboard/admin')
-          break
-
-        default:
-
-          navigate('/dashboard/student')
-
+        navigateByRole(response.data.role)
+      }
+      catch {
+        setError('Invalid email or password')
       }
 
     }
@@ -91,9 +118,10 @@ function Login() {
 
   /* SIGN UP */
 
-  const handleSignUp = (e) => {
+  const handleSignUp = async (e) => {
 
     e.preventDefault()
+    setError('')
 
     if (
       formData.name &&
@@ -101,49 +129,48 @@ function Login() {
       formData.password
     ) {
 
-      localStorage.setItem(
-        'userEmail',
-        formData.email
-      )
+      try {
+        await api.post(
+          '/auth/register',
+          {
+            full_name: formData.name,
+            email: formData.email,
+            password: formData.password
+          }
+        )
 
-      localStorage.setItem(
-        'userName',
-        formData.name
-      )
+        const response = await api.post(
+          '/auth/login',
+          {
+            email: formData.email,
+            password: formData.password
+          }
+        )
 
-      localStorage.setItem(
-        'userRole',
-        formData.role
-      )
+        localStorage.setItem(
+          'accessToken',
+          response.data.access_token
+        )
 
-      /* ROLE BASED REDIRECT */
+        localStorage.setItem(
+          'userEmail',
+          formData.email
+        )
 
-      switch (formData.role) {
+        localStorage.setItem(
+          'userName',
+          response.data.full_name
+        )
 
-        case 'student':
+        localStorage.setItem(
+          'userRole',
+          response.data.role
+        )
 
-          navigate('/dashboard/student')
-          break
-
-        case 'coordinator':
-
-          navigate('/dashboard/coordinator')
-          break
-
-        case 'approver':
-
-          navigate('/dashboard/approver')
-          break
-
-        case 'admin':
-
-          navigate('/dashboard/admin')
-          break
-
-        default:
-
-          navigate('/dashboard/student')
-
+        navigateByRole(response.data.role)
+      }
+      catch {
+        setError('Unable to create account')
       }
 
     }
@@ -309,6 +336,12 @@ function Login() {
             </button>
 
           </div>
+
+          {error && (
+            <p className="auth-error">
+              {error}
+            </p>
+          )}
 
           {/* SIGN IN */}
 
