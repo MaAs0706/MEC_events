@@ -1,4 +1,5 @@
 from sqlalchemy import Column
+from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import Text
@@ -29,6 +30,12 @@ class Event(Base):
     status = Column(String)
 
     organizer = Column(String)
+
+    created_by = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=True
+    )
 
     attendees = Column(Integer)
 

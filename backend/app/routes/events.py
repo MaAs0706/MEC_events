@@ -28,6 +28,7 @@ def create_event(
         date=event.date,
         status="pending",
         organizer=event.organizer,
+        created_by=current_user.id,
         attendees=0,
         capacity=event.capacity,
         image=event.image
@@ -66,7 +67,12 @@ def get_manage_events(
     ),
     db: Session = Depends(get_db)
 ):
-    return db.query(Event).all()
+    query = db.query(Event)
+
+    if current_user.role != "admin":
+        query = query.filter(Event.created_by == current_user.id)
+
+    return query.all()
 
 @router.get("/events/{event_id}")    
 def get_event(
@@ -99,6 +105,15 @@ def update_event(
         raise HTTPException(
             status_code=404,
             detail="Event not found"
+        )
+
+    if (
+        current_user.role != "admin"
+        and event.created_by != current_user.id
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="You can only update your own events"
         )
 
     event.title = updated_event.title
@@ -138,6 +153,15 @@ def update_event(
         raise HTTPException(
             status_code=404,
             detail="Event not found"
+        )
+
+    if (
+        current_user.role != "admin"
+        and event.created_by != current_user.id
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="You can only update your own events"
         )
 
     update_data = updates.model_dump(
