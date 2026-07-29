@@ -27,6 +27,10 @@ class Event(Base):
 
     date = Column(String)
 
+    start_time = Column(String)
+
+    end_time = Column(String)
+
     status = Column(String)
 
     organizer = Column(String)

@@ -166,7 +166,9 @@ function EventDetails() {
           <div>
             <small>Time</small>
             <strong>
-              {event.time}
+              {event.start_time && event.end_time
+                ? `${event.start_time} - ${event.end_time}`
+                : 'Time TBA'}
             </strong>
           </div>
         </div>

@@ -335,6 +335,61 @@
   color: rgba(255,255,255,0.6);
 }
 
+.venue-availability-list {
+  display: grid;
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.venue-slot-card {
+  width: 100%;
+  padding: 14px;
+
+  background: #0b0b0b;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+
+  color: white;
+  text-align: left;
+  cursor: pointer;
+}
+
+.venue-slot-card.active {
+  border-color: #ff3131;
+}
+
+.venue-slot-card div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.venue-slot-card span,
+.venue-slot-card small {
+  color: rgba(255,255,255,0.55);
+}
+
+.venue-load-bar {
+  height: 8px;
+  margin: 12px 0;
+
+  background: rgba(255,255,255,0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.venue-load-bar span {
+  display: block;
+  height: 100%;
+
+  background: #ff3131;
+}
+
+.booking-list {
+  display: grid;
+  gap: 6px;
+}
+
 .btn-create {
   width: 100%;
 

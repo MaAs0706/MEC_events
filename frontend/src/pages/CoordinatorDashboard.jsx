@@ -41,7 +41,9 @@ function CoordinatorDashboard() {
       category: '',
       organizer: '',
       capacity: '',
-      image: ''
+      image: '',
+      start_time: '',
+      end_time: ''
     })
 
   const venues = [
@@ -51,19 +53,8 @@ function CoordinatorDashboard() {
     'Sports Complex'
   ]
 
-  const bookedDates = {
-    'Main Auditorium': [16, 22, 28],
-    'Seminar Hall': [12, 18],
-    'Tech Lab': [8, 14, 25],
-    'Sports Complex': [20, 27]
-  }
-
-  const pendingDates = {
-    'Main Auditorium': [24],
-    'Seminar Hall': [26],
-    'Tech Lab': [10],
-    'Sports Complex': []
-  }
+  const [availability, setAvailability] =
+    useState([])
 
   useEffect(() => {
 
@@ -84,6 +75,27 @@ function CoordinatorDashboard() {
     fetchEvents()
 
   }, [])
+
+  useEffect(() => {
+
+    const fetchAvailability = async () => {
+
+      try {
+        const response = await api.get(
+          `/events/availability?date=2026-04-${String(selectedDate).padStart(2, '0')}`
+        )
+
+        setAvailability(response.data)
+      }
+      catch {
+        setAvailability([])
+      }
+
+    }
+
+    fetchAvailability()
+
+  }, [selectedDate, myEvents])
 
   const handleFormChange = (e) => {
 
@@ -110,6 +122,8 @@ function CoordinatorDashboard() {
           category: formData.category,
           venue: selectedVenue,
           date: `2026-04-${String(selectedDate).padStart(2, '0')}`,
+          start_time: formData.start_time,
+          end_time: formData.end_time,
           organizer: formData.organizer,
           capacity: Number(formData.capacity),
           image: formData.image
@@ -127,7 +141,9 @@ function CoordinatorDashboard() {
         category: '',
         organizer: '',
         capacity: '',
-        image: ''
+        image: '',
+        start_time: '',
+        end_time: ''
       })
 
       setShowCreateForm(false)
@@ -144,22 +160,39 @@ function CoordinatorDashboard() {
       { length: 30 },
       (_, i) => i + 1
     )
-  let selectedDateStatus = 'available'
+  const selectedVenueAvailability =
+    availability.find(
+      item =>
+        item.venue === selectedVenue
+    )
 
-if (
-  bookedDates[selectedVenue]?.includes(
-    selectedDate
-  )
-) {
-  selectedDateStatus = 'booked'
-}
-else if (
-  pendingDates[selectedVenue]?.includes(
-    selectedDate
-  )
-) {
-  selectedDateStatus = 'pending'
-}
+  const selectedDateLoad =
+    availability.reduce(
+      (total, item) =>
+        total + item.load,
+      0
+    ) / Math.max(availability.length, 1)
+
+  const selectedDateStatus =
+    selectedVenueAvailability?.bookings?.length
+      ? 'pending'
+      : 'available'
+
+  const getDayLoad = (day) => {
+
+    const date = `2026-04-${String(day).padStart(2, '0')}`
+    const dayEvents =
+      myEvents.filter(
+        event =>
+          event.date === date &&
+          ['pending', 'approved'].includes(
+            event.status
+          )
+      )
+
+    return Math.min(dayEvents.length / 4, 1)
+
+  }
   return (
 
     <div className="coordinator-container">
@@ -352,26 +385,7 @@ else if (
 
                     {days.map(day => {
 
-                      let status =
-                        'available'
-
-                      if (
-                        bookedDates[
-                          selectedVenue
-                        ]?.includes(day)
-                      ) {
-                        status =
-                          'booked'
-                      }
-
-                      else if (
-                        pendingDates[
-                          selectedVenue
-                        ]?.includes(day)
-                      ) {
-                        status =
-                          'pending'
-                      }
+                      const load = getDayLoad(day)
 
                       return (
 
@@ -383,7 +397,13 @@ else if (
                             scale: 1.05
                           }}
 
-                          className={`calendar-day ${status}`}
+                          className="calendar-day"
+                          style={{
+                            background:
+                              load > 0
+                                ? `rgba(255, 49, 49, ${0.18 + load * 0.62})`
+                                : undefined
+                          }}
 
                           onClick={() =>
                             setSelectedDate(
@@ -407,15 +427,15 @@ else if (
                   >
 
                     <span>
-                      🟢 Available
+                      Light red: lightly booked
                     </span>
 
                     <span>
-                      🟡 Pending
+                      Dark red: heavily booked
                     </span>
 
                     <span>
-                      🔴 Booked
+                      Click a date to inspect venues
                     </span>
 
                   </div>
@@ -436,19 +456,62 @@ else if (
                     April {selectedDate}
                   </h2>
 
-                  <div
-                    className="detail-row"
-                  >
+                  <div className="venue-availability-list">
 
-                    <Building2
-                      size={16}
-                    />
+                    {availability.map(item => (
 
-                    <span>
-                      {
-                        selectedVenue
-                      }
-                    </span>
+                      <button
+                        key={item.venue}
+                        type="button"
+                        className={`venue-slot-card ${
+                          selectedVenue === item.venue
+                            ? 'active'
+                            : ''
+                        }`}
+                        onClick={() =>
+                          setSelectedVenue(item.venue)
+                        }
+                      >
+
+                        <div>
+                          <strong>
+                            {item.venue}
+                          </strong>
+
+                          <span>
+                            Capacity {item.capacity}
+                          </span>
+                        </div>
+
+                        <div
+                          className="venue-load-bar"
+                        >
+                          <span
+                            style={{
+                              width: `${item.load * 100}%`
+                            }}
+                          />
+                        </div>
+
+                        {item.bookings.length ? (
+                          <div className="booking-list">
+                            {item.bookings.map(booking => (
+                              <small key={booking.event_id}>
+                                {booking.start_time} - {booking.end_time}
+                                {' '}
+                                {booking.title}
+                              </small>
+                            ))}
+                          </div>
+                        ) : (
+                          <small>
+                            Available all day
+                          </small>
+                        )}
+
+                      </button>
+
+                    ))}
 
                   </div>
 
@@ -463,13 +526,10 @@ else if (
   <p>
 
     {selectedDateStatus === 'available' &&
-      'Available for booking'}
+      `Average load ${Math.round(selectedDateLoad * 100)}%. Selected venue is free so far.`}
 
     {selectedDateStatus === 'pending' &&
-      'Pending approval request'}
-
-    {selectedDateStatus === 'booked' &&
-      'Venue already booked'}
+      `Average load ${Math.round(selectedDateLoad * 100)}%. Check booked slots before choosing time.`}
 
   </p>
 
@@ -477,10 +537,6 @@ else if (
 
                   <button
   className="btn-create"
-  disabled={
-    selectedDateStatus ===
-    'booked'
-  }
   onClick={() =>
     setShowCreateForm(
       !showCreateForm
@@ -488,10 +544,7 @@ else if (
   }
 >
 
-  {selectedDateStatus ===
-  'booked'
-    ? 'Date Unavailable'
-    : 'Create Event Request'}
+  Create Event Request
 
 </button>
 
@@ -556,6 +609,22 @@ else if (
                       name="image"
                       placeholder="Image URL"
                       value={formData.image}
+                      onChange={handleFormChange}
+                      required
+                    />
+
+                    <input
+                      name="start_time"
+                      type="time"
+                      value={formData.start_time}
+                      onChange={handleFormChange}
+                      required
+                    />
+
+                    <input
+                      name="end_time"
+                      type="time"
+                      value={formData.end_time}
                       onChange={handleFormChange}
                       required
                     />
@@ -636,6 +705,9 @@ else if (
 
                         <p>
                           {event.venue}
+                          {event.start_time &&
+                            event.end_time &&
+                            ` • ${event.start_time}-${event.end_time}`}
                         </p>
 
                       </div>

@@ -15,6 +15,10 @@ class EventCreate(BaseModel):
 
     date: str
 
+    start_time: str
+
+    end_time: str
+
     organizer: str
 
     capacity: int
@@ -28,6 +32,8 @@ class EventUpdate(BaseModel):
     category: Optional[str] = None
     venue: Optional[str] = None
     date: Optional[str] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
     status: Optional[str] = None
     organizer: Optional[str] = None
     attendees: Optional[int] = None
