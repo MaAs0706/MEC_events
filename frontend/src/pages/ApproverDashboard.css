@@ -231,6 +231,14 @@
   gap: 24px;
 }
 
+.review-error {
+  margin: 0 0 18px;
+
+  color: #ff6b6b;
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .review-card {
   background: #0d0d0d;
 
@@ -533,4 +541,3 @@
   }
 
 }
-

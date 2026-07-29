@@ -1,7 +1,7 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import events from '../data/events'
+import api from '../services/api'
 import {
   ShieldCheck,
   Clock3,
@@ -22,30 +22,45 @@ function ApproverDashboard() {
   const [feedbackText, setFeedbackText] =
     useState('')
 
+  const [error, setError] =
+    useState('')
+
   const [pendingEvents, setPendingEvents] =
-  useState(
-    events.filter(
-      event =>
-        event.status === 'pending'
-    )
-  )
+  useState([])
 
   const [approvedEvents, setApprovedEvents] =
-  useState(
-    events.filter(
-      event =>
-        event.status === 'approved'
-    )
-  )
+  useState([])
 
 const [rejectedEvents, setRejectedEvents] =
-  useState(
-    events.filter(
-      event =>
-        event.status === 'rejected'
-    )
-  )
-  const handleApprove = (eventId) => {
+  useState([])
+
+  useEffect(() => {
+
+    const fetchReviewEvents = async () => {
+
+      try {
+        const [
+          pendingResponse,
+          approvedResponse
+        ] = await Promise.all([
+          api.get('/events/pending'),
+          api.get('/events')
+        ])
+
+        setPendingEvents(pendingResponse.data)
+        setApprovedEvents(approvedResponse.data)
+      }
+      catch {
+        setError('Unable to load review queue')
+      }
+
+    }
+
+    fetchReviewEvents()
+
+  }, [])
+
+  const handleApprove = async (eventId) => {
 
     const event = pendingEvents.find(
       (e) => e.id === eventId
@@ -53,28 +68,34 @@ const [rejectedEvents, setRejectedEvents] =
 
     if (event) {
 
-      setApprovedEvents([
-        ...approvedEvents,
-        {
-          ...event,
-          status: 'approved'
-        }
-      ])
-
-      setPendingEvents(
-        pendingEvents.filter(
-          (e) => e.id !== eventId
+      try {
+        const response = await api.patch(
+          `/events/${eventId}/approve`
         )
-      )
+
+        setApprovedEvents([
+          response.data,
+          ...approvedEvents
+        ])
+
+        setPendingEvents(
+          pendingEvents.filter(
+            (e) => e.id !== eventId
+          )
+        )
 
       setSelectedEvent(null)
+      }
+      catch {
+        setError('Unable to approve event')
+      }
 
     }
 
   }
   
 
-  const handleReject = (eventId) => {
+  const handleReject = async (eventId) => {
 
     const event = pendingEvents.find(
       (e) => e.id === eventId
@@ -85,23 +106,31 @@ const [rejectedEvents, setRejectedEvents] =
       feedbackText.trim()
     ) {
 
-      setRejectedEvents([
-        ...rejectedEvents,
-        {
-          ...event,
-          status: 'rejected',
-          feedback: feedbackText
-        }
-      ])
-
-      setPendingEvents(
-        pendingEvents.filter(
-          (e) => e.id !== eventId
+      try {
+        const response = await api.patch(
+          `/events/${eventId}/reject`
         )
-      )
+
+        setRejectedEvents([
+          {
+            ...response.data,
+            feedback: feedbackText
+          },
+          ...rejectedEvents
+        ])
+
+        setPendingEvents(
+          pendingEvents.filter(
+            (e) => e.id !== eventId
+          )
+        )
 
       setFeedbackText('')
       setSelectedEvent(null)
+      }
+      catch {
+        setError('Unable to reject event')
+      }
 
     }
 
@@ -266,6 +295,12 @@ const [rejectedEvents, setRejectedEvents] =
 
         <main className="review-main">
 
+          {error && (
+            <p className="review-error">
+              {error}
+            </p>
+          )}
+
           {activeTab === 'pending' && (
 
             <div className="review-grid">
@@ -330,7 +365,7 @@ const [rejectedEvents, setRejectedEvents] =
                       </Link>
 
                       <p className="coordinator">
-                        by {event.coordinator}
+                        by {event.organizer}
                       </p>
                       
 
@@ -627,4 +662,3 @@ const [rejectedEvents, setRejectedEvents] =
 }
 
 export default ApproverDashboard
-

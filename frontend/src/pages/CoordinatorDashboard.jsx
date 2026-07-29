@@ -1,7 +1,7 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import events from '../data/events'
+import api from '../services/api'
 
 import {
   Calendar,
@@ -28,6 +28,22 @@ function CoordinatorDashboard() {
   const [showCreateForm, setShowCreateForm] =
     useState(false)
 
+  const [myEvents, setMyEvents] =
+    useState([])
+
+  const [formError, setFormError] =
+    useState('')
+
+  const [formData, setFormData] =
+    useState({
+      title: '',
+      description: '',
+      category: '',
+      organizer: '',
+      capacity: '',
+      image: ''
+    })
+
   const venues = [
     'Main Auditorium',
     'Seminar Hall',
@@ -49,28 +65,79 @@ function CoordinatorDashboard() {
     'Sports Complex': []
   }
 
-  const [myEvents] =
-    useState([
-      {
-        id: 1,
-        title: 'TechHack 2026',
-        status: 'approved',
-        venue: 'Main Auditorium',
-        attendees: 234,
-        capacity: 500,
-        permissionLetter: true
-      },
+  useEffect(() => {
 
-      {
-        id: 2,
-        title: 'AI Workshop',
-        status: 'pending',
-        venue: 'Tech Lab',
-        attendees: 120,
-        capacity: 200,
-        permissionLetter: false
+    const fetchEvents = async () => {
+
+      try {
+        const response =
+          await api.get('/events/manage')
+
+        setMyEvents(response.data)
       }
-    ])
+      catch {
+        setFormError('Unable to load your event requests')
+      }
+
+    }
+
+    fetchEvents()
+
+  }, [])
+
+  const handleFormChange = (e) => {
+
+    const { name, value } = e.target
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value
+    }))
+
+  }
+
+  const handleCreateEvent = async (e) => {
+
+    e.preventDefault()
+    setFormError('')
+
+    try {
+      const response = await api.post(
+        '/events',
+        {
+          title: formData.title,
+          description: formData.description,
+          category: formData.category,
+          venue: selectedVenue,
+          date: `2026-04-${String(selectedDate).padStart(2, '0')}`,
+          organizer: formData.organizer,
+          capacity: Number(formData.capacity),
+          image: formData.image
+        }
+      )
+
+      setMyEvents((currentEvents) => [
+        response.data,
+        ...currentEvents
+      ])
+
+      setFormData({
+        title: '',
+        description: '',
+        category: '',
+        organizer: '',
+        capacity: '',
+        image: ''
+      })
+
+      setShowCreateForm(false)
+      setActiveTab('events')
+    }
+    catch {
+      setFormError('Unable to submit event request')
+    }
+
+  }
 
   const days =
     Array.from(
@@ -432,6 +499,93 @@ else if (
 
               </div>
 
+              {showCreateForm && (
+
+                <form
+                  className="event-request-form"
+                  onSubmit={handleCreateEvent}
+                >
+
+                  <h2>
+                    New Event Request
+                  </h2>
+
+                  {formError && (
+                    <p className="form-error">
+                      {formError}
+                    </p>
+                  )}
+
+                  <div className="form-grid">
+
+                    <input
+                      name="title"
+                      placeholder="Event title"
+                      value={formData.title}
+                      onChange={handleFormChange}
+                      required
+                    />
+
+                    <input
+                      name="category"
+                      placeholder="Category"
+                      value={formData.category}
+                      onChange={handleFormChange}
+                      required
+                    />
+
+                    <input
+                      name="organizer"
+                      placeholder="Club / organizer"
+                      value={formData.organizer}
+                      onChange={handleFormChange}
+                      required
+                    />
+
+                    <input
+                      name="capacity"
+                      type="number"
+                      min="1"
+                      placeholder="Capacity"
+                      value={formData.capacity}
+                      onChange={handleFormChange}
+                      required
+                    />
+
+                    <input
+                      name="image"
+                      placeholder="Image URL"
+                      value={formData.image}
+                      onChange={handleFormChange}
+                      required
+                    />
+
+                    <input
+                      value={`${selectedVenue} • April ${selectedDate}, 2026`}
+                      disabled
+                    />
+
+                  </div>
+
+                  <textarea
+                    name="description"
+                    placeholder="Event description"
+                    value={formData.description}
+                    onChange={handleFormChange}
+                    required
+                  />
+
+                  <button
+                    className="btn-create"
+                    type="submit"
+                  >
+                    Submit for Approval
+                  </button>
+
+                </form>
+
+              )}
+
             </section>
 
           )}
@@ -455,16 +609,22 @@ else if (
 
               <div className="event-cards">
 
+                {formError && (
+                  <p className="form-error">
+                    {formError}
+                  </p>
+                )}
+
                 {myEvents.map(event => (
 
                   <Link
+                    key={event.id}
                     to={`/events/${event.id}`}
                     className="event-link"
                   >
 
                  <motion.div
                   className="event-card"
-                  key={event.id}
                  >
                     <div className="event-top">
 
@@ -512,7 +672,7 @@ else if (
 
                       <div
                         className={`workflow-step ${
-                          event.permissionLetter
+                          event.status === 'approved'
                             ? 'done'
                             : ''
                         }`}
@@ -558,7 +718,7 @@ else if (
 
                     {/* Permission Letter */}
 
-                    {event.permissionLetter && (
+                    {event.status === 'approved' && (
 
                       <div className="permission-card">
 

@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.models.event import Event 
+from app.models.registration import Registration
 from app.models.user import User 
 
 from app.schemas.event import EventUpdate
@@ -57,6 +58,15 @@ def get_pending_events(
         .filter(Event.status == "pending")
         .all()
     )
+
+@router.get("/events/manage")
+def get_manage_events(
+    current_user: User = Depends(
+        require_role(["coordinator", "admin"])
+    ),
+    db: Session = Depends(get_db)
+):
+    return db.query(Event).all()
 
 @router.get("/events/{event_id}")    
 def get_event(
@@ -212,3 +222,64 @@ def reject_event(
     db.refresh(event)
 
     return event
+
+@router.post("/events/{event_id}/register")
+def register_for_event(
+    event_id: int,
+    current_user: User = Depends(
+        require_role(["student"])
+    ),
+    db: Session = Depends(get_db)
+):
+    event = (
+        db.query(Event)
+        .filter(Event.id == event_id)
+        .first()
+    )
+
+    if not event:
+        raise HTTPException(
+            status_code=404,
+            detail="Event not found"
+        )
+
+    if event.status != "approved":
+        raise HTTPException(
+            status_code=400,
+            detail="Only approved events can be registered for"
+        )
+
+    if event.attendees >= event.capacity:
+        raise HTTPException(
+            status_code=400,
+            detail="Event capacity is full"
+        )
+
+    existing_registration = (
+        db.query(Registration)
+        .filter(Registration.event_id == event_id)
+        .filter(Registration.student_id == current_user.id)
+        .first()
+    )
+
+    if existing_registration:
+        raise HTTPException(
+            status_code=400,
+            detail="You are already registered for this event"
+        )
+
+    registration = Registration(
+        event_id=event_id,
+        student_id=current_user.id
+    )
+
+    event.attendees += 1
+
+    db.add(registration)
+    db.commit()
+    db.refresh(event)
+
+    return {
+        "message": "Registered successfully",
+        "event": event
+    }

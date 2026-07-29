@@ -1,9 +1,8 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import api from '../services/api'
 import './EventDetails.css'
-
-import  events  from '../data/events'
 
 function EventDetails() {
 
@@ -12,14 +11,73 @@ function EventDetails() {
   const [isRsvped, setIsRsvped] =
     useState(false)
 
-  const role =
-    localStorage.getItem('role')
+  const [event, setEvent] =
+    useState(null)
 
-  const event =
-    events.find(
-      event =>
-        event.id === Number(id)
+  const [loading, setLoading] =
+    useState(true)
+
+  const [registrationMessage, setRegistrationMessage] =
+    useState('')
+
+  const role =
+    localStorage.getItem('userRole')
+
+  useEffect(() => {
+
+    const fetchEvent = async () => {
+
+      try {
+        const response =
+          await api.get(`/events/${id}`)
+
+        setEvent(response.data)
+      }
+      catch {
+        setEvent(null)
+      }
+      finally {
+        setLoading(false)
+      }
+
+    }
+
+    fetchEvent()
+
+  }, [id])
+
+  const handleRegister = async () => {
+
+    setRegistrationMessage('')
+
+    try {
+      const response =
+        await api.post(`/events/${id}/register`)
+
+      setEvent(response.data.event)
+      setIsRsvped(true)
+      setRegistrationMessage('Registration confirmed')
+    }
+    catch (error) {
+      setRegistrationMessage(
+        error.response?.data?.detail ||
+        'Unable to register for this event'
+      )
+    }
+
+  }
+
+  if (loading) {
+
+    return (
+      <div className="event-not-found">
+        <h1>
+          Loading Event...
+        </h1>
+      </div>
     )
+
+  }
 
   if (!event) {
 
@@ -152,9 +210,8 @@ function EventDetails() {
 
           <button
             className="hero-action-btn"
-            onClick={() =>
-              setIsRsvped(!isRsvped)
-            }
+            onClick={handleRegister}
+            disabled={isRsvped}
           >
 
             {isRsvped
@@ -163,6 +220,12 @@ function EventDetails() {
 
           </button>
 
+        )}
+
+        {registrationMessage && (
+          <p className="registration-message">
+            {registrationMessage}
+          </p>
         )}
 
         {role === 'coordinator' && (
@@ -437,10 +500,9 @@ function EventDetails() {
                   }`}
 
                   onClick={() =>
-                    setIsRsvped(
-                      !isRsvped
-                    )
+                    handleRegister()
                   }
+                  disabled={isRsvped}
 
                 >
 
