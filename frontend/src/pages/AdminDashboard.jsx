@@ -1,7 +1,6 @@
 
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import events from '../data/events'
 import api from '../services/api'
 import {
   Users,
@@ -36,56 +35,63 @@ function AdminDashboard() {
   const [venueError, setVenueError] =
     useState('')
 
+  const [approvedEvents, setApprovedEvents] =
+    useState([])
+
+  const [pendingEvents, setPendingEvents] =
+    useState([])
+
+  const users = []
+
+  const allEvents = [
+    ...approvedEvents,
+    ...pendingEvents
+  ]
+
   const analytics = {
-    activeUsers: 850,
-    eventsToday: 24,
-    pendingReviews: 7,
-    venueUtilization: 78
+    activeUsers: users.length,
+    eventsToday: allEvents.filter(
+      event =>
+        event.date ===
+        new Date().toISOString().slice(0, 10)
+    ).length,
+    pendingReviews: pendingEvents.length,
+    venueUtilization: venues.length
+      ? Math.round(
+        allEvents.filter(
+          event =>
+            ['pending', 'approved'].includes(
+              event.status
+            )
+        ).length / venues.length * 100
+      )
+      : 0
   }
 
-  const users = [
-    {
-      id: 1,
-      name: 'John Doe',
-      role: 'Student',
-      status: 'Active'
-    },
-    {
-      id: 2,
-      name: 'Jane Smith',
-      role: 'Coordinator',
-      status: 'Active'
-    },
-    {
-      id: 3,
-      name: 'Mike Johnson',
-      role: 'Approver',
-      status: 'Active'
-    }
-  ]
+  const categories =
+    Object.entries(
+      allEvents.reduce(
+        (counts, event) => ({
+          ...counts,
+          [event.category]:
+            (counts[event.category] || 0) + 1
+        }),
+        {}
+      )
+    ).map(
+      ([name, eventCount]) => ({
+        name,
+        events: eventCount
+      })
+    )
 
-  const categories = [
-    {
-      name: 'Tech',
-      events: 12
-    },
-    {
-      name: 'Sports',
-      events: 5
-    },
-    {
-      name: 'Cultural',
-      events: 7
-    }
-  ]
-
-  const activityFeed = [
-    'AI Workshop approved',
-    'Tech Lab reserved',
-    'New coordinator registered',
-    'Spring Sports Meet submitted',
-    'Venue capacity updated'
-  ]
+  const activityFeed =
+    allEvents
+      .slice(0, 5)
+      .map(
+        event =>
+          `${event.title} is ${event.status}`
+      )
 
   useEffect(() => {
 
@@ -104,6 +110,32 @@ function AdminDashboard() {
     }
 
     fetchVenues()
+
+  }, [])
+
+  useEffect(() => {
+
+    const fetchEvents = async () => {
+
+      try {
+        const [
+          approvedResponse,
+          pendingResponse
+        ] = await Promise.all([
+          api.get('/events'),
+          api.get('/events/pending')
+        ])
+
+        setApprovedEvents(approvedResponse.data)
+        setPendingEvents(pendingResponse.data)
+      }
+      catch {
+        setVenueError('Unable to load admin dashboard data')
+      }
+
+    }
+
+    fetchEvents()
 
   }, [])
 
@@ -411,7 +443,13 @@ function AdminDashboard() {
                 </span>
 
                 <strong>
-                  92%
+                  {approvedEvents.length || allEvents.length
+                    ? `${Math.round(
+                      approvedEvents.length /
+                      Math.max(allEvents.length, 1) *
+                      100
+                    )}%`
+                    : '0%'}
                 </strong>
 
               </div>
@@ -423,7 +461,7 @@ function AdminDashboard() {
                 </span>
 
                 <strong>
-                  12
+                  {venues.length}
                 </strong>
 
               </div>
@@ -435,7 +473,7 @@ function AdminDashboard() {
                 </span>
 
                 <strong>
-                  7
+                  {pendingEvents.length}
                 </strong>
 
               </div>
@@ -454,7 +492,7 @@ function AdminDashboard() {
 
             </div>
 
-            {activityFeed.map(
+            {activityFeed.length ? activityFeed.map(
               (
                 item,
                 index
@@ -472,6 +510,10 @@ function AdminDashboard() {
                 </div>
 
               )
+            ) : (
+              <div className="activity-item">
+                No recent activity.
+              </div>
             )}
 
           </div>
@@ -490,7 +532,7 @@ function AdminDashboard() {
 
             <div className="mini-card">
 
-              <h3>700</h3>
+              <h3>0</h3>
 
               <span>
                 Students
@@ -500,7 +542,7 @@ function AdminDashboard() {
 
             <div className="mini-card">
 
-              <h3>90</h3>
+              <h3>0</h3>
 
               <span>
                 Coordinators
@@ -510,7 +552,7 @@ function AdminDashboard() {
 
             <div className="mini-card">
 
-              <h3>12</h3>
+              <h3>0</h3>
 
               <span>
                 Approvers
@@ -520,7 +562,7 @@ function AdminDashboard() {
 
             <div className="mini-card">
 
-              <h3>4</h3>
+              <h3>0</h3>
 
               <span>
                 Admins
@@ -532,7 +574,7 @@ function AdminDashboard() {
 
           <div className="users-table">
 
-            {users.map(user => (
+            {users.length ? users.map(user => (
 
               <div
                 key={user.id}
@@ -557,7 +599,13 @@ function AdminDashboard() {
 
               </div>
 
-            ))}
+            )) : (
+              <div className="user-row">
+                <div>
+                  User management API not connected yet.
+                </div>
+              </div>
+            )}
 
           </div>
 
@@ -656,7 +704,7 @@ function AdminDashboard() {
               Event Ecosystem
             </h3>
 
-            {categories.map(
+            {categories.length ? categories.map(
               category => (
 
                 <div
@@ -679,6 +727,12 @@ function AdminDashboard() {
                 </div>
 
               )
+            ) : (
+              <div className="venue-row">
+                <span>
+                  No event categories yet
+                </span>
+              </div>
             )}
 
           </div>

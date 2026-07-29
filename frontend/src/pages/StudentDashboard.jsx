@@ -1,8 +1,8 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {useNavigate} from 'react-router-dom'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import events from '../data/events'
+import api from '../services/api'
 import {
   Search,
   Bell,
@@ -27,11 +27,23 @@ if (hours >= 5 && hours <= 12) {
 function StudentDashboard() {
 
   const navigate = useNavigate()
+  const userName =
+    localStorage.getItem('userName') ||
+    'Student'
 
   /* STATES */
 
   const [joinedEvents, setJoinedEvents] =
     useState([])
+
+  const [events, setEvents] =
+    useState([])
+
+  const [loading, setLoading] =
+    useState(true)
+
+  const [error, setError] =
+    useState('')
 
   const [selectedCategory, setSelectedCategory] =
     useState('All Categories')
@@ -39,9 +51,50 @@ function StudentDashboard() {
   const [searchTerm, setSearchTerm] =
     useState('')
 
-  /* EVENTS */
+  useEffect(() => {
 
-  
+    const fetchEvents = async () => {
+
+      try {
+        const response =
+          await api.get('/events')
+
+        setEvents(response.data)
+
+        const statusResults =
+          await Promise.allSettled(
+            response.data.map(
+              event =>
+                api.get(
+                  `/events/${event.id}/registration-status`
+                )
+            )
+          )
+
+        const registeredIds =
+          statusResults
+            .map((result, index) =>
+              result.status === 'fulfilled' &&
+              result.value.data.registered
+                ? response.data[index].id
+                : null
+            )
+            .filter(Boolean)
+
+        setJoinedEvents(registeredIds)
+      }
+      catch {
+        setError('Unable to load events')
+      }
+      finally {
+        setLoading(false)
+      }
+
+    }
+
+    fetchEvents()
+
+  }, [])
 
   /* FILTER EVENTS */
 
@@ -68,19 +121,37 @@ function StudentDashboard() {
 
   /* JOIN EVENT */
 
-  const toggleJoinEvent = (eventId) => {
+  const joinEvent = async (eventId) => {
 
-    setJoinedEvents((prev) => {
+    if (joinedEvents.includes(eventId)) {
+      return
+    }
 
-      if (prev.includes(eventId)) {
-        return prev.filter(
-          (id) => id !== eventId
+    setError('')
+
+    try {
+      const response =
+        await api.post(`/events/${eventId}/register`)
+
+      setJoinedEvents((prev) => [
+        ...prev,
+        eventId
+      ])
+
+      setEvents((currentEvents) =>
+        currentEvents.map((event) =>
+          event.id === eventId
+            ? response.data.event
+            : event
         )
-      }
-
-      return [...prev, eventId]
-
-    })
+      )
+    }
+    catch (requestError) {
+      setError(
+        requestError.response?.data?.detail ||
+        'Unable to join event'
+      )
+    }
 
   }
 
@@ -165,7 +236,7 @@ function StudentDashboard() {
           >
             {greeting},
             <br />
-            Aswanth.
+            {userName}.
           </motion.h1>
 
           <motion.p
@@ -392,7 +463,19 @@ function StudentDashboard() {
 
           </div>
 
-          {filteredEvents.length === 0 && (
+          {loading && (
+            <div className="empty-state">
+              <h3>Loading events...</h3>
+            </div>
+          )}
+
+          {error && (
+            <div className="empty-state">
+              <h3>{error}</h3>
+            </div>
+          )}
+
+          {!loading && !error && filteredEvents.length === 0 && (
 
             <div className="empty-state">
 
@@ -462,8 +545,14 @@ function StudentDashboard() {
                         ? 'joined'
                         : ''
                     }`}
-                    onClick={() =>
-                      toggleJoinEvent(event.id)
+                    onClick={(clickEvent) => {
+                      clickEvent.preventDefault()
+                      joinEvent(event.id)
+                    }}
+                    disabled={
+                      joinedEvents.includes(
+                        event.id
+                      )
                     }
                   >
 
@@ -494,20 +583,34 @@ function StudentDashboard() {
 
             <h3>Recent Activity</h3>
 
-            <div className="activity-item">
-              <span className="activity-dot"></span>
-              You joined TechHack 2026
-            </div>
+            {joinedEvents.length ? (
+              joinedEvents.slice(0, 3).map(
+                eventId => {
+                  const joinedEvent =
+                    events.find(
+                      event =>
+                        event.id === eventId
+                    )
 
-            <div className="activity-item">
-              <span className="activity-dot"></span>
-              Spring Concert starts tomorrow
-            </div>
-
-            <div className="activity-item">
-              <span className="activity-dot"></span>
-              3 new tech events added
-            </div>
+                  return (
+                    <div
+                      className="activity-item"
+                      key={eventId}
+                    >
+                      <span className="activity-dot"></span>
+                      {joinedEvent
+                        ? `You joined ${joinedEvent.title}`
+                        : 'You joined an event'}
+                    </div>
+                  )
+                }
+              )
+            ) : (
+              <div className="activity-item">
+                <span className="activity-dot"></span>
+                No recent activity yet.
+              </div>
+            )}
 
           </div>
 
@@ -515,41 +618,32 @@ function StudentDashboard() {
 
             <h3>Upcoming Schedule</h3>
 
-            <div className="schedule-item">
+            {events.slice(0, 3).map(event => (
+              <div
+                className="schedule-item"
+                key={event.id}
+              >
+                <span className="schedule-date">
+                  {event.date}
+                </span>
 
-              <span className="schedule-date">
-                TODAY
-              </span>
+                <p>
+                  {event.start_time || 'TBA'}
+                  {' '}
+                  —
+                  {' '}
+                  {event.title}
+                </p>
+              </div>
+            ))}
 
-              <p>
-                6PM — Spring Concert
-              </p>
-
-            </div>
-
-            <div className="schedule-item">
-
-              <span className="schedule-date">
-                TOMORROW
-              </span>
-
-              <p>
-                9AM — AI Workshop
-              </p>
-
-            </div>
-
-            <div className="schedule-item">
-
-              <span className="schedule-date">
-                FRIDAY
-              </span>
-
-              <p>
-                Hackathon registration closes
-              </p>
-
-            </div>
+            {!events.length && (
+              <div className="schedule-item">
+                <p>
+                  No upcoming events yet.
+                </p>
+              </div>
+            )}
 
           </div>
 

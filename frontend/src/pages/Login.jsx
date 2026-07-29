@@ -493,7 +493,7 @@ function Login() {
                 <input
                   type="text"
                   name="name"
-                  placeholder="John Doe"
+                  placeholder="Full name"
                   value={formData.name}
                   onChange={
                     handleInputChange

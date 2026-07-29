@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import api from '../services/api'
 import {
   User,
   CalendarDays,
@@ -22,32 +23,17 @@ function UserProfile() {
 
   const [userData, setUserData] =
     useState({
-      name: 'Aswanth Madhav',
-      email: 'aswanth@example.com',
-      phone: '+91 9876543210',
-      role: 'student',
-      joinDate: '2026-01-15',
-      bio:
-        'Passionate about technology, design and building meaningful products.',
-      department: 'Computer Science',
-      semester: '2nd Year'
+      name: '',
+      email: '',
+      phone: '',
+      role: '',
+      joinDate: '',
+      bio: '',
+      department: '',
+      semester: ''
     })
 
-  const [myRsvps] = useState([
-    {
-      id: 1,
-      title: 'TechHack 2026',
-      date: '2026-04-25',
-      status: 'confirmed'
-    },
-
-    {
-      id: 2,
-      title: 'Spring Concert',
-      date: '2026-05-01',
-      status: 'confirmed'
-    }
-  ])
+  const [myRsvps] = useState([])
 
   const [settings, setSettings] =
     useState({
@@ -66,6 +52,42 @@ function UserProfile() {
     }))
 
   }
+
+  useEffect(() => {
+
+    const fetchProfile = async () => {
+
+      try {
+        const response =
+          await api.get('/auth/me')
+
+        setUserData((currentData) => ({
+          ...currentData,
+          name: response.data.name,
+          email: response.data.email,
+          role: response.data.role
+        }))
+      }
+      catch {
+        setUserData((currentData) => ({
+          ...currentData,
+          name:
+            localStorage.getItem('userName') ||
+            '',
+          email:
+            localStorage.getItem('userEmail') ||
+            '',
+          role:
+            localStorage.getItem('userRole') ||
+            ''
+        }))
+      }
+
+    }
+
+    fetchProfile()
+
+  }, [])
 
   return (
     <div className="profile-page">
@@ -467,7 +489,7 @@ function UserProfile() {
 
               <div className="rsvp-list">
 
-                {myRsvps.map((rsvp) => (
+                {myRsvps.length ? myRsvps.map((rsvp) => (
 
                   <div
                     className="rsvp-card"
@@ -494,7 +516,19 @@ function UserProfile() {
 
                   </div>
 
-                ))}
+                )) : (
+                  <div className="rsvp-card">
+                    <div>
+                      <h3>
+                        No registrations yet.
+                      </h3>
+
+                      <p>
+                        Registered events will appear here once the profile RSVP API is connected.
+                      </p>
+                    </div>
+                  </div>
+                )}
 
               </div>
 
@@ -608,23 +642,7 @@ function UserProfile() {
 
               <span className="activity-dot"></span>
 
-              Joined TechHack 2026
-
-            </div>
-
-            <div className="activity-item">
-
-              <span className="activity-dot"></span>
-
-              Spring Concert tomorrow
-
-            </div>
-
-            <div className="activity-item">
-
-              <span className="activity-dot"></span>
-
-              Profile updated recently
+              No recent activity yet.
 
             </div>
 
@@ -640,23 +658,7 @@ function UserProfile() {
 
               <Trophy size={18} />
 
-              Top Event Explorer
-
-            </div>
-
-            <div className="achievement-item">
-
-              <Bell size={18} />
-
-              10 Events Joined
-
-            </div>
-
-            <div className="achievement-item">
-
-              <Clock3 size={18} />
-
-              Active This Week
+              Achievements will appear here once activity tracking is connected.
 
             </div>
 
