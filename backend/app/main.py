@@ -8,6 +8,7 @@ from app.models.event import Event
 from app.models.registration import Registration
 from app.models.venue import Venue
 from app.routes.auth import router as auth_router
+from app.routes.users import router as user_router
 from app.routes.venues import router as venue_router
 
 from app.routes.events import router as event_router
@@ -67,6 +68,7 @@ with engine.begin() as connection:
 
 fastapi_app.include_router(event_router)
 fastapi_app.include_router(auth_router)
+fastapi_app.include_router(user_router)
 fastapi_app.include_router(venue_router)
 
 

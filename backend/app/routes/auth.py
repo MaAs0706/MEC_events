@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 from app.utils.jwt import create_access_token
 
 from app.dependencies import get_db
+from app.models.event import Event
+from app.models.registration import Registration
 from app.models.user import User
 from app.schemas.user import UserRegister
 from app.utils.security import hash_password
@@ -28,6 +30,23 @@ def get_me(
         "email": current_user.email,
         "role": current_user.role
     }
+
+@router.get("/me/registrations")
+def get_my_registrations(
+    current_user: User = Depends(
+        get_current_user
+    ),
+    db: Session = Depends(get_db)
+):
+    return (
+        db.query(Event)
+        .join(
+            Registration,
+            Registration.event_id == Event.id
+        )
+        .filter(Registration.student_id == current_user.id)
+        .all()
+    )
 
 @router.post("/login")
 def login_user(

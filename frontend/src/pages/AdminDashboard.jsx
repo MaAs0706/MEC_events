@@ -41,7 +41,8 @@ function AdminDashboard() {
   const [pendingEvents, setPendingEvents] =
     useState([])
 
-  const users = []
+  const [users, setUsers] =
+    useState([])
 
   const allEvents = [
     ...approvedEvents,
@@ -110,6 +111,26 @@ function AdminDashboard() {
     }
 
     fetchVenues()
+
+  }, [])
+
+  useEffect(() => {
+
+    const fetchUsers = async () => {
+
+      try {
+        const response =
+          await api.get('/users')
+
+        setUsers(response.data)
+      }
+      catch {
+        setVenueError('Unable to load users')
+      }
+
+    }
+
+    fetchUsers()
 
   }, [])
 
@@ -195,6 +216,50 @@ function AdminDashboard() {
     }
     catch {
       setVenueError('Unable to delete venue')
+    }
+
+  }
+
+  const handleRoleChange = async (
+    userId,
+    role
+  ) => {
+
+    try {
+      const response = await api.patch(
+        `/users/${userId}/role`,
+        {
+          role
+        }
+      )
+
+      setUsers(
+        users.map(user =>
+          user.id === userId
+            ? response.data
+            : user
+        )
+      )
+    }
+    catch {
+      setVenueError('Unable to update user role')
+    }
+
+  }
+
+  const handleDeleteUser = async (userId) => {
+
+    try {
+      await api.delete(`/users/${userId}`)
+
+      setUsers(
+        users.filter(
+          user => user.id !== userId
+        )
+      )
+    }
+    catch {
+      setVenueError('Unable to delete user')
     }
 
   }
@@ -532,7 +597,14 @@ function AdminDashboard() {
 
             <div className="mini-card">
 
-              <h3>0</h3>
+              <h3>
+                {
+                  users.filter(
+                    user =>
+                      user.role === 'student'
+                  ).length
+                }
+              </h3>
 
               <span>
                 Students
@@ -542,7 +614,14 @@ function AdminDashboard() {
 
             <div className="mini-card">
 
-              <h3>0</h3>
+              <h3>
+                {
+                  users.filter(
+                    user =>
+                      user.role === 'coordinator'
+                  ).length
+                }
+              </h3>
 
               <span>
                 Coordinators
@@ -552,7 +631,14 @@ function AdminDashboard() {
 
             <div className="mini-card">
 
-              <h3>0</h3>
+              <h3>
+                {
+                  users.filter(
+                    user =>
+                      user.role === 'approver'
+                  ).length
+                }
+              </h3>
 
               <span>
                 Approvers
@@ -562,7 +648,14 @@ function AdminDashboard() {
 
             <div className="mini-card">
 
-              <h3>0</h3>
+              <h3>
+                {
+                  users.filter(
+                    user =>
+                      user.role === 'admin'
+                  ).length
+                }
+              </h3>
 
               <span>
                 Admins
@@ -582,20 +675,49 @@ function AdminDashboard() {
               >
 
                 <div>
-                  {user.name}
+                  {user.full_name}
+                  <span>
+                    {user.email}
+                  </span>
                 </div>
 
                 <div>
-                  {user.role}
+                  <select
+                    value={user.role}
+                    onChange={(event) =>
+                      handleRoleChange(
+                        user.id,
+                        event.target.value
+                      )
+                    }
+                  >
+                    <option value="student">
+                      student
+                    </option>
+                    <option value="coordinator">
+                      coordinator
+                    </option>
+                    <option value="approver">
+                      approver
+                    </option>
+                    <option value="admin">
+                      admin
+                    </option>
+                  </select>
                 </div>
 
                 <div>
-                  {user.status}
+                  Active
                 </div>
 
-                <ChevronRight
-                  size={18}
-                />
+                <button
+                  className="venue-delete"
+                  onClick={() =>
+                    handleDeleteUser(user.id)
+                  }
+                >
+                  Remove
+                </button>
 
               </div>
 

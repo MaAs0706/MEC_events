@@ -33,7 +33,8 @@ function UserProfile() {
       semester: ''
     })
 
-  const [myRsvps] = useState([])
+  const [myRsvps, setMyRsvps] =
+    useState([])
 
   const [settings, setSettings] =
     useState({
@@ -58,15 +59,22 @@ function UserProfile() {
     const fetchProfile = async () => {
 
       try {
-        const response =
-          await api.get('/auth/me')
+        const [
+          profileResponse,
+          registrationsResponse
+        ] = await Promise.all([
+          api.get('/auth/me'),
+          api.get('/auth/me/registrations')
+        ])
 
         setUserData((currentData) => ({
           ...currentData,
-          name: response.data.name,
-          email: response.data.email,
-          role: response.data.role
+          name: profileResponse.data.name,
+          email: profileResponse.data.email,
+          role: profileResponse.data.role
         }))
+
+        setMyRsvps(registrationsResponse.data)
       }
       catch {
         setUserData((currentData) => ({
