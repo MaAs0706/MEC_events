@@ -6,7 +6,9 @@ from sqlalchemy.orm import Session
 from app.dependencies import get_db
 from app.dependencies import require_role
 from app.models.user import User
+from app.schemas.user import UserCreate
 from app.schemas.user import UserRoleUpdate
+from app.utils.security import hash_password
 
 
 router = APIRouter(prefix="/users")
@@ -37,6 +39,53 @@ def get_users(
         }
         for user in users
     ]
+
+
+@router.post("")
+def create_user(
+    user_create: UserCreate,
+    current_user: User = Depends(
+        require_role(["admin"])
+    ),
+    db: Session = Depends(get_db)
+):
+    if user_create.role not in ALLOWED_ROLES:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid role"
+        )
+
+    existing_user = (
+        db.query(User)
+        .filter(User.email == user_create.email)
+        .first()
+    )
+
+    if existing_user:
+        raise HTTPException(
+            status_code=400,
+            detail="Email already registered"
+        )
+
+    new_user = User(
+        full_name=user_create.full_name,
+        email=user_create.email,
+        password_hash=hash_password(
+            user_create.password
+        ),
+        role=user_create.role
+    )
+
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    return {
+        "id": new_user.id,
+        "full_name": new_user.full_name,
+        "email": new_user.email,
+        "role": new_user.role
+    }
 
 
 @router.patch("/{user_id}/role")

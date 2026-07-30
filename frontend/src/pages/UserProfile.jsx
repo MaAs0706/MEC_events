@@ -6,9 +6,7 @@ import {
   User,
   CalendarDays,
   Shield,
-  Bell,
-  Trophy,
-  Clock3
+  Trophy
 } from 'lucide-react'
 
 import './UserProfile.css'
@@ -174,7 +172,9 @@ function UserProfile() {
 
                   <div>
 
-                    <h4>8</h4>
+                    <h4>
+                      {myRsvps.length}
+                    </h4>
 
                     <span>RSVPs</span>
 
@@ -182,7 +182,15 @@ function UserProfile() {
 
                   <div>
 
-                    <h4>24</h4>
+                    <h4>
+                      {
+                        myRsvps.filter(
+                          event =>
+                            event.status ===
+                            'approved'
+                        ).length
+                      }
+                    </h4>
 
                     <span>Events</span>
 
@@ -190,9 +198,11 @@ function UserProfile() {
 
                   <div>
 
-                    <h4>2nd</h4>
+                    <h4>
+                      {userData.role || '—'}
+                    </h4>
 
-                    <span>Year</span>
+                    <span>Role</span>
 
                   </div>
 
@@ -532,7 +542,7 @@ function UserProfile() {
                       </h3>
 
                       <p>
-                        Registered events will appear here once the profile RSVP API is connected.
+                        Registered events will appear here after you join an approved event.
                       </p>
                     </div>
                   </div>

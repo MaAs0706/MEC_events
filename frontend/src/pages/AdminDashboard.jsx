@@ -9,11 +9,8 @@ import {
   TrendingUp,
   Shield,
   Calendar,
-  Bell,
   BarChart3,
-  UserCheck,
-  MapPin,
-  ChevronRight
+  UserCheck
 } from 'lucide-react'
 
 import './AdminDashboard.css'
@@ -44,6 +41,14 @@ function AdminDashboard() {
   const [users, setUsers] =
     useState([])
 
+  const [userForm, setUserForm] =
+    useState({
+      full_name: '',
+      email: '',
+      password: '',
+      role: 'coordinator'
+    })
+
   const allEvents = [
     ...approvedEvents,
     ...pendingEvents
@@ -57,6 +62,16 @@ function AdminDashboard() {
         new Date().toISOString().slice(0, 10)
     ).length,
     pendingReviews: pendingEvents.length,
+    approvalRate: allEvents.length
+      ? Math.round(
+        approvedEvents.length / allEvents.length * 100
+      )
+      : 0,
+    totalAttendees: allEvents.reduce(
+      (total, event) =>
+        total + (event.attendees || 0),
+      0
+    ),
     venueUtilization: venues.length
       ? Math.round(
         allEvents.filter(
@@ -168,6 +183,46 @@ function AdminDashboard() {
       ...currentForm,
       [name]: value
     }))
+
+  }
+
+  const handleUserFormChange = (e) => {
+
+    const { name, value } = e.target
+
+    setUserForm((currentForm) => ({
+      ...currentForm,
+      [name]: value
+    }))
+
+  }
+
+  const handleCreateUser = async (e) => {
+
+    e.preventDefault()
+    setVenueError('')
+
+    try {
+      const response = await api.post(
+        '/users',
+        userForm
+      )
+
+      setUsers([
+        response.data,
+        ...users
+      ])
+
+      setUserForm({
+        full_name: '',
+        email: '',
+        password: '',
+        role: 'coordinator'
+      })
+    }
+    catch {
+      setVenueError('Unable to create user')
+    }
 
   }
 
@@ -593,6 +648,82 @@ function AdminDashboard() {
 
         <section className="users-panel">
 
+          <form
+            className="admin-create-form"
+            onSubmit={handleCreateUser}
+          >
+
+            <div>
+
+              <h3>
+                Create Platform Account
+              </h3>
+
+              <p>
+                Add coordinators, approvers,
+                admins, or students directly
+                from the admin dashboard.
+              </p>
+
+            </div>
+
+            <input
+              name="full_name"
+              placeholder="Full name"
+              value={userForm.full_name}
+              onChange={handleUserFormChange}
+              required
+            />
+
+            <input
+              name="email"
+              type="email"
+              placeholder="Email"
+              value={userForm.email}
+              onChange={handleUserFormChange}
+              required
+            />
+
+            <input
+              name="password"
+              type="password"
+              placeholder="Temporary password"
+              value={userForm.password}
+              onChange={handleUserFormChange}
+              required
+            />
+
+            <select
+              name="role"
+              value={userForm.role}
+              onChange={handleUserFormChange}
+            >
+              <option value="coordinator">
+                coordinator
+              </option>
+              <option value="approver">
+                approver
+              </option>
+              <option value="admin">
+                admin
+              </option>
+              <option value="student">
+                student
+              </option>
+            </select>
+
+            <button type="submit">
+              Create Account
+            </button>
+
+          </form>
+
+          {venueError && (
+            <p className="venue-error">
+              {venueError}
+            </p>
+          )}
+
           <div className="user-stats">
 
             <div className="mini-card">
@@ -724,7 +855,7 @@ function AdminDashboard() {
             )) : (
               <div className="user-row">
                 <div>
-                  User management API not connected yet.
+                  No users found yet.
                 </div>
               </div>
             )}
@@ -880,8 +1011,10 @@ function AdminDashboard() {
             </h3>
 
             <p>
-              92% approval rate
-              this month.
+              {analytics.approvalRate}%
+              {' '}
+              approval rate across
+              submitted events.
             </p>
 
           </div>
@@ -897,8 +1030,10 @@ function AdminDashboard() {
             </h3>
 
             <p>
-              +14% compared to
-              last month.
+              {users.length}
+              {' '}
+              platform accounts
+              currently exist.
             </p>
 
           </div>
@@ -914,8 +1049,10 @@ function AdminDashboard() {
             </h3>
 
             <p>
-              3450 attendees
-              across all events.
+              {analytics.totalAttendees}
+              {' '}
+              attendees across
+              tracked events.
             </p>
 
           </div>
