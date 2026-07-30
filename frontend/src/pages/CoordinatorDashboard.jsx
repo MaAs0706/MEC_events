@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import {
+  Link,
+  useNavigate
+} from 'react-router-dom'
 import { motion } from 'framer-motion'
 import api from '../services/api'
+import { signOut } from '../services/auth'
 
 import {
   Calendar,
@@ -9,7 +13,8 @@ import {
   FileText,
   Users,
   BarChart3,
-  Download
+  Download,
+  LogOut
 } from 'lucide-react'
 
 import './CoordinatorDashboard.css'
@@ -17,6 +22,7 @@ import './CoordinatorDashboard.css'
 function CoordinatorDashboard() {
 
   const today = new Date()
+  const navigate = useNavigate()
 
   const [activeTab, setActiveTab] =
     useState('calendar')
@@ -394,6 +400,17 @@ function CoordinatorDashboard() {
                   'userName'
                 ) || 'Coordinator'
               }
+            </button>
+
+            <button
+              className="signout-btn"
+              onClick={() =>
+                signOut(navigate)
+              }
+              title="Sign out"
+            >
+              <LogOut size={16} />
+              Sign out
             </button>
 
           </div>

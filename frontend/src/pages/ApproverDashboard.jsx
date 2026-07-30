@@ -1,17 +1,24 @@
 import React, { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import {
+  Link,
+  useNavigate
+} from 'react-router-dom'
 import { motion } from 'framer-motion'
 import api from '../services/api'
+import { signOut } from '../services/auth'
 import {
   ShieldCheck,
   Clock3,
   CheckCircle2,
-  XCircle
+  XCircle,
+  LogOut
 } from 'lucide-react'
 
 import './ApproverDashboard.css'
 
 function ApproverDashboard() {
+
+  const navigate = useNavigate()
 
   const [activeTab, setActiveTab] =
     useState('pending')
@@ -169,6 +176,16 @@ const [rejectedEvents, setRejectedEvents] =
 
           <button className="approver-user">
             Approver
+          </button>
+
+          <button
+            className="signout-btn"
+            onClick={() =>
+              signOut(navigate)
+            }
+          >
+            <LogOut size={16} />
+            Sign out
           </button>
 
         </div>

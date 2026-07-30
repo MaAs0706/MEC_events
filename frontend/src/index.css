@@ -69,6 +69,35 @@ button {
   font-family: inherit;
 }
 
+.signout-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  min-height: 42px;
+
+  padding: 0 14px;
+
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 999px;
+
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.82);
+
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+  transition: 0.25s ease;
+}
+
+.signout-btn:hover {
+  border-color: rgba(255,49,49,0.42);
+  background: rgba(255,49,49,0.12);
+  color: white;
+}
+
 .campus-watermark {
   position: relative;
   isolation: isolate;

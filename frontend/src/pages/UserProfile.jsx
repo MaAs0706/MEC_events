@@ -1,17 +1,24 @@
 import React, { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import {
+  Link,
+  useNavigate
+} from 'react-router-dom'
 import { motion } from 'framer-motion'
 import api from '../services/api'
+import { signOut } from '../services/auth'
 import {
   User,
   CalendarDays,
   Shield,
-  Trophy
+  Trophy,
+  LogOut
 } from 'lucide-react'
 
 import './UserProfile.css'
 
 function UserProfile() {
+
+  const navigate = useNavigate()
 
   const [activeTab, setActiveTab] =
     useState('profile')
@@ -117,6 +124,16 @@ function UserProfile() {
           >
             Back to Dashboard
           </Link>
+
+          <button
+            className="signout-btn"
+            onClick={() =>
+              signOut(navigate)
+            }
+          >
+            <LogOut size={16} />
+            Sign out
+          </button>
 
         </div>
 

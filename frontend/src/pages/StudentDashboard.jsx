@@ -3,6 +3,7 @@ import {useNavigate} from 'react-router-dom'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import api from '../services/api'
+import { signOut } from '../services/auth'
 import {
   Search,
   Bell,
@@ -203,7 +204,7 @@ function StudentDashboard() {
           <button
             className="icon-btn"
             onClick={() =>
-              navigate('/')
+              signOut(navigate)
             }
             title="Logout"
           >

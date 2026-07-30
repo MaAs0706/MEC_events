@@ -1,7 +1,11 @@
 
 import React, { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import {
+  Link,
+  useNavigate
+} from 'react-router-dom'
 import api from '../services/api'
+import { signOut } from '../services/auth'
 import {
   Users,
   Building2,
@@ -10,12 +14,15 @@ import {
   Shield,
   Calendar,
   BarChart3,
-  UserCheck
+  UserCheck,
+  LogOut
 } from 'lucide-react'
 
 import './AdminDashboard.css'
 
 function AdminDashboard() {
+
+  const navigate = useNavigate()
 
   const [activeTab, setActiveTab] =
     useState('overview')
@@ -352,6 +359,16 @@ function AdminDashboard() {
 
             Administrator
 
+          </button>
+
+          <button
+            className="signout-btn"
+            onClick={() =>
+              signOut(navigate)
+            }
+          >
+            <LogOut size={16} />
+            Sign out
           </button>
 
         </div>
