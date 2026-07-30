@@ -288,6 +288,18 @@ body {
   letter-spacing: 2px;
 }
 
+.logo-button {
+  border: none;
+  background: transparent;
+  color: white;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.logo-button:hover {
+  color: #ff3131;
+}
+
 .nav-search {
   flex: 1;
   display: flex;

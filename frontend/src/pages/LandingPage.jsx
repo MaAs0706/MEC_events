@@ -87,6 +87,49 @@ function LandingPage() {
 
   }
 
+  const resetGate = () => {
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'instant'
+    })
+
+    gateControls.set({
+      opacity: 1
+    })
+
+    leftDoorControls.set({
+      x: '0%',
+      rotateY: 0,
+      opacity: 1
+    })
+
+    rightDoorControls.set({
+      x: '0%',
+      rotateY: 0,
+      opacity: 1
+    })
+
+    logoControls.set({
+      opacity: 1,
+      scale: 1
+    })
+
+    doorDetailControls.set({
+      opacity: 0
+    })
+
+    contentControls.set({
+      opacity: 0.2,
+      scale: 0.985,
+      filter: 'blur(10px)'
+    })
+
+    setGateOpen(false)
+    setGateRemoved(false)
+
+  }
+
  useEffect(() => {
 
   const fetchEvents = async () => {
@@ -312,9 +355,13 @@ const totalRegistrations =
       <nav className="landing-nav">
         <div className="nav-inner">
 
-          <div className="logo">
+          <button
+            className="logo logo-button"
+            onClick={resetGate}
+            type="button"
+          >
             NEXUS.
-          </div>
+          </button>
 
           <div className="nav-search">
             <input
