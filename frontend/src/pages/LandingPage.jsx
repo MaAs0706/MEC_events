@@ -515,7 +515,7 @@ const totalRegistrations =
     whileHover={{ y: -3 }}
   >
     <div className="stat-number">
-      {approvedEvents.length}
+      {upcomingApprovedEvents.length}
     </div>
 
     <div className="stat-label">
