@@ -1,6 +1,9 @@
 
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import {
+  motion,
+  useAnimation
+} from 'framer-motion'
 import './LandingPage.css'
 import React, { useEffect, useState } from 'react'
 import api from '../services/api'
@@ -8,6 +11,81 @@ import api from '../services/api'
 function LandingPage() {
   const [events, setEvents] = useState([])
  const [loading, setLoading] = useState(true)
+  const [gateOpen, setGateOpen] = useState(false)
+  const [gateRemoved, setGateRemoved] = useState(false)
+  const gateControls = useAnimation()
+  const leftDoorControls = useAnimation()
+  const rightDoorControls = useAnimation()
+  const logoControls = useAnimation()
+  const doorDetailControls = useAnimation()
+  const contentControls = useAnimation()
+
+  const openGate = async () => {
+
+    if (gateOpen) {
+      return
+    }
+
+    setGateOpen(true)
+
+    await Promise.all([
+      logoControls.start({
+        opacity: 0,
+        scale: 0.92,
+        transition: {
+          duration: 0.35,
+          ease: 'easeOut'
+        }
+      }),
+      doorDetailControls.start({
+        opacity: 1,
+        transition: {
+          duration: 0.35,
+          ease: 'easeOut'
+        }
+      })
+    ])
+
+    await Promise.all([
+      leftDoorControls.start({
+        x: '-112%',
+        rotateY: -18,
+        transition: {
+          duration: 1.05,
+          ease: [0.76, 0, 0.24, 1]
+        }
+      }),
+      rightDoorControls.start({
+        x: '112%',
+        rotateY: 18,
+        transition: {
+          duration: 1.05,
+          ease: [0.76, 0, 0.24, 1]
+        }
+      }),
+      contentControls.start({
+        opacity: 1,
+        scale: 1,
+        filter: 'blur(0px)',
+        transition: {
+          duration: 1,
+          ease: 'easeOut',
+          delay: 0.25
+        }
+      })
+    ])
+
+    await gateControls.start({
+      opacity: 0,
+      transition: {
+        duration: 0.4,
+        ease: 'easeOut'
+      }
+    })
+
+    setGateRemoved(true)
+
+  }
 
  useEffect(() => {
 
@@ -38,6 +116,70 @@ function LandingPage() {
   fetchEvents()
 
 }, [])
+
+useEffect(() => {
+
+  if (gateRemoved) {
+    document.body.style.overflow = ''
+    return
+  }
+
+  document.body.style.overflow = 'hidden'
+
+  const handleWheel = (event) => {
+    if (event.deltaY > 4) {
+      event.preventDefault()
+      openGate()
+    }
+  }
+
+  let touchStartY = 0
+
+  const handleTouchStart = (event) => {
+    touchStartY = event.touches[0].clientY
+  }
+
+  const handleTouchMove = (event) => {
+    const currentY = event.touches[0].clientY
+
+    if (touchStartY - currentY > 12) {
+      event.preventDefault()
+      openGate()
+    }
+  }
+
+  window.addEventListener(
+    'wheel',
+    handleWheel,
+    {
+      passive: false
+    }
+  )
+
+  window.addEventListener(
+    'touchstart',
+    handleTouchStart,
+    {
+      passive: true
+    }
+  )
+
+  window.addEventListener(
+    'touchmove',
+    handleTouchMove,
+    {
+      passive: false
+    }
+  )
+
+  return () => {
+    document.body.style.overflow = ''
+    window.removeEventListener('wheel', handleWheel)
+    window.removeEventListener('touchstart', handleTouchStart)
+    window.removeEventListener('touchmove', handleTouchMove)
+  }
+
+}, [gateRemoved, gateOpen])
   const featuredEvents =
   events
     .filter(
@@ -89,6 +231,82 @@ const totalRegistrations =
   return (
     <div className="landing-wrapper">
 
+      {!gateRemoved && (
+      <motion.section
+        className="nexus-gate"
+        animate={gateControls}
+      >
+
+        <motion.div
+          className="gate-logo"
+          animate={logoControls}
+          initial={{
+            opacity: 1,
+            scale: 1
+          }}
+        >
+          NEXUS.
+        </motion.div>
+
+        <motion.div
+          className="door-panel door-left"
+          animate={leftDoorControls}
+          initial={{
+            x: '0%',
+            rotateY: 0,
+            opacity: 1
+          }}
+        />
+
+        <motion.div
+          className="door-panel door-right"
+          animate={rightDoorControls}
+          initial={{
+            x: '0%',
+            rotateY: 0,
+            opacity: 1
+          }}
+        />
+
+        <motion.div
+          className="door-frame"
+          animate={doorDetailControls}
+          initial={{
+            opacity: 0
+          }}
+        >
+
+          <span className="door-edge door-edge-left"></span>
+          <span className="door-edge door-edge-right"></span>
+          <span className="door-glow"></span>
+
+        </motion.div>
+
+        <motion.p
+          className="gate-hint"
+          animate={{
+            opacity: gateOpen ? 0 : 1
+          }}
+          transition={{
+            duration: 0.25
+          }}
+        >
+          Scroll to enter campus
+        </motion.p>
+
+      </motion.section>
+      )}
+
+      <motion.div
+        className="landing-content"
+        animate={contentControls}
+        initial={{
+          opacity: 0.2,
+          scale: 0.985,
+          filter: 'blur(10px)'
+        }}
+      >
+
       {/* NAVIGATION */}
 
       <nav className="landing-nav">
@@ -127,7 +345,24 @@ const totalRegistrations =
 
             {/* LEFT */}
 
-            <div className="hero-left">
+            <motion.div
+              className="hero-left"
+              initial={{
+                opacity: 0,
+                y: 40
+              }}
+              whileInView={{
+                opacity: 1,
+                y: 0
+              }}
+              viewport={{
+                once: true,
+                amount: 0.35
+              }}
+              transition={{
+                duration: 0.7
+              }}
+            >
 
               <motion.div
                 className="hero-badge"
@@ -234,11 +469,31 @@ const totalRegistrations =
 
 </div>
 
-            </div>
+            </motion.div>
 
             {/* RIGHT */}
 
-            <div className="hero-right">
+            <motion.div
+              className="hero-right"
+              initial={{
+                opacity: 0,
+                y: 50,
+                scale: 0.96
+              }}
+              whileInView={{
+                opacity: 1,
+                y: 0,
+                scale: 1
+              }}
+              viewport={{
+                once: true,
+                amount: 0.3
+              }}
+              transition={{
+                duration: 0.8,
+                delay: 0.1
+              }}
+            >
 <motion.div
   className="live-card"
   initial={{ opacity: 0, x: 30 }}
@@ -279,7 +534,7 @@ const totalRegistrations =
 
 </motion.div>
 
-            </div>
+            </motion.div>
 
           </div>
 
@@ -292,10 +547,24 @@ const totalRegistrations =
 
         <div className="section-inner">
 
-          <div className="section-heading">
+          <motion.div
+            className="section-heading"
+            initial={{
+              opacity: 0,
+              y: 35
+            }}
+            whileInView={{
+              opacity: 1,
+              y: 0
+            }}
+            viewport={{
+              once: true,
+              amount: 0.5
+            }}
+          >
             <span>TRENDING THIS WEEK</span>
             <h2>Featured events</h2>
-          </div>
+          </motion.div>
 
           <div className="events-grid">
 
@@ -308,6 +577,18 @@ const totalRegistrations =
 
   <motion.div
     className="event-card"
+    initial={{
+      opacity: 0,
+      y: 36
+    }}
+    whileInView={{
+      opacity: 1,
+      y: 0
+    }}
+    viewport={{
+      once: true,
+      amount: 0.25
+    }}
     whileHover={{ y: -6 }}
   >
 
@@ -352,6 +633,8 @@ const totalRegistrations =
         </div>
 
       </section>
+
+      </motion.div>
 
     </div>
   )
