@@ -528,6 +528,21 @@ function AdminDashboard() {
 
         <button
           className={
+            activeTab === 'events'
+              ? 'active'
+              : ''
+          }
+          onClick={() =>
+            setActiveTab(
+              'events'
+            )
+          }
+        >
+          Events
+        </button>
+
+        <button
+          className={
             activeTab === 'analytics'
               ? 'active'
               : ''
@@ -1011,7 +1026,152 @@ function AdminDashboard() {
 
       )}
 
+      {/* EVENTS */}
+
+      {activeTab === 'events' && (
+
+        <section className="admin-events-panel">
+
+          <div className="admin-events-column">
+
+            <div className="section-header">
+
+              <h3>
+                Pending Reviews
+              </h3>
+
+              <span>
+                {pendingEvents.length}
+              </span>
+
+            </div>
+
+            {pendingEvents.length ? pendingEvents.map(
+              event => (
+
+                <div
+                  key={event.id}
+                  className="admin-event-card pending"
+                >
+
+                  <div>
+
+                    <span className="event-status">
+                      {event.status}
+                    </span>
+
+                    <h3>
+                      {event.title}
+                    </h3>
+
+                    <p>
+                      {event.organizer}
+                      {' • '}
+                      {event.venue}
+                    </p>
+
+                    <small>
+                      {new Date(event.date).toLocaleDateString()}
+                      {event.start_time &&
+                        ` • ${event.start_time}`}
+                      {event.end_time &&
+                        ` - ${event.end_time}`}
+                    </small>
+
+                  </div>
+
+                  <Link
+                    to={`/events/${event.id}`}
+                    className="admin-event-link"
+                  >
+                    View Details
+                  </Link>
+
+                </div>
+
+              )
+            ) : (
+              <div className="admin-empty-card">
+                No pending reviews.
+              </div>
+            )}
+
+          </div>
+
+          <div className="admin-events-column">
+
+            <div className="section-header">
+
+              <h3>
+                Approved Events
+              </h3>
+
+              <span>
+                {approvedEvents.length}
+              </span>
+
+            </div>
+
+            {approvedEvents.length ? approvedEvents.map(
+              event => (
+
+                <div
+                  key={event.id}
+                  className="admin-event-card approved"
+                >
+
+                  <div>
+
+                    <span className="event-status">
+                      {event.status}
+                    </span>
+
+                    <h3>
+                      {event.title}
+                    </h3>
+
+                    <p>
+                      {event.organizer}
+                      {' • '}
+                      {event.venue}
+                    </p>
+
+                    <small>
+                      {new Date(event.date).toLocaleDateString()}
+                      {' • '}
+                      {event.attendees || 0}
+                      /
+                      {event.capacity}
+                      {' '}
+                      registrations
+                    </small>
+
+                  </div>
+
+                  <Link
+                    to={`/events/${event.id}`}
+                    className="admin-event-link"
+                  >
+                    View Details
+                  </Link>
+
+                </div>
+
+              )
+            ) : (
+              <div className="admin-empty-card">
+                No approved events yet.
+              </div>
+            )}
+
+          </div>
+
+        </section>
+
+      )}
+
       {/* ANALYTICS */}
+
 
       {activeTab === 'analytics' && (
 
