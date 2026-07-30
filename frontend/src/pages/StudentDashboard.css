@@ -452,6 +452,31 @@ body {
   font-weight: 600;
 }
 
+.section-action {
+  border: none;
+  background: transparent;
+
+  color: #ff3131;
+
+  font-size: 14px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.success-state {
+  margin-bottom: 22px;
+  padding: 14px 16px;
+
+  border: 1px solid rgba(34,197,94,0.22);
+  border-radius: 12px;
+
+  background: rgba(34,197,94,0.08);
+  color: rgb(74,222,128);
+
+  font-weight: 700;
+}
+
 .events-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -529,6 +554,13 @@ body {
   font-weight: 700;
 
   cursor: pointer;
+}
+
+.join-btn.joined,
+.join-btn:disabled {
+  background: rgba(34,197,94,0.16);
+  color: rgb(74,222,128);
+  cursor: not-allowed;
 }
 
 /* ACTIVITY */

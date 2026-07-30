@@ -52,6 +52,86 @@ function StudentDashboard() {
   const [searchTerm, setSearchTerm] =
     useState('')
 
+  const [startDate, setStartDate] =
+    useState('')
+
+  const [endDate, setEndDate] =
+    useState('')
+
+  const [viewMode, setViewMode] =
+    useState('all')
+
+  const [statusMessage, setStatusMessage] =
+    useState('')
+
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+
+  const approvedUpcomingEvents =
+    events
+      .filter(event => {
+        const eventDate = new Date(event.date)
+        eventDate.setHours(0, 0, 0, 0)
+
+        return eventDate >= todayStart
+      })
+      .sort(
+        (firstEvent, secondEvent) =>
+          new Date(firstEvent.date) -
+          new Date(secondEvent.date)
+      )
+
+  const joinedEventDetails =
+    approvedUpcomingEvents.filter(
+      event =>
+        joinedEvents.includes(event.id)
+    )
+
+  const categoryOptions = [
+    'All Categories',
+    ...new Set(
+      events
+        .map(event => event.category)
+        .filter(Boolean)
+    )
+  ]
+
+  const weekEnd = new Date(todayStart)
+  weekEnd.setDate(weekEnd.getDate() + 7)
+
+  const eventsThisWeek =
+    approvedUpcomingEvents.filter(event => {
+      const eventDate = new Date(event.date)
+      eventDate.setHours(0, 0, 0, 0)
+
+      return (
+        eventDate >= todayStart &&
+        eventDate <= weekEnd
+      )
+    })
+
+  const topCategory =
+    approvedUpcomingEvents.reduce(
+      (currentTop, event) => {
+        const count =
+          approvedUpcomingEvents.filter(
+            item =>
+              item.category === event.category
+          ).length
+
+        return count > currentTop.count
+          ? {
+            name: event.category,
+            count
+          }
+          : currentTop
+      },
+      {
+        name: 'No category yet',
+        count: 0
+      }
+    )
+
   useEffect(() => {
 
     const fetchEvents = async () => {
@@ -99,22 +179,39 @@ function StudentDashboard() {
 
   /* FILTER EVENTS */
 
-  const filteredEvents = events.filter(
+  const filteredEvents = approvedUpcomingEvents.filter(
     (event) => {
 
       const matchesCategory =
         selectedCategory === 'All Categories' ||
-        event.category ===
-          selectedCategory.toUpperCase()
+        event.category === selectedCategory
 
       const matchesSearch =
         event.title
           .toLowerCase()
           .includes(searchTerm.toLowerCase())
 
+      const eventDate = new Date(event.date)
+      eventDate.setHours(0, 0, 0, 0)
+
+      const matchesStartDate =
+        !startDate ||
+        eventDate >= new Date(startDate)
+
+      const matchesEndDate =
+        !endDate ||
+        eventDate <= new Date(endDate)
+
+      const matchesViewMode =
+        viewMode === 'all' ||
+        joinedEvents.includes(event.id)
+
       return (
         matchesCategory &&
-        matchesSearch
+        matchesSearch &&
+        matchesStartDate &&
+        matchesEndDate &&
+        matchesViewMode
       )
 
     }
@@ -129,6 +226,7 @@ function StudentDashboard() {
     }
 
     setError('')
+    setStatusMessage('')
 
     try {
       const response =
@@ -146,6 +244,8 @@ function StudentDashboard() {
             : event
         )
       )
+
+      setStatusMessage('Registration confirmed')
     }
     catch (requestError) {
       setError(
@@ -153,6 +253,16 @@ function StudentDashboard() {
         'Unable to join event'
       )
     }
+
+  }
+
+  const scrollToEvents = () => {
+
+    document
+      .querySelector('.events-area')
+      ?.scrollIntoView({
+        behavior: 'smooth'
+      })
 
   }
 
@@ -187,6 +297,13 @@ function StudentDashboard() {
           <button
             className="icon-btn"
             title="Notifications"
+            onClick={() => {
+              document
+                .querySelector('.activity-sidebar')
+                ?.scrollIntoView({
+                  behavior: 'smooth'
+                })
+            }}
           >
             <Bell size={18} />
           </button>
@@ -259,20 +376,19 @@ function StudentDashboard() {
 
             <button
               className="primary-btn"
-              onClick={() => {
-                document.querySelector('.events-area').scrollIntoView({ behavior: 'smooth' })
-              }}
+              onClick={scrollToEvents}
             >
               Explore Events
             </button>
 
             <button
               className="secondary-btn"
-              onClick={() =>
-                alert('Calendar feature coming soon')
-              }
+              onClick={() => {
+                setViewMode('rsvps')
+                scrollToEvents()
+              }}
             >
-              My Calendar
+              My Schedule
             </button>
 
           </motion.div>
@@ -282,35 +398,45 @@ function StudentDashboard() {
           <div className="quick-actions">
 
             <button
-              onClick={() =>
-                alert('Saved Events feature coming soon')
-              }
+              onClick={() => {
+                setViewMode('all')
+                setStartDate('')
+                setEndDate('')
+                scrollToEvents()
+              }}
             >
-              Saved Events
+              Browse All
             </button>
 
             <button
-              onClick={() =>
-                alert('My RSVPs: ' + joinedEvents.length + ' events joined')
-              }
+              onClick={() => {
+                setViewMode('rsvps')
+                scrollToEvents()
+              }}
             >
               My RSVPs
             </button>
 
             <button
-              onClick={() =>
-                alert('Reminder feature coming soon')
-              }
+              onClick={() => {
+                const todayValue =
+                  new Date().toISOString().slice(0, 10)
+
+                setStartDate(todayValue)
+                setEndDate('')
+                setViewMode('all')
+                scrollToEvents()
+              }}
             >
-              Create Reminder
+              From Today
             </button>
 
             <button
               onClick={() =>
-                alert('Tickets feature coming soon')
+                navigate('/profile')
               }
             >
-              Tickets
+              Profile
             </button>
 
           </div>
@@ -329,10 +455,12 @@ function StudentDashboard() {
                 THIS WEEK
               </span>
 
-              <h2>24</h2>
+              <h2>
+                {eventsThisWeek.length}
+              </h2>
 
               <p>
-                Events happening around campus
+                Events happening this week
               </p>
 
             </div>
@@ -348,7 +476,7 @@ function StudentDashboard() {
               </h2>
 
               <p>
-                You joined events this week
+                Upcoming events you joined
               </p>
 
             </div>
@@ -359,11 +487,15 @@ function StudentDashboard() {
                 TRENDING
               </span>
 
-              <h3>Tech events ↑</h3>
+              <h3>
+                {topCategory.name}
+                {topCategory.count
+                  ? ' ↑'
+                  : ''}
+              </h3>
 
               <p>
-                Most students are joining
-                hackathons
+                Most active upcoming category
               </p>
 
             </div>
@@ -397,21 +529,13 @@ function StudentDashboard() {
               }
             >
 
-              <option>
-                All Categories
-              </option>
+              {categoryOptions.map(category => (
 
-              <option>
-                Tech
-              </option>
+                <option key={category}>
+                  {category}
+                </option>
 
-              <option>
-                Sports
-              </option>
-
-              <option>
-                Cultural
-              </option>
+              ))}
 
             </select>
 
@@ -421,7 +545,13 @@ function StudentDashboard() {
 
             <label>Start Date</label>
 
-            <input type="date" />
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) =>
+                setStartDate(e.target.value)
+              }
+            />
 
           </div>
 
@@ -429,7 +559,13 @@ function StudentDashboard() {
 
             <label>End Date</label>
 
-            <input type="date" />
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) =>
+                setEndDate(e.target.value)
+              }
+            />
 
           </div>
 
@@ -442,6 +578,12 @@ function StudentDashboard() {
               )
 
               setSearchTerm('')
+
+              setStartDate('')
+
+              setEndDate('')
+
+              setViewMode('all')
 
             }}
           >
@@ -456,13 +598,39 @@ function StudentDashboard() {
 
           <div className="section-header">
 
-            <h2>Trending Events</h2>
+            <h2>
+              {viewMode === 'rsvps'
+                ? 'My RSVPs'
+                : 'Upcoming Events'}
+            </h2>
 
-            <Link to="/">
-              View All
-            </Link>
+            {viewMode === 'rsvps' ? (
+              <button
+                className="section-action"
+                onClick={() =>
+                  setViewMode('all')
+                }
+              >
+                View All
+              </button>
+            ) : (
+              <button
+                className="section-action"
+                onClick={() =>
+                  setViewMode('rsvps')
+                }
+              >
+                My RSVPs
+              </button>
+            )}
 
           </div>
+
+          {statusMessage && (
+            <div className="success-state">
+              {statusMessage}
+            </div>
+          )}
 
           {loading && (
             <div className="empty-state">
@@ -498,11 +666,11 @@ function StudentDashboard() {
               <Link
   to={`/events/${event.id}`}
   className="event-link"
+  key={event.id}
 >
 
   <motion.div
     className="event-card"
-    key={event.id}
     whileHover={{ y: -4 }}
   >
 
@@ -529,7 +697,9 @@ function StudentDashboard() {
                   <div className="event-meta">
 
                     <span>
-                      {event.date}
+                      {new Date(
+                        event.date
+                      ).toLocaleDateString()}
                     </span>
 
                     <span>
@@ -561,7 +731,7 @@ function StudentDashboard() {
                       event.id
                     )
                       ? 'Joined'
-                      : 'Join Event'}
+                      : 'RSVP / Join'}
 
                   </button>
 
@@ -584,24 +754,17 @@ function StudentDashboard() {
 
             <h3>Recent Activity</h3>
 
-            {joinedEvents.length ? (
-              joinedEvents.slice(0, 3).map(
-                eventId => {
-                  const joinedEvent =
-                    events.find(
-                      event =>
-                        event.id === eventId
-                    )
+            {joinedEventDetails.length ? (
+              joinedEventDetails.slice(0, 3).map(
+                joinedEvent => {
 
                   return (
                     <div
                       className="activity-item"
-                      key={eventId}
+                      key={joinedEvent.id}
                     >
                       <span className="activity-dot"></span>
-                      {joinedEvent
-                        ? `You joined ${joinedEvent.title}`
-                        : 'You joined an event'}
+                      {`You joined ${joinedEvent.title}`}
                     </div>
                   )
                 }
@@ -619,13 +782,15 @@ function StudentDashboard() {
 
             <h3>Upcoming Schedule</h3>
 
-            {events.slice(0, 3).map(event => (
+            {joinedEventDetails.slice(0, 3).map(event => (
               <div
                 className="schedule-item"
                 key={event.id}
               >
                 <span className="schedule-date">
-                  {event.date}
+                  {new Date(
+                    event.date
+                  ).toLocaleDateString()}
                 </span>
 
                 <p>
@@ -638,10 +803,10 @@ function StudentDashboard() {
               </div>
             ))}
 
-            {!events.length && (
+            {!joinedEventDetails.length && (
               <div className="schedule-item">
                 <p>
-                  No upcoming events yet.
+                  Your joined events will appear here.
                 </p>
               </div>
             )}
