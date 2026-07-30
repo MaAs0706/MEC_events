@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import {
+  Link,
+  useNavigate,
+  useParams
+} from 'react-router-dom'
 import { motion } from 'framer-motion'
 import api from '../services/api'
 import './EventDetails.css'
@@ -7,6 +11,7 @@ import './EventDetails.css'
 function EventDetails() {
 
   const { id } = useParams()
+  const navigate = useNavigate()
 
   const [isRsvped, setIsRsvped] =
     useState(false)
@@ -20,8 +25,30 @@ function EventDetails() {
   const [registrationMessage, setRegistrationMessage] =
     useState('')
 
+  const [reviewMessage, setReviewMessage] =
+    useState('')
+
+  const [rejectionReason, setRejectionReason] =
+    useState('')
+
   const role =
     localStorage.getItem('userRole')
+
+  const dashboardRoutes = {
+
+    student:
+      '/dashboard/student',
+
+    coordinator:
+      '/dashboard/coordinator',
+
+    approver:
+      '/dashboard/approver',
+
+    admin:
+      '/dashboard/admin'
+
+  }
 
   useEffect(() => {
 
@@ -76,6 +103,67 @@ function EventDetails() {
 
   }
 
+  const handleApprove = async () => {
+
+    setReviewMessage('')
+
+    try {
+      const response =
+        await api.patch(`/events/${id}/approve`)
+
+      setEvent(response.data)
+      setReviewMessage('Event approved successfully')
+    }
+    catch (error) {
+      setReviewMessage(
+        error.response?.data?.detail ||
+        'Unable to approve event'
+      )
+    }
+
+  }
+
+  const handleReject = async () => {
+
+    setReviewMessage('')
+
+    if (!rejectionReason.trim()) {
+      setReviewMessage(
+        'Please add a rejection reason before rejecting.'
+      )
+      return
+    }
+
+    try {
+      const response =
+        await api.patch(
+          `/events/${id}/reject`,
+          {
+            rejection_reason: rejectionReason
+          }
+        )
+
+      setEvent(response.data)
+      setRejectionReason('')
+      setReviewMessage('Event rejected successfully')
+    }
+    catch (error) {
+      setReviewMessage(
+        error.response?.data?.detail ||
+        'Unable to reject event'
+      )
+    }
+
+  }
+
+  const goBackToDashboard = () => {
+
+    navigate(
+      dashboardRoutes[role] || '/'
+    )
+
+  }
+
   if (loading) {
 
     return (
@@ -105,22 +193,6 @@ function EventDetails() {
       </div>
 
     )
-
-  }
-
-  const dashboardRoutes = {
-
-    student:
-      '/dashboard/student',
-
-    coordinator:
-      '/dashboard/coordinator',
-
-    approver:
-      '/dashboard/approver',
-
-    admin:
-      '/dashboard/admin'
 
   }
 
@@ -249,23 +321,57 @@ function EventDetails() {
 
         )}
 
-        {role === 'approver' && (
+        {['approver', 'admin'].includes(role) &&
+          event.status === 'pending' && (
 
           <div className="approver-actions">
 
             <button
               className="approve-btn"
+              onClick={handleApprove}
             >
               Approve
             </button>
 
             <button
               className="reject-btn"
+              onClick={handleReject}
             >
               Reject
             </button>
 
           </div>
+
+        )}
+
+        {['approver', 'admin'].includes(role) &&
+          event.status === 'pending' && (
+
+          <textarea
+            className="review-textarea"
+            placeholder="Reason for rejection..."
+            value={rejectionReason}
+            onChange={(e) =>
+              setRejectionReason(e.target.value)
+            }
+          />
+
+        )}
+
+        {reviewMessage && (
+          <p className="registration-message">
+            {reviewMessage}
+          </p>
+        )}
+
+        {['approver', 'admin'].includes(role) && (
+
+          <button
+            className="action-btn subtle"
+            onClick={goBackToDashboard}
+          >
+            Back to Dashboard
+          </button>
 
         )}
 
@@ -343,9 +449,9 @@ function EventDetails() {
                   </span>
 
                   <span className="detail-value">
-                    {event.time}
-                    {' - '}
-                    {event.endTime}
+                    {event.start_time && event.end_time
+                      ? `${event.start_time} - ${event.end_time}`
+                      : 'Time TBA'}
                   </span>
 
                 </div>
@@ -562,59 +668,6 @@ function EventDetails() {
 
             )}
 
-            {/* APPROVER */}
-
-            {role ===
-              'approver' && (
-
-              <div className="role-card">
-
-                <h3>
-                  Review Request
-                </h3>
-
-                <button
-                  className="approve-btn"
-                >
-                  Approve
-                </button>
-
-                <button
-                  className="reject-btn"
-                >
-                  Reject
-                </button>
-
-              </div>
-
-            )}
-
-            {/* ADMIN */}
-
-            {role ===
-              'admin' && (
-
-              <div className="role-card">
-
-                <h3>
-                  Admin Controls
-                </h3>
-
-                <button
-                  className="action-btn"
-                >
-                  Edit Event
-                </button>
-
-                <button
-                  className="delete-btn"
-                >
-                  Delete Event
-                </button>
-
-              </div>
-
-            )}
              <div
                  className="contact-card"
              >
