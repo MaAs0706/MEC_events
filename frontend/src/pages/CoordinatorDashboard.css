@@ -189,6 +189,47 @@
   padding: 28px;
 }
 
+.calendar-month-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+}
+
+.calendar-month-header h2 {
+  margin-bottom: 6px;
+}
+
+.calendar-month-header span {
+  color: rgba(255,255,255,0.48);
+  font-size: 13px;
+}
+
+.calendar-month-header button {
+  min-width: 44px;
+  height: 44px;
+
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+
+  background: #111;
+  color: white;
+
+  font-size: 18px;
+  font-weight: 800;
+
+  cursor: pointer;
+}
+
+.calendar-month-header button:hover {
+  border-color: rgba(255,49,49,0.45);
+}
+
+.calendar-month-actions {
+  display: flex;
+  gap: 10px;
+}
+
 /* =========================
    WEEKDAYS
 ========================= */
@@ -242,8 +283,27 @@
   font-weight: 700;
 }
 
+.calendar-empty {
+  aspect-ratio: 1;
+}
+
 .calendar-day:hover {
   transform: translateY(-3px);
+}
+
+.calendar-day.today {
+  box-shadow:
+    0 0 0 2px rgba(255,255,255,0.3),
+    0 0 24px rgba(255,255,255,0.08);
+}
+
+.calendar-day.selected {
+  border:
+    1px solid rgba(255,49,49,0.9);
+
+  box-shadow:
+    0 0 0 2px rgba(255,49,49,0.2),
+    0 0 24px rgba(255,49,49,0.24);
 }
 
 /* AVAILABLE */

@@ -16,11 +16,22 @@ import './CoordinatorDashboard.css'
 
 function CoordinatorDashboard() {
 
+  const today = new Date()
+
   const [activeTab, setActiveTab] =
     useState('calendar')
 
   const [selectedDate, setSelectedDate] =
-    useState(24)
+    useState(today.getDate())
+
+  const [visibleMonth, setVisibleMonth] =
+    useState(
+      new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        1
+      )
+    )
 
   const [selectedVenue, setSelectedVenue] =
     useState('Main Auditorium')
@@ -59,6 +70,98 @@ function CoordinatorDashboard() {
 
   const [availability, setAvailability] =
     useState([])
+
+  const visibleYear =
+    visibleMonth.getFullYear()
+
+  const visibleMonthIndex =
+    visibleMonth.getMonth()
+
+  const monthLabel =
+    visibleMonth.toLocaleDateString(
+      'en-US',
+      {
+        month: 'long',
+        year: 'numeric'
+      }
+    )
+
+  const selectedDateObject =
+    new Date(
+      visibleYear,
+      visibleMonthIndex,
+      selectedDate
+    )
+
+  const selectedDateValue =
+    `${selectedDateObject.getFullYear()}-${String(
+      selectedDateObject.getMonth() + 1
+    ).padStart(2, '0')}-${String(
+      selectedDateObject.getDate()
+    ).padStart(2, '0')}`
+
+  const firstWeekdayOffset =
+    (
+      new Date(
+        visibleYear,
+        visibleMonthIndex,
+        1
+      ).getDay() + 6
+    ) % 7
+
+  const daysInMonth =
+    new Date(
+      visibleYear,
+      visibleMonthIndex + 1,
+      0
+    ).getDate()
+
+  const days =
+    Array.from(
+      { length: daysInMonth },
+      (_, i) => i + 1
+    )
+
+  const goToPreviousMonth = () => {
+
+    setVisibleMonth(
+      new Date(
+        visibleYear,
+        visibleMonthIndex - 1,
+        1
+      )
+    )
+    setSelectedDate(1)
+
+  }
+
+  const goToNextMonth = () => {
+
+    setVisibleMonth(
+      new Date(
+        visibleYear,
+        visibleMonthIndex + 1,
+        1
+      )
+    )
+    setSelectedDate(1)
+
+  }
+
+  const goToToday = () => {
+
+    const currentDate = new Date()
+
+    setVisibleMonth(
+      new Date(
+        currentDate.getFullYear(),
+        currentDate.getMonth(),
+        1
+      )
+    )
+    setSelectedDate(currentDate.getDate())
+
+  }
 
   useEffect(() => {
 
@@ -112,7 +215,7 @@ function CoordinatorDashboard() {
 
       try {
         const response = await api.get(
-          `/events/availability?date=2026-04-${String(selectedDate).padStart(2, '0')}`
+          `/events/availability?date=${selectedDateValue}`
         )
 
         setAvailability(response.data)
@@ -125,7 +228,7 @@ function CoordinatorDashboard() {
 
     fetchAvailability()
 
-  }, [selectedDate, myEvents])
+  }, [selectedDateValue, myEvents])
 
   const handleFormChange = (e) => {
 
@@ -151,7 +254,7 @@ function CoordinatorDashboard() {
           description: formData.description,
           category: formData.category,
           venue: selectedVenue,
-          date: `2026-04-${String(selectedDate).padStart(2, '0')}`,
+          date: selectedDateValue,
           start_time: formData.start_time,
           end_time: formData.end_time,
           organizer: formData.organizer,
@@ -212,11 +315,6 @@ function CoordinatorDashboard() {
 
   }
 
-  const days =
-    Array.from(
-      { length: 30 },
-      (_, i) => i + 1
-    )
   const selectedVenueAvailability =
     availability.find(
       item =>
@@ -237,7 +335,18 @@ function CoordinatorDashboard() {
 
   const getDayLoad = (day) => {
 
-    const date = `2026-04-${String(day).padStart(2, '0')}`
+    const dateObject =
+      new Date(
+        visibleYear,
+        visibleMonthIndex,
+        day
+      )
+
+    const date = `${dateObject.getFullYear()}-${String(
+      dateObject.getMonth() + 1
+    ).padStart(2, '0')}-${String(
+      dateObject.getDate()
+    ).padStart(2, '0')}`
     const dayEvents =
       myEvents.filter(
         event =>
@@ -418,9 +527,55 @@ function CoordinatorDashboard() {
                   className="calendar-card"
                 >
 
-                  <h2>
-                    April 2026
-                  </h2>
+                  <div className="calendar-month-header">
+
+                    <button
+                      type="button"
+                      onClick={goToPreviousMonth}
+                    >
+                      ‹
+                    </button>
+
+                    <div>
+
+                      <h2>
+                        {monthLabel}
+                      </h2>
+
+                      <span>
+                        Selected:
+                        {' '}
+                        {selectedDateObject.toLocaleDateString(
+                          'en-US',
+                          {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric'
+                          }
+                        )}
+                      </span>
+
+                    </div>
+
+                    <div className="calendar-month-actions">
+
+                      <button
+                        type="button"
+                        onClick={goToToday}
+                      >
+                        Today
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={goToNextMonth}
+                      >
+                        ›
+                      </button>
+
+                    </div>
+
+                  </div>
 
                   <div
                     className="weekdays"
@@ -443,18 +598,41 @@ function CoordinatorDashboard() {
                     {days.map(day => {
 
                       const load = getDayLoad(day)
+                      const isToday =
+                        visibleYear === today.getFullYear() &&
+                        visibleMonthIndex === today.getMonth() &&
+                        day === today.getDate()
+                      const isSelected =
+                        day === selectedDate
 
                       return (
 
-                        <motion.div
+                        <React.Fragment key={day}>
 
-                          key={day}
+                        {day === 1 &&
+                          Array.from(
+                            {
+                              length: firstWeekdayOffset
+                            },
+                            (_, index) => (
+                              <div
+                                key={`blank-${index}`}
+                                className="calendar-empty"
+                              />
+                            )
+                          )}
+
+                        <motion.div
 
                           whileHover={{
                             scale: 1.05
                           }}
 
-                          className="calendar-day"
+                          className={`calendar-day ${
+                            isToday ? 'today' : ''
+                          } ${
+                            isSelected ? 'selected' : ''
+                          }`}
                           style={{
                             background:
                               load > 0
@@ -472,6 +650,8 @@ function CoordinatorDashboard() {
                           {day}
 
                         </motion.div>
+
+                        </React.Fragment>
 
                       )
 
@@ -510,7 +690,14 @@ function CoordinatorDashboard() {
                   </h3>
 
                   <h2>
-                    April {selectedDate}
+                    {selectedDateObject.toLocaleDateString(
+                      'en-US',
+                      {
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric'
+                      }
+                    )}
                   </h2>
 
                   <div className="venue-availability-list">
