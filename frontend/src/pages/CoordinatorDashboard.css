@@ -206,16 +206,16 @@
 }
 
 .calendar-month-header button {
-  min-width: 44px;
-  height: 44px;
+  min-width: 38px;
+  height: 38px;
 
   border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 12px;
+  border-radius: 10px;
 
   background: #111;
   color: white;
 
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 800;
 
   cursor: pointer;
@@ -228,6 +228,18 @@
 .calendar-month-actions {
   display: flex;
   gap: 10px;
+}
+
+.calendar-month-actions button:first-child {
+  min-width: auto;
+  height: 32px;
+
+  padding: 0 12px;
+
+  border-radius: 999px;
+
+  font-size: 12px;
+  letter-spacing: 0.02em;
 }
 
 /* =========================
@@ -268,13 +280,15 @@
 }
 
 .calendar-day {
-  aspect-ratio: 1;
+  width: 54px;
+  height: 54px;
 
   border-radius: 14px;
 
   display: flex;
   justify-content: center;
   align-items: center;
+  justify-self: center;
 
   cursor: pointer;
 
@@ -293,17 +307,17 @@
 
 .calendar-day.today {
   box-shadow:
-    0 0 0 2px rgba(255,255,255,0.3),
-    0 0 24px rgba(255,255,255,0.08);
+    inset 0 0 0 1px rgba(255,255,255,0.4),
+    0 0 16px rgba(255,255,255,0.06);
 }
 
 .calendar-day.selected {
   border:
-    1px solid rgba(255,49,49,0.9);
+    1px solid rgba(255,49,49,0.85);
 
   box-shadow:
-    0 0 0 2px rgba(255,49,49,0.2),
-    0 0 24px rgba(255,49,49,0.24);
+    0 0 0 1px rgba(255,49,49,0.22),
+    0 0 18px rgba(255,49,49,0.2);
 }
 
 /* AVAILABLE */
