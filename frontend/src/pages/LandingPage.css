@@ -258,6 +258,36 @@ body {
   background: #050505;
 }
 
+.landing-content::before {
+  content: '';
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 0;
+
+  width: min(72vw, 900px);
+  height: min(44vw, 520px);
+
+  transform: translate(-50%, -50%);
+
+  background-image: url('/campus-outline.svg');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+
+  opacity: 0.13;
+  filter:
+    drop-shadow(0 0 24px rgba(214,168,74,0.15));
+
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+.landing-content > * {
+  position: relative;
+  z-index: 1;
+}
+
 /* NAVIGATION */
 
 .landing-nav {

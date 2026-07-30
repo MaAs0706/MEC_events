@@ -1,0 +1,49 @@
+<svg width="900" height="520" viewBox="0 0 900 520" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g opacity="0.62" stroke="#D6A84A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M95 384H812" opacity="0.45"/>
+    <path d="M168 371V166L251 116H651L731 169V371" />
+    <path d="M251 116L295 72H604L651 116" />
+    <path d="M296 72H604L640 38H330L296 72Z" />
+    <path d="M168 166H731" />
+    <path d="M188 218H711" />
+    <path d="M203 272H696" />
+    <path d="M227 326H672" />
+    <path d="M252 166V371" opacity="0.55"/>
+    <path d="M648 166V371" opacity="0.55"/>
+    <path d="M315 128H585" />
+    <path d="M332 147H568" opacity="0.55"/>
+    <path d="M241 189H659" opacity="0.5"/>
+    <path d="M261 240H639" opacity="0.5"/>
+    <path d="M286 294H614" opacity="0.5"/>
+    <path d="M336 190V215" opacity="0.45"/>
+    <path d="M392 190V215" opacity="0.45"/>
+    <path d="M448 190V215" opacity="0.45"/>
+    <path d="M504 190V215" opacity="0.45"/>
+    <path d="M560 190V215" opacity="0.45"/>
+    <path d="M322 241V269" opacity="0.45"/>
+    <path d="M379 241V269" opacity="0.45"/>
+    <path d="M436 241V269" opacity="0.45"/>
+    <path d="M493 241V269" opacity="0.45"/>
+    <path d="M550 241V269" opacity="0.45"/>
+    <path d="M607 241V269" opacity="0.45"/>
+    <path d="M349 295V323" opacity="0.45"/>
+    <path d="M410 295V323" opacity="0.45"/>
+    <path d="M471 295V323" opacity="0.45"/>
+    <path d="M532 295V323" opacity="0.45"/>
+    <path d="M593 295V323" opacity="0.45"/>
+    <path d="M314 371V342C314 324 329 309 347 309H553C571 309 586 324 586 342V371" />
+    <path d="M371 371V333" opacity="0.7"/>
+    <path d="M450 371V333" opacity="0.7"/>
+    <path d="M529 371V333" opacity="0.7"/>
+    <path d="M179 170L93 217V371" opacity="0.65"/>
+    <path d="M721 171L807 218V371" opacity="0.65"/>
+    <path d="M93 217H166" opacity="0.45"/>
+    <path d="M734 218H807" opacity="0.45"/>
+    <path d="M116 262H166" opacity="0.45"/>
+    <path d="M734 262H784" opacity="0.45"/>
+    <path d="M126 306H166" opacity="0.45"/>
+    <path d="M734 306H774" opacity="0.45"/>
+    <path d="M212 384C238 402 274 402 300 384" opacity="0.36"/>
+    <path d="M600 384C626 402 662 402 688 384" opacity="0.36"/>
+  </g>
+</svg>

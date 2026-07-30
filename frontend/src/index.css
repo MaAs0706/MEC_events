@@ -69,6 +69,40 @@ button {
   font-family: inherit;
 }
 
+.campus-watermark {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+}
+
+.campus-watermark::before {
+  content: '';
+  position: fixed;
+  right: clamp(-180px, -8vw, -70px);
+  bottom: clamp(-100px, -5vw, -40px);
+  z-index: 50;
+
+  width: min(78vw, 940px);
+  height: min(48vw, 540px);
+
+  background-image: url('/campus-outline.svg');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+
+  opacity: 0.16;
+  filter:
+    drop-shadow(0 0 24px rgba(214,168,74,0.16));
+
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+.campus-watermark > * {
+  position: relative;
+  z-index: 1;
+}
+
 /* Form Elements */
 input, textarea, select {
   font-family: inherit;
