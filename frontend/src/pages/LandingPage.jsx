@@ -238,21 +238,35 @@ useEffect(() => {
   }
 
 }, [gateRemoved, gateOpen])
-  const featuredEvents =
+
+const startOfToday = new Date()
+startOfToday.setHours(0, 0, 0, 0)
+
+const upcomingApprovedEvents =
   events
     .filter(
-      event =>
-        event.status ===
-        'approved'
+      event => {
+        const eventDate = new Date(event.date)
+        eventDate.setHours(0, 0, 0, 0)
+
+        return (
+          event.status === 'approved' &&
+          eventDate >= startOfToday
+        )
+      }
     )
+    .sort(
+      (firstEvent, secondEvent) =>
+        new Date(firstEvent.date) -
+        new Date(secondEvent.date)
+    )
+
+  const featuredEvents =
+  upcomingApprovedEvents
     .slice(0, 3)
 
     const liveEvents =
-  events
-    .filter(
-      event =>
-        event.status === 'approved'
-    )
+  upcomingApprovedEvents
     .slice(0, 4)
 
     const totalEvents = events.length
