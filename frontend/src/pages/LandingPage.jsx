@@ -12,7 +12,12 @@ function LandingPage() {
   const [events, setEvents] = useState([])
  const [loading, setLoading] = useState(true)
   const [gateOpen, setGateOpen] = useState(false)
-  const [gateRemoved, setGateRemoved] = useState(false)
+  const [gateRemoved, setGateRemoved] = useState(
+    () =>
+      sessionStorage.getItem(
+        'nexusGateOpened'
+      ) === 'true'
+  )
   const gateControls = useAnimation()
   const leftDoorControls = useAnimation()
   const rightDoorControls = useAnimation()
@@ -66,7 +71,6 @@ function LandingPage() {
       contentControls.start({
         opacity: 1,
         scale: 1,
-        filter: 'blur(0px)',
         transition: {
           duration: 1,
           ease: 'easeOut',
@@ -84,10 +88,18 @@ function LandingPage() {
     })
 
     setGateRemoved(true)
+    sessionStorage.setItem(
+      'nexusGateOpened',
+      'true'
+    )
 
   }
 
   const resetGate = () => {
+
+    sessionStorage.removeItem(
+      'nexusGateOpened'
+    )
 
     window.scrollTo({
       top: 0,
@@ -121,8 +133,7 @@ function LandingPage() {
 
     contentControls.set({
       opacity: 0.2,
-      scale: 0.985,
-      filter: 'blur(10px)'
+      scale: 0.985
     })
 
     setGateOpen(false)
@@ -164,6 +175,10 @@ useEffect(() => {
 
   if (gateRemoved) {
     document.body.style.overflow = ''
+    contentControls.set({
+      opacity: 1,
+      scale: 1
+    })
     return
   }
 
@@ -343,11 +358,17 @@ const totalRegistrations =
       <motion.div
         className="landing-content"
         animate={contentControls}
-        initial={{
-          opacity: 0.2,
-          scale: 0.985,
-          filter: 'blur(10px)'
-        }}
+        initial={
+          gateRemoved
+            ? {
+              opacity: 1,
+              scale: 1
+            }
+            : {
+              opacity: 0.2,
+              scale: 0.985
+            }
+        }
       >
 
       {/* NAVIGATION */}
