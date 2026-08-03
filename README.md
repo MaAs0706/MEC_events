@@ -370,6 +370,98 @@ Before hosting NEXUS publicly or on a college server:
 
 ---
 
+## Contributing
+
+NEXUS is currently at `v0.0.1`, which means the core MVP works, but there are many useful areas where contributors can help.
+
+If you want to contribute:
+
+1. Fork the repository.
+2. Create a new branch.
+3. Set up the backend and frontend locally.
+4. Pick an open issue or propose a new one.
+5. Make a focused change.
+6. Test your change.
+7. Open a pull request with a clear description.
+
+Suggested branch names:
+
+```text
+feature/permission-letter
+feature/forgot-password
+fix/student-dashboard-filter
+docs/setup-guide
+```
+
+### Good first contribution areas
+
+These are suitable for new contributors:
+
+- Improve README setup instructions.
+- Add screenshots/GIFs of the app.
+- Improve empty states in dashboards.
+- Improve mobile responsiveness.
+- Clean up repeated CSS.
+- Improve form validation messages.
+- Add better loading states.
+- Add frontend error messages instead of generic alerts.
+- Improve accessibility, labels, focus states, and keyboard navigation.
+
+### Feature contribution areas
+
+These are larger features contributors can work on:
+
+- Permission letter PDF generation with ReportLab.
+- Forgot password flow with email reset links.
+- Cloudinary signed image uploads.
+- Notification system.
+- Alembic database migrations.
+- Production `.env` configuration cleanup.
+- Supabase/PostgreSQL deployment guide.
+- Better admin analytics.
+- Coordinator resubmission flow after rejection.
+- Student cancellation/unregister flow.
+
+### Contribution guidelines
+
+Please keep pull requests focused. A good pull request should solve one clear problem.
+
+Before opening a PR:
+
+- Run the frontend build:
+
+```bash
+cd frontend
+npm run build
+```
+
+- Compile the backend:
+
+```bash
+cd backend
+python3 -m compileall app
+```
+
+- Mention what you changed.
+- Mention how you tested it.
+- Add screenshots for UI changes when possible.
+
+### Issue labels we recommend
+
+```text
+good first issue
+frontend
+backend
+documentation
+bug
+feature
+security
+deployment
+help wanted
+```
+
+---
+
 ## Possible deployment options
 
 ### Simple cloud deployment
@@ -403,4 +495,3 @@ Nginx
 - Physical or cryptographic digital signatures.
 
 For v1 permission letters, approver name and date are enough.
-
