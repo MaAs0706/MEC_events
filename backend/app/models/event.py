@@ -17,8 +17,9 @@ class Event(Base):
         index=True
     )
 
+
     title = Column(String)
-    
+
 
     description = Column(Text)
 
