@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from app.database import SessionLocal
 from fastapi import Depends
 from fastapi import HTTPException
+from fastapi.security import HTTPAuthorizationCredentials
 from fastapi.security import HTTPBearer
 from jose import jwt
 from jose import JWTError
@@ -13,6 +14,7 @@ from sqlalchemy.orm import Session
 
 
 security = HTTPBearer()
+optional_security = HTTPBearer(auto_error=False)
 
 load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -75,6 +77,49 @@ def get_current_user(
         raise credentials_exception
 
     return user                
+
+
+def get_optional_current_user(
+    token: HTTPAuthorizationCredentials | None = Depends(optional_security),
+    db: Session = Depends(get_db)
+):
+    """Return the signed-in user when a valid bearer token is supplied.
+
+    Approved event pages can still be viewed from the public landing page, so
+    this dependency deliberately accepts requests without a token. A malformed
+    token is rejected rather than treated as an anonymous request.
+    """
+    if token is None:
+        return None
+
+    credentials_exception = HTTPException(
+        status_code=401,
+        detail="Invalid token"
+    )
+
+    try:
+        payload = jwt.decode(
+            token.credentials,
+            SECRET_KEY,
+            algorithms=[ALGORITHM]
+        )
+        user_id = payload.get("user_id")
+
+        if user_id is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
+    user = (
+        db.query(User)
+        .filter(User.id == user_id)
+        .first()
+    )
+
+    if not user:
+        raise credentials_exception
+
+    return user
 
 def require_role(allowed_roles: list[str]):
 

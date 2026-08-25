@@ -11,7 +11,7 @@ from app.models.venue import Venue
 from app.schemas.event import EventUpdate
 from app.schemas.event import EventReject
 
-from app.dependencies import get_db, require_role
+from app.dependencies import get_db, get_optional_current_user, require_role
 from app.schemas.event import EventCreate
 router = APIRouter()
 
@@ -202,6 +202,9 @@ def get_manage_events(
 @router.get("/events/availability")
 def get_venue_availability(
     date: str,
+    current_user: User = Depends(
+        require_role(["coordinator", "admin"])
+    ),
     db: Session = Depends(get_db)
 ):
     bookings = (
@@ -242,13 +245,48 @@ def get_venue_availability(
 
 @router.get("/events/{event_id}")    
 def get_event(
-    event_id:int ,
-    db:Session = Depends(get_db)
-
+    event_id: int,
+    current_user: User | None = Depends(
+        get_optional_current_user
+    ),
+    db: Session = Depends(get_db)
 ):
-    event = db.query(Event).filter(Event.id == event_id).first()
+    event = (
+        db.query(Event)
+        .filter(Event.id == event_id)
+        .first()
+    )
+
     if not event:
-        raise HTTPException(status_code=404, detail="Event not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Event not found"
+        )
+
+    # Approved events are intentionally visible from the public landing page.
+    if event.status == "approved":
+        return event
+
+    # Pending and rejected requests are internal. A coordinator can only read
+    # their own request, while approvers and admins can review all requests.
+    can_view_internal_event = (
+        current_user is not None
+        and (
+            current_user.role in ["approver", "admin"]
+            or (
+                current_user.role == "coordinator"
+                and event.created_by == current_user.id
+            )
+        )
+    )
+
+    if not can_view_internal_event:
+        # Returning 404 avoids confirming that a hidden event ID exists.
+        raise HTTPException(
+            status_code=404,
+            detail="Event not found"
+        )
+
     return event
 
 @router.put("/events/{event_id}")
