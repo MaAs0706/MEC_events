@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.dependencies import get_db
 from app.dependencies import require_role
+from app.models.event import Event
 from app.models.venue import Venue
 from app.schemas.venue import VenueCreate
 from app.schemas.venue import VenueUpdate
@@ -73,6 +74,37 @@ def update_venue(
             detail="Venue not found"
         )
 
+    events_using_venue = (
+        db.query(Event)
+        .filter(Event.venue == existing_venue.name)
+        .all()
+    )
+
+    if venue.name != existing_venue.name and events_using_venue:
+        raise HTTPException(
+            status_code=400,
+            detail="A venue used by events cannot be renamed"
+        )
+
+    duplicate_venue = (
+        db.query(Venue)
+        .filter(Venue.name == venue.name)
+        .filter(Venue.id != venue_id)
+        .first()
+    )
+
+    if duplicate_venue:
+        raise HTTPException(
+            status_code=400,
+            detail="Venue already exists"
+        )
+
+    if any(event.capacity > venue.capacity for event in events_using_venue):
+        raise HTTPException(
+            status_code=400,
+            detail="Venue capacity cannot be lower than an event using it"
+        )
+
     existing_venue.name = venue.name
     existing_venue.capacity = venue.capacity
 
@@ -100,6 +132,18 @@ def delete_venue(
         raise HTTPException(
             status_code=404,
             detail="Venue not found"
+        )
+
+    event_uses_venue = (
+        db.query(Event)
+        .filter(Event.venue == existing_venue.name)
+        .first()
+    )
+
+    if event_uses_venue:
+        raise HTTPException(
+            status_code=400,
+            detail="This venue is used by events and cannot be removed"
         )
 
     db.delete(existing_venue)

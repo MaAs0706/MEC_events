@@ -276,8 +276,11 @@ function AdminDashboard() {
         )
       )
     }
-    catch {
-      setVenueError('Unable to delete venue')
+    catch (error) {
+      setVenueError(
+        error.response?.data?.detail ||
+        'Unable to delete venue'
+      )
     }
 
   }
@@ -303,8 +306,11 @@ function AdminDashboard() {
         )
       )
     }
-    catch {
-      setVenueError('Unable to update user role')
+    catch (error) {
+      setVenueError(
+        error.response?.data?.detail ||
+        'Unable to update user role'
+      )
     }
 
   }
@@ -320,8 +326,11 @@ function AdminDashboard() {
         )
       )
     }
-    catch {
-      setVenueError('Unable to delete user')
+    catch (error) {
+      setVenueError(
+        error.response?.data?.detail ||
+        'Unable to delete user'
+      )
     }
 
   }

@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 
 from app.dependencies import get_db
 from app.dependencies import require_role
+from app.models.event import Event
+from app.models.registration import Registration
 from app.models.user import User
 from app.schemas.user import UserCreate
 from app.schemas.user import UserRoleUpdate
@@ -103,6 +105,15 @@ def update_user_role(
             detail="Invalid role"
         )
 
+    if (
+        user_id == current_user.id
+        and role_update.role != current_user.role
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="You cannot change your own role"
+        )
+
     user = (
         db.query(User)
         .filter(User.id == user_id)
@@ -113,6 +124,16 @@ def update_user_role(
         raise HTTPException(
             status_code=404,
             detail="User not found"
+        )
+
+    if (
+        user.role == "admin"
+        and role_update.role != "admin"
+        and db.query(User).filter(User.role == "admin").count() == 1
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="At least one admin account must remain"
         )
 
     user.role = role_update.role
@@ -152,6 +173,31 @@ def delete_user(
         raise HTTPException(
             status_code=404,
             detail="User not found"
+        )
+
+    has_event_history = (
+        db.query(Event)
+        .filter(
+            (Event.created_by == user.id)
+            | (Event.reviewed_by == user.id)
+        )
+        .first()
+        is not None
+    )
+    has_registration_history = (
+        db.query(Registration)
+        .filter(Registration.student_id == user.id)
+        .first()
+        is not None
+    )
+
+    if has_event_history or has_registration_history:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Users with event or registration history cannot be removed. "
+                "Archive or deactivate the account instead."
+            )
         )
 
     db.delete(user)

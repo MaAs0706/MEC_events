@@ -66,6 +66,43 @@ def validate_event_time(start_time: str, end_time: str):
         )
 
 
+def validate_event_capacity(
+    db: Session,
+    venue_name: str,
+    capacity: int,
+    attendees: int = 0
+):
+    if capacity < 1:
+        raise HTTPException(
+            status_code=400,
+            detail="Event capacity must be at least 1"
+        )
+
+    venue = (
+        db.query(Venue)
+        .filter(Venue.name == venue_name)
+        .first()
+    )
+
+    if not venue:
+        raise HTTPException(
+            status_code=400,
+            detail="Selected venue does not exist"
+        )
+
+    if capacity > venue.capacity:
+        raise HTTPException(
+            status_code=400,
+            detail="Event capacity exceeds venue capacity"
+        )
+
+    if capacity < attendees:
+        raise HTTPException(
+            status_code=400,
+            detail="Event capacity cannot be lower than current registrations"
+        )
+
+
 def get_booking_load(bookings: list[Event]):
     booked_minutes = 0
 
@@ -119,17 +156,11 @@ def create_event(
         event.end_time
     )
 
-    venue = (
-        db.query(Venue)
-        .filter(Venue.name == event.venue)
-        .first()
+    validate_event_capacity(
+        db,
+        event.venue,
+        event.capacity
     )
-
-    if venue and event.capacity > venue.capacity:
-        raise HTTPException(
-            status_code=400,
-            detail="Event capacity exceeds venue capacity"
-        )
 
     if has_time_conflict(
         db,
@@ -325,6 +356,13 @@ def update_event(
         updated_event.end_time
     )
 
+    validate_event_capacity(
+        db,
+        updated_event.venue,
+        updated_event.capacity,
+        event.attendees
+    )
+
     if has_time_conflict(
         db,
         updated_event.venue,
@@ -347,7 +385,6 @@ def update_event(
     event.end_time = updated_event.end_time
     event.status = "pending"
     event.organizer = updated_event.organizer
-    event.attendees = 0
     event.capacity = updated_event.capacity
     event.image = updated_event.image
 
@@ -389,7 +426,8 @@ def update_event(
         )
 
     update_data = updates.model_dump(
-        exclude_unset=True
+        exclude_unset=True,
+        exclude_none=True
     )
     update_data.pop("status",None)
     update_data.pop("attendees",None)
@@ -398,10 +436,18 @@ def update_event(
     next_date = update_data.get("date", event.date)
     next_start_time = update_data.get("start_time", event.start_time)
     next_end_time = update_data.get("end_time", event.end_time)
+    next_capacity = update_data.get("capacity", event.capacity)
 
     validate_event_time(
         next_start_time,
         next_end_time
+    )
+
+    validate_event_capacity(
+        db,
+        next_venue,
+        next_capacity,
+        event.attendees
     )
 
     if has_time_conflict(
@@ -512,6 +558,7 @@ def register_for_event(
     event = (
         db.query(Event)
         .filter(Event.id == event_id)
+        .with_for_update()
         .first()
     )
 
@@ -527,12 +574,6 @@ def register_for_event(
             detail="Only approved events can be registered for"
         )
 
-    if event.attendees >= event.capacity:
-        raise HTTPException(
-            status_code=400,
-            detail="Event capacity is full"
-        )
-
     existing_registration = (
         db.query(Registration)
         .filter(Registration.event_id == event_id)
@@ -544,6 +585,12 @@ def register_for_event(
         raise HTTPException(
             status_code=400,
             detail="You are already registered for this event"
+        )
+
+    if event.attendees >= event.capacity:
+        raise HTTPException(
+            status_code=400,
+            detail="Event capacity is full"
         )
 
     registration = Registration(
