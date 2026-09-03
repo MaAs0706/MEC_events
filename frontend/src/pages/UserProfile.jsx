@@ -35,7 +35,8 @@ function UserProfile() {
       joinDate: '',
       bio: '',
       department: '',
-      semester: ''
+      semester: '',
+      className: ''
     })
 
   const [myRsvps, setMyRsvps] =
@@ -59,6 +60,49 @@ function UserProfile() {
 
   }
 
+  const [saveMessage, setSaveMessage] =
+    useState('')
+
+  const handleSaveProfile = async (e) => {
+
+    e.preventDefault()
+    setSaveMessage('')
+
+    try {
+      const response = await api.patch(
+        '/auth/me',
+        {
+          full_name: userData.name,
+          email: userData.email,
+          phone: userData.phone,
+          class_name: userData.className
+        }
+      )
+
+      localStorage.setItem(
+        'userName',
+        response.data.name
+      )
+
+      setUserData((currentData) => ({
+        ...currentData,
+        name: response.data.name,
+        email: response.data.email,
+        phone:
+          response.data.phone || '',
+        className:
+          response.data.class_name || ''
+      }))
+
+      setEditMode(false)
+      setSaveMessage('Profile updated')
+    }
+    catch {
+      setSaveMessage('Unable to save profile')
+    }
+
+  }
+
   useEffect(() => {
 
     const fetchProfile = async () => {
@@ -76,7 +120,11 @@ function UserProfile() {
           ...currentData,
           name: profileResponse.data.name,
           email: profileResponse.data.email,
-          role: profileResponse.data.role
+          role: profileResponse.data.role,
+          className:
+            profileResponse.data.class_name || '',
+          phone:
+            profileResponse.data.phone || ''
         }))
 
         setMyRsvps(registrationsResponse.data)
@@ -308,7 +356,10 @@ function UserProfile() {
 
               {editMode ? (
 
-                <form className="profile-form">
+                <form
+                  className="profile-form"
+                  onSubmit={handleSaveProfile}
+                >
 
                   <div className="form-group">
 
@@ -343,6 +394,26 @@ function UserProfile() {
                         setUserData({
                           ...userData,
                           email:
+                            e.target.value
+                        })
+                      }
+                    />
+
+                  </div>
+
+                  <div className="form-group">
+
+                    <label>
+                      Class
+                    </label>
+
+                    <input
+                      type="text"
+                      value={userData.className}
+                      onChange={(e) =>
+                        setUserData({
+                          ...userData,
+                          className:
                             e.target.value
                         })
                       }
@@ -430,7 +501,16 @@ function UserProfile() {
 
                   </div>
 
-                  <button className="save-btn">
+                  {saveMessage && (
+                    <p className="form-error">
+                      {saveMessage}
+                    </p>
+                  )}
+
+                  <button
+                    type="submit"
+                    className="save-btn"
+                  >
                     Save Changes
                   </button>
 
@@ -472,6 +552,30 @@ function UserProfile() {
 
                     <span className="info-value">
                       {userData.email}
+                    </span>
+
+                  </div>
+
+                  <div className="info-item">
+
+                    <span className="info-label">
+                      Class
+                    </span>
+
+                    <span className="info-value">
+                      {userData.className || '—'}
+                    </span>
+
+                  </div>
+
+                  <div className="info-item">
+
+                    <span className="info-label">
+                      Phone
+                    </span>
+
+                    <span className="info-value">
+                      {userData.phone || '—'}
                     </span>
 
                   </div>

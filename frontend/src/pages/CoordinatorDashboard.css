@@ -709,6 +709,85 @@
   cursor: pointer;
 }
 
+.edit-event-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-top: 14px;
+  padding: 10px 14px;
+
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 10px;
+
+  background: transparent;
+  color: white;
+
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* EDIT FORM */
+
+.event-edit-form {
+  margin-bottom: 28px;
+  padding: 24px;
+
+  background: #101010;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+}
+
+.edit-form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  margin-bottom: 18px;
+}
+
+.edit-form-header h2 {
+  margin: 0;
+}
+
+.close-edit-btn {
+  padding: 8px 14px;
+
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 10px;
+
+  background: transparent;
+  color: rgba(255,255,255,0.7);
+
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.event-edit-form input,
+.event-edit-form textarea,
+.event-edit-form select {
+  width: 100%;
+  padding: 14px 16px;
+
+  background: #050505;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+
+  color: white;
+}
+
+.event-edit-form select {
+  appearance: none;
+}
+
+.event-edit-form textarea {
+  min-height: 120px;
+  margin: 14px 0;
+  resize: vertical;
+}
+
 .attendees-list {
   display: grid;
   gap: 10px;

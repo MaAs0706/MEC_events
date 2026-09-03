@@ -316,14 +316,26 @@ Alembic was added to replace unsafe runtime schema mutation.
 - `backend/app/main.py` no longer runs `Base.metadata.create_all()` or startup `ALTER TABLE` statements.
 - Do not add future schema changes in `backend/migrations/001_dev_schema_updates.sql`; write a new Alembic revision instead.
 
-### Current Supabase State (as of 2026-09-01)
+### Current Supabase State (as of 2026-09-02)
 
 - A Supabase project has been created.
-- A direct connection URL was configured and a basic `SELECT 1` test was reported as successful initially.
-- Alembic later could not resolve the direct database hostname from the current network.
-- The recommended next action is to use the Supabase **Session Pooler** connection URL (normally port 5432), update local `DATABASE_URL`, URL-encode special characters in the database password, and run `SELECT 1` again.
-- The initial NEXUS Alembic migration has **not yet been successfully applied to Supabase**. Do not assume Supabase currently has NEXUS tables.
-- A connection URL appeared in a local error trace during setup. Rotate the Supabase database password, update local `.env`, and keep the new connection string private.
+- The direct connection hostname resolves from the current network and `SELECT 1` succeeds.
+- The initial NEXUS Alembic migration **has been successfully applied**: revision `20260831_0001` is current (`alembic_version` table exists), and `users`, `venues`, `events`, and `registrations` all exist.
+- The 4 default venues (Main Auditorium 500, Seminar Hall 120, Tech Lab 80, Sports Complex 800) were seeded by the migration.
+- Three users were copied from the local development database: Aswanth (student), Admin (admin), Aldrin (coordinator). Password hashes transferred intact.
+- The local `events` table contained only dirty test rows (malformed dates like `27/07/2026`, placeholder `string` values, an invalid `Accept` status, empty event times). These were **not imported**; Supabase currently has no events or registrations. Create fresh events through the app for testing.
+- The Supabase database password was rotated after appearing in a local error trace and in chat/terminal output. Keep the connection string private; do not print `DATABASE_URL` in commands — read it via python-dotenv instead.
+
+### Row-Level Security (RLS) Decision — No RLS for now
+
+RLS is intentionally **disabled**. The FastAPI backend connects as the `postgres` superuser (table owner), which bypasses RLS, so enabling it would have no enforcement effect today while adding zero-policy lockout risk if Supabase `anon`/`authenticated` keys are ever used. Application-layer authorization (`require_role`, event privacy 404s) is the security boundary.
+
+Enable RLS only as part of a future change where one of these is true:
+
+- The backend connects with a dedicated non-owner role (`SET ROLE`/`rls_app`).
+- The frontend starts talking to Supabase via the `anon`/`authenticated` keys (PostgREST), which makes RLS mandatory.
+
+Policies must be defined **before** RLS is enabled, and this decision should be revisited alongside any transition to Supabase Auth.
 
 ### Migration Commands
 
@@ -341,16 +353,14 @@ Expected result after a successful migration:
 - Revision `20260831_0001` is current.
 - `users`, `venues`, `events`, and `registrations` exist.
 
-### Local Data Migration (Not Yet Done)
+### Local Data Migration (DONE, selective)
 
-If existing local data needs to move to Supabase:
+Completed on 2026-09-02:
 
-1. Keep the local database untouched until Supabase is verified.
-2. Back up the local database with `pg_dump`.
-3. Apply the schema migration to the empty Supabase project.
-4. Import data carefully, preserving IDs and relationships.
-5. Verify users, password hashes, venues, events, and registrations.
-6. Test the full application against Supabase.
+1. Local database was backed up with `pg_dump` (`nexus.dump`).
+2. Schema migration (`20260831_0001`) was applied to the empty Supabase project.
+3. Imported selectively with IDs preserved: 3 users only (Aswanth/student, Admin/admin, Aldrin/coordinator). Venues already existed from the migration seed.
+4. The 5 local events and 1 registration were skipped because they contained dirty test data (see Supabase State above).
 
 Do not copy database credentials into the frontend or commit `.env` files.
 

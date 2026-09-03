@@ -142,6 +142,38 @@ def get_venues(db: Session):
     return VENUES
 
 
+def serialize_event(event: Event, db: Session):
+    reviewer = None
+    if event.reviewed_by is not None:
+        reviewer = (
+            db.query(User)
+            .filter(User.id == event.reviewed_by)
+            .first()
+        )
+
+    return {
+        "id": event.id,
+        "title": event.title,
+        "description": event.description,
+        "category": event.category,
+        "venue": event.venue,
+        "date": event.date,
+        "start_time": event.start_time,
+        "end_time": event.end_time,
+        "status": event.status,
+        "rejection_reason": event.rejection_reason,
+        "reviewed_by": event.reviewed_by,
+        "reviewed_at": event.reviewed_at,
+        "organizer": event.organizer,
+        "created_by": event.created_by,
+        "attendees": event.attendees,
+        "capacity": event.capacity,
+        "image": event.image,
+        "approved_by_name": reviewer.full_name if reviewer else None,
+        "approved_by_role": reviewer.role if reviewer else None,
+    }
+
+
 @router.post("/events")
 def create_event(
     
@@ -296,7 +328,7 @@ def get_event(
 
     # Approved events are intentionally visible from the public landing page.
     if event.status == "approved":
-        return event
+        return serialize_event(event, db)
 
     # Pending and rejected requests are internal. A coordinator can only read
     # their own request, while approvers and admins can review all requests.
@@ -318,7 +350,7 @@ def get_event(
             detail="Event not found"
         )
 
-    return event
+    return serialize_event(event, db)
 
 @router.put("/events/{event_id}")
 def update_event(
@@ -671,7 +703,9 @@ def get_event_attendees(
         {
             "id": attendee.id,
             "full_name": attendee.full_name,
-            "email": attendee.email
+            "email": attendee.email,
+            "class_name": attendee.class_name,
+            "phone": attendee.phone
         }
         for attendee in attendees
     ]

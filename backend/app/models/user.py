@@ -36,3 +36,13 @@ class User(Base):
         nullable=False,
         default="student"
     )
+
+    class_name = Column(
+        String,
+        nullable=True
+    )
+
+    phone = Column(
+        String,
+        nullable=True
+    )

@@ -66,6 +66,23 @@ function CoordinatorDashboard() {
       end_time: ''
     })
 
+  const [editingEvent, setEditingEvent] =
+    useState(null)
+
+  const [editFormData, setEditFormData] =
+    useState({
+      title: '',
+      description: '',
+      category: '',
+      organizer: '',
+      capacity: '',
+      image: '',
+      start_time: '',
+      end_time: '',
+      date: '',
+      venue: ''
+    })
+
   const [venues, setVenues] =
     useState([
       'Main Auditorium',
@@ -294,18 +311,95 @@ function CoordinatorDashboard() {
 
   }
 
-  const toggleAttendees = async (eventId) => {
+  const startEditingEvent = (event) => {
 
-    if (attendeesByEvent[eventId]) {
-      setAttendeesByEvent((current) => ({
+    setEditFormData({
+      title: event.title || '',
+      description: event.description || '',
+      category: event.category || '',
+      organizer: event.organizer || '',
+      capacity: event.capacity != null
+        ? String(event.capacity)
+        : '',
+      image: event.image || '',
+      start_time: event.start_time || '',
+      end_time: event.end_time || '',
+      date: event.date || '',
+      venue: event.venue || ''
+    })
+
+    setEditingEvent(event)
+
+  }
+
+  const closeEditingEvent = () => {
+
+    setEditingEvent(null)
+    setEditFormData({})
+
+  }
+
+  const handleEditChange = (e) => {
+
+    const { name, value } = e.target
+
+    setEditFormData((prev) => ({
+      ...prev,
+      [name]: value
+    }))
+
+  }
+
+  const handleUpdateEvent = async (e) => {
+
+    e.preventDefault()
+    setFormError('')
+
+    try {
+      const response = await api.patch(
+        `/events/${editingEvent.id}`,
+        {
+          title: editFormData.title,
+          description: editFormData.description,
+          category: editFormData.category,
+          venue: editFormData.venue,
+          date: editFormData.date,
+          start_time: editFormData.start_time,
+          end_time: editFormData.end_time,
+          organizer: editFormData.organizer,
+          capacity: Number(editFormData.capacity),
+          image: editFormData.image
+        }
+      )
+
+      setMyEvents((currentEvents) =>
+        currentEvents.map((event) =>
+          event.id === response.data.id
+            ? response.data
+            : event
+        )
+      )
+
+      closeEditingEvent()
+      setFormError('')
+    }
+    catch {
+      setFormError('Unable to update event')
+    }
+
+  }
+
+  const toggleAttendees = async (eventId) => {
+      if (attendeesByEvent[eventId]) {
+        setAttendeesByEvent((current) => ({
         ...current,
         [eventId]: null
       }))
 
       return
-    }
+      }
 
-    try {
+      try {
       const response = await api.get(
         `/events/${eventId}/attendees`
       )
@@ -868,6 +962,7 @@ function CoordinatorDashboard() {
 
                     <input
                       name="image"
+                      type="url"
                       placeholder="Image URL"
                       value={formData.image}
                       onChange={handleFormChange}
@@ -936,6 +1031,143 @@ function CoordinatorDashboard() {
                 </p>
 
               </div>
+
+              {editingEvent && (
+
+                <form
+                  className="event-edit-form"
+                  onSubmit={handleUpdateEvent}
+                >
+
+                  <div className="edit-form-header">
+
+                    <h2>
+                      Edit Event
+                    </h2>
+
+                    <button
+                      type="button"
+                      className="close-edit-btn"
+                      onClick={closeEditingEvent}
+                    >
+                      Cancel
+                    </button>
+
+                  </div>
+
+                  {formError && (
+                    <p className="form-error">
+                      {formError}
+                    </p>
+                  )}
+
+                  <div className="form-grid">
+
+                    <input
+                      name="title"
+                      placeholder="Event title"
+                      value={editFormData.title}
+                      onChange={handleEditChange}
+                      required
+                    />
+
+                    <input
+                      name="category"
+                      placeholder="Category"
+                      value={editFormData.category}
+                      onChange={handleEditChange}
+                      required
+                    />
+
+                    <input
+                      name="organizer"
+                      placeholder="Club / organizer"
+                      value={editFormData.organizer}
+                      onChange={handleEditChange}
+                      required
+                    />
+
+                    <input
+                      name="capacity"
+                      type="number"
+                      min="1"
+                      placeholder="Capacity"
+                      value={editFormData.capacity}
+                      onChange={handleEditChange}
+                      required
+                    />
+
+                    <input
+                      name="date"
+                      type="date"
+                      value={editFormData.date}
+                      onChange={handleEditChange}
+                      required
+                    />
+
+                    <select
+                      name="venue"
+                      value={editFormData.venue}
+                      onChange={handleEditChange}
+                      required
+                    >
+
+                      {venues.map(venue => (
+                        <option
+                          key={venue}
+                          value={venue}
+                        >
+                          {venue}
+                        </option>
+                      ))}
+
+                    </select>
+
+                    <input
+                      name="image"
+                      type="url"
+                      placeholder="Image URL"
+                      value={editFormData.image}
+                      onChange={handleEditChange}
+                      required
+                    />
+
+                    <input
+                      name="start_time"
+                      type="time"
+                      value={editFormData.start_time}
+                      onChange={handleEditChange}
+                      required
+                    />
+
+                    <input
+                      name="end_time"
+                      type="time"
+                      value={editFormData.end_time}
+                      onChange={handleEditChange}
+                      required
+                    />
+
+                  </div>
+
+                  <textarea
+                    name="description"
+                    placeholder="Event description"
+                    value={editFormData.description}
+                    onChange={handleEditChange}
+                    required
+                  />
+
+                  <button
+                    className="btn-create"
+                    type="submit"
+                  >
+                    Save Changes
+                  </button>
+
+                </form>
+
+              )}
 
               <div className="event-cards">
 
@@ -1073,6 +1305,12 @@ function CoordinatorDashboard() {
                                 </strong>
 
                                 <span>
+                                  {attendee.class_name
+                                    ? `${attendee.class_name} • `
+                                    : ''}
+                                  {attendee.phone
+                                    ? `${attendee.phone} • `
+                                    : ''}
                                   {attendee.email}
                                 </span>
                               </div>
@@ -1094,6 +1332,16 @@ function CoordinatorDashboard() {
                     >
                       View details
                     </Link>
+
+                    <button
+                      type="button"
+                      className="edit-event-btn"
+                      onClick={() =>
+                        startEditingEvent(event)
+                      }
+                    >
+                      Edit event
+                    </button>
 
                     {/* Permission Letter */}
 

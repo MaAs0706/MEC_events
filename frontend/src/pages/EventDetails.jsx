@@ -164,6 +164,17 @@ function EventDetails() {
 
   }
 
+  const goBack = () => {
+
+    if (role) {
+      goBackToDashboard()
+    }
+    else {
+      navigate('/')
+    }
+
+  }
+
   if (loading) {
 
     return (
@@ -364,16 +375,12 @@ function EventDetails() {
           </p>
         )}
 
-        {['approver', 'admin'].includes(role) && (
-
-          <button
-            className="action-btn subtle"
-            onClick={goBackToDashboard}
-          >
-            Back to Dashboard
-          </button>
-
-        )}
+        <button
+          className="action-btn subtle"
+          onClick={goBack}
+        >
+          ← Back
+        </button>
 
       </div>
 
@@ -699,8 +706,9 @@ function EventDetails() {
     </span>
 
     <strong>
-      {event.approvedBy ||
-        'Pending Review'}
+      {event.status === 'approved' && event.approved_by_name
+        ? event.approved_by_name
+        : 'Not approved yet'}
     </strong>
 
   </div>

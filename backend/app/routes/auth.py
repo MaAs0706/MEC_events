@@ -12,6 +12,7 @@ from app.models.user import User
 from app.schemas.user import UserRegister
 from app.utils.security import hash_password
 from app.schemas.user import UserLogin
+from app.schemas.user import ProfileUpdate
 from app.utils.security import verify_password
 
 from app.dependencies import get_current_user
@@ -28,7 +29,53 @@ def get_me(
         "id": current_user.id,
         "name": current_user.full_name,
         "email": current_user.email,
-        "role": current_user.role
+        "role": current_user.role,
+        "class_name": current_user.class_name,
+        "phone": current_user.phone
+    }
+
+@router.patch("/me")
+def update_me(
+    updates: ProfileUpdate,
+    current_user: User = Depends(
+        get_current_user
+    ),
+    db: Session = Depends(get_db)
+):
+    update_data = updates.model_dump(
+        exclude_unset=True,
+        exclude_none=True
+    )
+
+    if "email" in update_data:
+        existing = (
+            db.query(User)
+            .filter(User.email == update_data["email"])
+            .filter(User.id != current_user.id)
+            .first()
+        )
+        if existing:
+            raise HTTPException(
+                status_code=400,
+                detail="Email already in use"
+            )
+
+    for key, value in update_data.items():
+        if key == "full_name":
+            setattr(current_user, "full_name", value)
+        else:
+            setattr(current_user, key, value)
+
+    db.commit()
+    db.refresh(current_user)
+
+    return {
+        "id": current_user.id,
+        "name": current_user.full_name,
+        "email": current_user.email,
+        "role": current_user.role,
+        "class_name": current_user.class_name,
+        "phone": current_user.phone
     }
 
 @router.get("/me/registrations")
@@ -115,7 +162,9 @@ def register_user(
         password_hash=hash_password(
             user.password
         ),
-        role="student"
+        role="student",
+        class_name=user.class_name,
+        phone=user.phone
     )
 
     db.add(new_user)

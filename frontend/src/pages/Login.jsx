@@ -16,7 +16,9 @@ function Login() {
       email: '',
       password: '',
       name: '',
-      role: 'student'
+      role: 'student',
+      className: '',
+      phone: ''
     })
 
   const [error, setError] =
@@ -135,7 +137,9 @@ function Login() {
           {
             full_name: formData.name,
             email: formData.email,
-            password: formData.password
+            password: formData.password,
+            class_name: formData.className,
+            phone: formData.phone
           }
         )
 
@@ -537,6 +541,42 @@ function Login() {
                     handleInputChange
                   }
                   required
+                />
+
+              </div>
+
+              <div className="form-group">
+
+                <label>
+                  Class
+                </label>
+
+                <input
+                  type="text"
+                  name="className"
+                  placeholder="e.g. CSE 3rd Year"
+                  value={formData.className}
+                  onChange={
+                    handleInputChange
+                  }
+                />
+
+              </div>
+
+              <div className="form-group">
+
+                <label>
+                  Phone
+                </label>
+
+                <input
+                  type="tel"
+                  name="phone"
+                  placeholder="Contact number"
+                  value={formData.phone}
+                  onChange={
+                    handleInputChange
+                  }
                 />
 
               </div>

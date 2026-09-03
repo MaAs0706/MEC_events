@@ -75,7 +75,9 @@ def create_user(
         password_hash=hash_password(
             user_create.password
         ),
-        role=user_create.role
+        role=user_create.role,
+        class_name=user_create.class_name,
+        phone=user_create.phone
     )
 
     db.add(new_user)
