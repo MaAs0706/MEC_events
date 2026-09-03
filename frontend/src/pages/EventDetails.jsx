@@ -178,10 +178,47 @@ function EventDetails() {
   if (loading) {
 
     return (
-      <div className="event-not-found">
-        <h1>
-          Loading Event...
-        </h1>
+      <div className="event-loader-page">
+
+        <Link to="/" className="state-back-link">
+          ← Back
+        </Link>
+
+        <div className="nexus-loader">
+
+          <div className="loader-mark">
+            N
+          </div>
+
+          <p>NEXUS</p>
+
+          <div className="loader-bar">
+            <span />
+          </div>
+
+          <small>Fetching event...</small>
+
+        </div>
+
+        <div className="event-skeleton" aria-hidden="true">
+
+          <div className="skeleton-hero" />
+
+          <div className="skeleton-body">
+
+            <div className="skeleton-line w40" />
+            <div className="skeleton-line w90" />
+            <div className="skeleton-line w75" />
+
+            <div className="skeleton-block" />
+
+            <div className="skeleton-line w50" />
+            <div className="skeleton-line w80" />
+
+          </div>
+
+        </div>
+
       </div>
     )
 
@@ -191,13 +228,17 @@ function EventDetails() {
 
     return (
 
-      <div className="event-not-found">
+      <div className="event-state-page">
+
+        <Link to="/" className="state-back-link">
+          ← Back
+        </Link>
 
         <h1>
           Event Not Found
         </h1>
 
-        <Link to="/">
+        <Link to="/" className="state-action-link">
           Go Home
         </Link>
 

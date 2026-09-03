@@ -265,22 +265,21 @@ body {
   top: 50%;
   z-index: 0;
 
-  width: min(72vw, 900px);
-  height: min(44vw, 520px);
+  width: min(74vw, 900px);
+  height: min(42vw, 440px);
 
   transform: translate(-50%, -50%);
 
-  background-image: url('/campus-outline.svg');
+  background-image: url('/nexus-outline.svg');
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
 
-  opacity: 0.13;
+  opacity: 0.22;
   filter:
-    drop-shadow(0 0 24px rgba(214,168,74,0.15));
+    drop-shadow(0 0 30px rgba(214,168,74,0.25));
 
   pointer-events: none;
-  mix-blend-mode: screen;
 }
 
 .landing-content > * {
