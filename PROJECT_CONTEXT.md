@@ -217,7 +217,7 @@ Constraint:
 
 - Door-opening NEXUS hero interaction, stored in session storage so browser back navigation returns after the animation.
 - Clicking the NEXUS logo resets the gate animation.
-- Golden college-building watermark on non-hero pages and post-gate landing content.
+- Golden NEXUS geometric logo watermark on non-hero pages and post-gate landing content (replaces old campus-outline silhouette).
 - Landing page fetches approved events from the backend.
 - Featured and upcoming landing events are filtered to today or later.
 - Landing metrics use backend event data.
@@ -229,7 +229,18 @@ Constraint:
 - Approver dashboard fetches pending/approved events and supports approval/rejection.
 - Admin dashboard manages users, roles, venues, pending events, and approved events.
 - Event details supports student registration and approver/admin review actions.
+- Event details has a branded loading state (animated NEXUS loader + skeleton shimmer) instead of a blank screen during fetch.
+- Event details has a universal "← Back" button during loading, not-found, and detail views — routes logged-in roles to their dashboard, public users to `/`.
 - Sign out is available across role dashboards and profile pages.
+
+### Branding / Watermark
+
+- **New SVG asset**: `frontend/public/nexus-outline.svg` — user-provided NEXUS geometric logo. All paths are filled golden `#D6A84A`.
+- **Landing page** (`LandingPage.css .landing-content::before`): large centered golden silhouette behind the hero. `mix-blend-mode: screen` removed (incompatible with colored fills); opacity `0.22`; golden `drop-shadow`.
+- **All wrapped pages** (`index.css` `.campus-watermark::before`): same SVG, same styling — covers Login, all dashboards, EventDetails, and Profile.
+- Old `campus-outline.svg` still in `public/` but unreferenced — safe to delete.
+
+**EventDetails loading styles** (`EventDetails.css`): `@keyframes shimmer` for skeleton shimmer; `@keyframes loaderPulse` / `loaderSlide` for the animated NEXUS loader mark and progress bar; `.event-loader-page` full-page loader; `.event-skeleton` / `.skeleton-hero` / `.skeleton-line` / `.skeleton-block` for shimmer preview.
 
 ### Current UI Limitations / Static or Partial UX
 
