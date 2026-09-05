@@ -645,6 +645,12 @@ body {
   background-position: center;
 }
 
+.event-image-fallback {
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255,51,51,0.15), transparent 60%),
+    linear-gradient(135deg, #111111 0%, #0a0a0a 100%);
+}
+
 .event-content {
   padding: 24px;
 }

@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, UploadFile, File
 from datetime import datetime
 from datetime import timezone
 from sqlalchemy.orm import Session
@@ -13,6 +13,24 @@ from app.schemas.event import EventReject
 
 from app.dependencies import get_db, get_optional_current_user, require_role
 from app.schemas.event import EventCreate
+
+import os
+import uuid
+
+UPLOAD_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+    "uploads",
+    "events"
+)
+
+ALLOWED_TYPES = {
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif"
+}
+
+MAX_SIZE = 5 * 1024 * 1024
 router = APIRouter()
 
 VENUES = [
@@ -142,6 +160,14 @@ def get_venues(db: Session):
     return VENUES
 
 
+def event_image_url(image):
+    if not image:
+        return None
+    if image.startswith("http"):
+        return image
+    return f"http://127.0.0.1:8000/uploads/events/{image}"
+
+
 def serialize_event(event: Event, db: Session):
     reviewer = None
     if event.reviewed_by is not None:
@@ -150,6 +176,8 @@ def serialize_event(event: Event, db: Session):
             .filter(User.id == event.reviewed_by)
             .first()
         )
+
+    image_url = event_image_url(event.image)
 
     return {
         "id": event.id,
@@ -168,7 +196,7 @@ def serialize_event(event: Event, db: Session):
         "created_by": event.created_by,
         "attendees": event.attendees,
         "capacity": event.capacity,
-        "image": event.image,
+        "image": image_url,
         "approved_by_name": reviewer.full_name if reviewer else None,
         "approved_by_role": reviewer.role if reviewer else None,
     }
@@ -229,11 +257,15 @@ def create_event(
 
 @router.get("/events")
 def get_events(db: Session = Depends(get_db)):
-    return (
+    events = (
         db.query(Event)
         .filter(Event.status == "approved")
         .all()
     )
+    return [
+        serialize_event(event, db)
+        for event in events
+    ]
 
 @router.get("/events/pending")
 def get_pending_events(
@@ -260,7 +292,12 @@ def get_manage_events(
     if current_user.role != "admin":
         query = query.filter(Event.created_by == current_user.id)
 
-    return query.all()
+    events = query.all()
+
+    return [
+        serialize_event(event, db)
+        for event in events
+    ]
 
 @router.get("/events/availability")
 def get_venue_availability(
@@ -709,3 +746,109 @@ def get_event_attendees(
         }
         for attendee in attendees
     ]
+
+
+@router.post("/events/{event_id}/image")
+def upload_event_image(
+    event_id: int,
+    file: UploadFile = File(...),
+    current_user: User = Depends(
+        require_role(["coordinator", "admin"])
+    ),
+    db: Session = Depends(get_db)
+):
+    event = (
+        db.query(Event)
+        .filter(Event.id == event_id)
+        .first()
+    )
+
+    if not event:
+        raise HTTPException(
+            status_code=404,
+            detail="Event not found"
+        )
+
+    if (
+        current_user.role != "admin"
+        and event.created_by != current_user.id
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="You can only upload images for your own events"
+        )
+
+    if file.content_type not in ALLOWED_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail="File must be JPEG, PNG, WebP, or GIF"
+        )
+
+    contents = file.file.read()
+
+    if len(contents) > MAX_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail="File size must be under 5MB"
+        )
+
+    ext = file.filename.rsplit(".", 1)[-1] if "." in (file.filename or "") else "jpg"
+    filename = f"{uuid.uuid4().hex}.{ext}"
+
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+    with open(os.path.join(UPLOAD_DIR, filename), "wb") as f:
+        f.write(contents)
+
+    old_file = event.image
+    event.image = filename
+    db.commit()
+    db.refresh(event)
+
+    if old_file and not old_file.startswith("http"):
+        old_path = os.path.join(UPLOAD_DIR, old_file)
+        if os.path.exists(old_path):
+            os.remove(old_path)
+
+    return serialize_event(event, db)
+
+
+@router.delete("/events/{event_id}/image")
+def delete_event_image(
+    event_id: int,
+    current_user: User = Depends(
+        require_role(["coordinator", "admin"])
+    ),
+    db: Session = Depends(get_db)
+):
+    event = (
+        db.query(Event)
+        .filter(Event.id == event_id)
+        .first()
+    )
+
+    if not event:
+        raise HTTPException(
+            status_code=404,
+            detail="Event not found"
+        )
+
+    if (
+        current_user.role != "admin"
+        and event.created_by != current_user.id
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="You can only delete images for your own events"
+        )
+
+    if event.image and not event.image.startswith("http"):
+        old_path = os.path.join(UPLOAD_DIR, event.image)
+        if os.path.exists(old_path):
+            os.remove(old_path)
+
+    event.image = None
+    db.commit()
+    db.refresh(event)
+
+    return serialize_event(event, db)

@@ -1,16 +1,6 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel
 
-from typing import List, Optional
-
-
-def validate_image_url(value) -> str:
-    if value is None:
-        return value
-    if value == "no":
-        return value
-    if not value.startswith(("http://", "https://")):
-        raise ValueError("Image must be a valid http(s) URL")
-    return value
+from typing import Optional
 
 
 class EventCreate(BaseModel):
@@ -24,9 +14,8 @@ class EventCreate(BaseModel):
     end_time: str
     organizer: str
     capacity: int
-    image: str
+    image: Optional[str] = None
 
-    _validate_image = field_validator("image")(validate_image_url)
 
 class EventUpdate(BaseModel):
 
@@ -43,7 +32,6 @@ class EventUpdate(BaseModel):
     capacity: Optional[int] = None
     image: Optional[str] = None
 
-    _validate_image = field_validator("image")(validate_image_url)
 
 class EventReject(BaseModel):
 

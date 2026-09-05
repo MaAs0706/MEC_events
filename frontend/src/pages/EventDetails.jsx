@@ -258,10 +258,17 @@ function EventDetails() {
 
   <div className="hero-background">
 
-    <img
-      src={event.image}
-      alt={event.title}
-    />
+    {event.image ? (
+      <img
+        src={event.image}
+        alt={event.title}
+        onError={(e) => {
+          e.target.style.display = 'none'
+        }}
+      />
+    ) : (
+      <div className="hero-placeholder" />
+    )}
 
   </div>
 

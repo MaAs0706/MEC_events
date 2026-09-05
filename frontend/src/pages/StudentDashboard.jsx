@@ -675,10 +675,11 @@ function StudentDashboard() {
   >
 
                 <div
-                  className="event-image"
+                  className={`event-image ${event.image ? '' : 'event-image-fallback'}`}
                   style={{
-                    backgroundImage:
-                      `url(${event.image})`
+                    backgroundImage: event.image
+                      ? `url(${event.image})`
+                      : 'none'
                   }}
                 ></div>
 

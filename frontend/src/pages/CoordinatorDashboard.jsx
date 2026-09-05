@@ -61,10 +61,15 @@ function CoordinatorDashboard() {
       category: '',
       organizer: '',
       capacity: '',
-      image: '',
       start_time: '',
       end_time: ''
     })
+
+  const [imageFile, setImageFile] =
+    useState(null)
+
+  const [imagePreview, setImagePreview] =
+    useState(null)
 
   const [editingEvent, setEditingEvent] =
     useState(null)
@@ -76,12 +81,17 @@ function CoordinatorDashboard() {
       category: '',
       organizer: '',
       capacity: '',
-      image: '',
       start_time: '',
       end_time: '',
       date: '',
       venue: ''
     })
+
+  const [editImageFile, setEditImageFile] =
+    useState(null)
+
+  const [editImagePreview, setEditImagePreview] =
+    useState(null)
 
   const [venues, setVenues] =
     useState([
@@ -281,13 +291,29 @@ function CoordinatorDashboard() {
           start_time: formData.start_time,
           end_time: formData.end_time,
           organizer: formData.organizer,
-          capacity: Number(formData.capacity),
-          image: formData.image
+          capacity: Number(formData.capacity)
         }
       )
 
+      let createdEvent = response.data
+
+      if (imageFile) {
+        const uploadForm = new FormData()
+        uploadForm.append('file', imageFile)
+        const uploadRes = await api.post(
+          `/events/${createdEvent.id}/image`,
+          uploadForm,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          }
+        )
+        createdEvent = uploadRes.data
+      }
+
       setMyEvents((currentEvents) => [
-        response.data,
+        createdEvent,
         ...currentEvents
       ])
 
@@ -297,10 +323,11 @@ function CoordinatorDashboard() {
         category: '',
         organizer: '',
         capacity: '',
-        image: '',
         start_time: '',
         end_time: ''
       })
+      setImageFile(null)
+      setImagePreview(null)
 
       setShowCreateForm(false)
       setActiveTab('events')
@@ -321,12 +348,14 @@ function CoordinatorDashboard() {
       capacity: event.capacity != null
         ? String(event.capacity)
         : '',
-      image: event.image || '',
       start_time: event.start_time || '',
       end_time: event.end_time || '',
       date: event.date || '',
       venue: event.venue || ''
     })
+
+    setEditImageFile(null)
+    setEditImagePreview(event.image || null)
 
     setEditingEvent(event)
 
@@ -336,6 +365,8 @@ function CoordinatorDashboard() {
 
     setEditingEvent(null)
     setEditFormData({})
+    setEditImageFile(null)
+    setEditImagePreview(null)
 
   }
 
@@ -367,15 +398,31 @@ function CoordinatorDashboard() {
           start_time: editFormData.start_time,
           end_time: editFormData.end_time,
           organizer: editFormData.organizer,
-          capacity: Number(editFormData.capacity),
-          image: editFormData.image
+          capacity: Number(editFormData.capacity)
         }
       )
 
+      let updatedEvent = response.data
+
+      if (editImageFile) {
+        const uploadForm = new FormData()
+        uploadForm.append('file', editImageFile)
+        const uploadRes = await api.post(
+          `/events/${updatedEvent.id}/image`,
+          uploadForm,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          }
+        )
+        updatedEvent = uploadRes.data
+      }
+
       setMyEvents((currentEvents) =>
         currentEvents.map((event) =>
-          event.id === response.data.id
-            ? response.data
+          event.id === updatedEvent.id
+            ? updatedEvent
             : event
         )
       )
@@ -960,14 +1007,43 @@ function CoordinatorDashboard() {
                       required
                     />
 
-                    <input
-                      name="image"
-                      type="url"
-                      placeholder="Image URL"
-                      value={formData.image}
-                      onChange={handleFormChange}
-                      required
-                    />
+                    {imagePreview && (
+                      <div className="image-upload-preview">
+                        <img
+                          src={imagePreview}
+                          alt="Event image preview"
+                        />
+                        <button
+                          type="button"
+                          className="image-remove-btn"
+                          onClick={() => {
+                            setImageFile(null)
+                            setImagePreview(null)
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    )}
+
+                    <label className="image-upload-box">
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        onChange={(e) => {
+                          const file = e.target.files[0]
+                          if (file) {
+                            setImageFile(file)
+                            setImagePreview(
+                              URL.createObjectURL(file)
+                            )
+                          }
+                        }}
+                      />
+                      {imageFile
+                        ? imageFile.name
+                        : 'Upload event image (optional)'}
+                    </label>
 
                     <input
                       name="start_time"
@@ -1123,14 +1199,43 @@ function CoordinatorDashboard() {
 
                     </select>
 
-                    <input
-                      name="image"
-                      type="url"
-                      placeholder="Image URL"
-                      value={editFormData.image}
-                      onChange={handleEditChange}
-                      required
-                    />
+                    {editImagePreview && (
+                      <div className="image-upload-preview">
+                        <img
+                          src={editImagePreview}
+                          alt="Event image preview"
+                        />
+                        <button
+                          type="button"
+                          className="image-remove-btn"
+                          onClick={() => {
+                            setEditImageFile(null)
+                            setEditImagePreview(null)
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    )}
+
+                    <label className="image-upload-box">
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        onChange={(e) => {
+                          const file = e.target.files[0]
+                          if (file) {
+                            setEditImageFile(file)
+                            setEditImagePreview(
+                              URL.createObjectURL(file)
+                            )
+                          }
+                        }}
+                      />
+                      {editImageFile
+                        ? editImageFile.name
+                        : 'Upload new image (optional)'}
+                    </label>
 
                     <input
                       name="start_time"
