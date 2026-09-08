@@ -289,8 +289,8 @@ These are real outstanding issues and should be considered before production dep
 
 ### High Priority
 
-1. **No automated tests.** There are no repository-owned backend or frontend tests. Add API tests for visibility, role checks, capacity, duplicate registration, locking behavior, deletion blocks, and migration behavior.
-2. **Loose input validation.** Event date/time fields are strings. Add typed/validated date and time values, positive integer capacity constraints, text length limits, image URL validation, and rejection-reason limits.
+1. **No automated tests.** There are no repository-owned backend or frontend tests. Add API tests for visibility, role checks, capacity, duplicate registration, locking behavior, deletion blocks, and migration behavior. — *DONE: pytest + Vitest set up; see §15 Development Commands.*
+2. **Loose input validation.** Event date/time fields are strings. Add typed/validated date and time values, positive integer capacity constraints, text length limits, image URL validation, and rejection-reason limits. — *DONE: Pydantic validators enforce exact `YYYY-MM-DD` / `HH:MM` formats (round-trip checked), text min/max lengths, capacity bounds, rejection reason ≤ 500 chars; frontend rejection textareas capped at 500.*
 3. **No password policy or rate limiting.** Add password-strength rules, login throttling/rate limiting, and abuse protection before public exposure.
 4. **No account deactivation.** Deletion is blocked for historical users, but there is no `is_active`/archived state to disable accounts safely.
 5. **No automatic JWT-expiry handling in the frontend.** API 401 responses should clear stale tokens and redirect to login.
@@ -485,7 +485,29 @@ Run from `backend/`:
 ./.venv/bin/uvicorn app.main:app --reload
 ./.venv/bin/python -m compileall app
 ./.venv/bin/alembic upgrade head
+./.venv/bin/pytest                          # run all backend tests
+./.venv/bin/pytest --cov=app --cov-report=term-missing  # coverage
 ```
+
+### Frontend
+
+Run from `frontend/`:
+
+```bash
+npm run dev
+npm run build
+npm test      # Vitest (unit/component tests)
+```
+
+### Test Suite
+
+Backend (pytest): fixtures in `backend/tests/conftest.py` use a fresh in-memory
+SQLite DB per test with fake signed-in users (`login_as`). Test files:
+`tests/test_events.py` (API behavior), `tests/test_validation.py` (input rules).
+
+Frontend (Vitest + Testing Library): `frontend/src/setupTests.js` loads
+jest-dom matchers; tests render components with mocked API/framer-motion.
+Example: `frontend/src/__tests__/LandingPage.test.jsx`.
 
 Do **not** run `uvicorn main:app` from inside `backend/app`; imports use the package path `app.*` and require the backend directory as the working directory.
 

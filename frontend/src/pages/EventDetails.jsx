@@ -409,6 +409,7 @@ function EventDetails() {
           <textarea
             className="review-textarea"
             placeholder="Reason for rejection..."
+            maxLength={500}
             value={rejectionReason}
             onChange={(e) =>
               setRejectionReason(e.target.value)

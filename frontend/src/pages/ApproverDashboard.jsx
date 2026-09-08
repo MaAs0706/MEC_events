@@ -608,6 +608,7 @@ const [rejectedEvents, setRejectedEvents] =
 </div>
                 <textarea
                   placeholder="Add rejection feedback..."
+                  maxLength={500}
                   value={feedbackText}
                   onChange={(e) =>
                     setFeedbackText(
