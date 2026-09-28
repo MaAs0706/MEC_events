@@ -646,6 +646,16 @@
   .stats-row {
     grid-template-columns: 1fr;
   }
+
+  .event-details-grid { grid-template-columns: 1fr; gap: 20px; }
+  .event-main { gap: 20px; }
+  .event-sidebar { gap: 14px; }
+  .description-section, .details-section, .requirements-section, .agenda-section { padding: 20px; border-radius: 16px; }
+  .details-grid { grid-template-columns: 1fr; gap: 12px; }
+  .detail-item { padding: 15px; }
+  .hero-meta { display: grid; grid-template-columns: 1fr; gap: 10px; width: 100%; }
+  .gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .gallery-image { height: 130px; }
 }
 
 /* ========================================

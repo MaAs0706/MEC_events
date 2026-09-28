@@ -712,4 +712,10 @@ body {
     flex-direction: column;
   }
 
+  .filter-row { overflow-x: auto; padding-bottom: 6px; }
+  .filter-btn { white-space: nowrap; }
+  .event-grid { grid-template-columns: 1fr; }
+  .event-card { min-height: 0; }
+  .dashboard-grid { gap: 20px; }
+
 }

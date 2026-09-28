@@ -1055,4 +1055,19 @@
     align-items: flex-start;
   }
 
+  .venue-selector { width: 100%; min-width: 0; }
+
+  .calendar-card,
+  .date-panel,
+  .event-request-form { padding: 18px; border-radius: 16px; }
+
+  .calendar-month-header { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .calendar-month-actions { width: 100%; justify-content: space-between; }
+  .calendar-grid { gap: 4px; }
+  .calendar-day { width: min(11vw, 46px); height: min(11vw, 46px); border-radius: 11px; }
+  .weekdays { margin-top: 18px; margin-bottom: 10px; }
+  .weekdays span { font-size: 10px; letter-spacing: 0; }
+  .form-grid { grid-template-columns: 1fr; }
+  .image-upload-preview { min-height: 200px; }
+
 }
