@@ -291,20 +291,26 @@ function CoordinatorDashboard() {
       )
 
       let createdEvent = response.data
+      let uploadError = ''
 
       if (imageFile) {
-        const uploadForm = new FormData()
-        uploadForm.append('file', imageFile)
-        const uploadRes = await api.post(
-          `/events/${createdEvent.id}/image`,
-          uploadForm,
-          {
-            headers: {
-              'Content-Type': 'multipart/form-data'
+        try {
+          const uploadForm = new FormData()
+          uploadForm.append('file', imageFile)
+          const uploadRes = await api.post(
+            `/events/${createdEvent.id}/image`,
+            uploadForm,
+            {
+              headers: {
+                'Content-Type': 'multipart/form-data'
+              }
             }
-          }
-        )
-        createdEvent = uploadRes.data
+          )
+          createdEvent = uploadRes.data
+        }
+        catch (error) {
+          uploadError = error.response?.data?.detail || 'The cover image could not be uploaded.'
+        }
       }
 
       setMyEvents((currentEvents) => [
@@ -324,11 +330,21 @@ function CoordinatorDashboard() {
       setImageFile(null)
       setImagePreview(null)
 
-      setShowCreateForm(false)
-      setActiveTab('events')
+      if (uploadError) {
+        setFormError(
+          `Event request submitted, but its cover image was not uploaded: ${uploadError} You can add it later by editing the event.`
+        )
+      }
+      else {
+        setShowCreateForm(false)
+        setActiveTab('events')
+      }
     }
-    catch {
-      setFormError('Unable to submit event request')
+    catch (error) {
+      setFormError(
+        error.response?.data?.detail ||
+        'Unable to submit event request'
+      )
     }
 
   }
