@@ -17,6 +17,7 @@ from app.dependencies import get_db, get_optional_current_user, require_role
 from app.schemas.event import EventCreate
 from app.utils.media_storage import delete_image, MediaStorageError, upload_image
 from app.utils.permission_letter import build_permission_letter
+from app.utils.notifications import create_notification
 
 import os
 from io import BytesIO
@@ -263,6 +264,10 @@ def create_event(
     )
 
     db.add(new_event)
+    db.commit()
+    db.refresh(new_event)
+    for reviewer in db.query(User).filter(User.role.in_(["approver", "admin"]), User.is_active.is_(True)).all():
+        create_notification(db, reviewer.id, "New event request", f"{new_event.title} needs review.", f"/events/{new_event.id}")
     db.commit()
     db.refresh(new_event)
     return new_event
@@ -660,6 +665,7 @@ def approve_event(
     event.rejection_reason = None
     event.reviewed_by = current_user.id
     event.reviewed_at = datetime.now(timezone.utc).isoformat()
+    create_notification(db, event.created_by, "Event approved", f"{event.title} has been approved.", f"/events/{event.id}")
 
 
     db.commit()
@@ -698,6 +704,7 @@ def reject_event(
     event.rejection_reason = rejection.rejection_reason
     event.reviewed_by = current_user.id
     event.reviewed_at = datetime.now(timezone.utc).isoformat()
+    create_notification(db, event.created_by, "Event rejected", f"{event.title} was rejected. Review the feedback and resubmit when ready.", f"/events/{event.id}")
 
     db.commit()
     db.refresh(event)
@@ -758,6 +765,9 @@ def register_for_event(
     event.attendees += 1
 
     db.add(registration)
+    create_notification(db, current_user.id, "Registration confirmed", f"You are registered for {event.title}.", f"/events/{event.id}")
+    if event.created_by != current_user.id:
+        create_notification(db, event.created_by, "New event registration", f"A student registered for {event.title}.", f"/events/{event.id}")
     db.commit()
     db.refresh(event)
 

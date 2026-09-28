@@ -9,6 +9,7 @@ from app.database import Base
 from app.models.event import Event
 from app.models.event_gallery_image import EventGalleryImage
 from app.models.analytics_event import AnalyticsEvent
+from app.models.notification import Notification
 from app.models.registration import Registration
 from app.models.user import User
 from app.models.venue import Venue
