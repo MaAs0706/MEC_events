@@ -1,4 +1,5 @@
 import os
+from time import perf_counter
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -10,6 +11,8 @@ from fastapi.staticfiles import StaticFiles
 from app.routes.auth import router as auth_router
 from app.routes.users import router as user_router
 from app.routes.venues import router as venue_router
+from app.routes.analytics import router as analytics_router
+from app.utils.analytics import record_request
 
 from app.routes.events import router as event_router
 
@@ -21,6 +24,7 @@ fastapi_app.include_router(event_router)
 fastapi_app.include_router(auth_router)
 fastapi_app.include_router(user_router)
 fastapi_app.include_router(venue_router)
+fastapi_app.include_router(analytics_router)
 
 UPLOADS_DIR = Path(__file__).resolve().parent.parent / "uploads"
 
@@ -29,6 +33,30 @@ fastapi_app.mount(
     StaticFiles(directory=str(UPLOADS_DIR)),
     name="uploads"
 )
+
+
+@fastapi_app.middleware("http")
+async def capture_request_analytics(request, call_next):
+    """Record API traffic without collecting raw IP addresses or emails."""
+    path = request.url.path
+    # Reading the dashboard must not inflate the traffic figures it displays.
+    if path.startswith("/analytics") or path.startswith("/docs") or path.startswith("/openapi"):
+        return await call_next(request)
+
+    started_at = perf_counter()
+    status_code = 500
+    try:
+        response = await call_next(request)
+        status_code = response.status_code
+        return response
+    finally:
+        record_request(
+            path=path,
+            method=request.method,
+            status_code=status_code,
+            duration_ms=round((perf_counter() - started_at) * 1000),
+            visitor_id=request.headers.get("X-Nexus-Visitor"),
+        )
 
 
 @fastapi_app.get("/")

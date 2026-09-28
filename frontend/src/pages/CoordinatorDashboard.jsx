@@ -40,7 +40,7 @@ function CoordinatorDashboard() {
     )
 
   const [selectedVenue, setSelectedVenue] =
-    useState('Main Auditorium')
+    useState('')
 
   const [showCreateForm, setShowCreateForm] =
     useState(false)
@@ -93,13 +93,7 @@ function CoordinatorDashboard() {
   const [editImagePreview, setEditImagePreview] =
     useState(null)
 
-  const [venues, setVenues] =
-    useState([
-      'Main Auditorium',
-      'Seminar Hall',
-      'Tech Lab',
-      'Sports Complex'
-    ])
+  const [venues, setVenues] = useState([])
 
   const [availability, setAvailability] =
     useState([])
@@ -225,11 +219,12 @@ function CoordinatorDashboard() {
           await api.get('/venues')
 
         if (response.data.length) {
-          setVenues(
-            response.data.map(
-              venue => venue.name
-            )
-          )
+          const venueNames = response.data.map(venue => venue.name)
+          setVenues(venueNames)
+          setSelectedVenue((currentVenue) => currentVenue || venueNames[0])
+        } else {
+          setSelectedVenue('')
+          setFormError('No venues are available. Ask an admin to add one first.')
         }
       }
       catch {
@@ -1070,10 +1065,10 @@ function CoordinatorDashboard() {
                     </label>
 
                     <input
-                      value={`${selectedVenue} • ${selectedDateObject.toLocaleDateString(
+                      value={selectedVenue ? `${selectedVenue} • ${selectedDateObject.toLocaleDateString(
                         'en-IN',
                         { day: 'numeric', month: 'long', year: 'numeric' }
-                      )}`}
+                      )}` : 'Select a venue from the availability list'}
                       disabled
                     />
 

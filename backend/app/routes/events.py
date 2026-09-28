@@ -30,26 +30,6 @@ MAX_SIZE = 5 * 1024 * 1024
 MAX_GALLERY_IMAGES = 20
 router = APIRouter()
 
-VENUES = [
-    {
-        "name": "Main Auditorium",
-        "capacity": 500
-    },
-    {
-        "name": "Seminar Hall",
-        "capacity": 120
-    },
-    {
-        "name": "Tech Lab",
-        "capacity": 80
-    },
-    {
-        "name": "Sports Complex",
-        "capacity": 800
-    }
-]
-
-
 def has_time_conflict(
     db: Session,
     venue: str,
@@ -144,17 +124,13 @@ def get_booking_load(bookings: list[Event]):
 
 def get_venues(db: Session):
     venues = db.query(Venue).all()
-
-    if venues:
-        return [
-            {
-                "name": venue.name,
-                "capacity": venue.capacity
-            }
-            for venue in venues
-        ]
-
-    return VENUES
+    return [
+        {
+            "name": venue.name,
+            "capacity": venue.capacity
+        }
+        for venue in venues
+    ]
 
 
 def event_image_url(image):

@@ -61,35 +61,17 @@ function AdminDashboard() {
     ...pendingEvents
   ]
 
-  const analytics = {
-    activeUsers: users.length,
-    eventsToday: allEvents.filter(
-      event =>
-        event.date ===
-        new Date().toISOString().slice(0, 10)
-    ).length,
-    pendingReviews: pendingEvents.length,
-    approvalRate: allEvents.length
-      ? Math.round(
-        approvedEvents.length / allEvents.length * 100
-      )
-      : 0,
-    totalAttendees: allEvents.reduce(
-      (total, event) =>
-        total + (event.attendees || 0),
-      0
-    ),
-    venueUtilization: venues.length
-      ? Math.round(
-        allEvents.filter(
-          event =>
-            ['pending', 'approved'].includes(
-              event.status
-            )
-        ).length / venues.length * 100
-      )
-      : 0
-  }
+  const [analytics, setAnalytics] = useState({
+    traffic: { today_requests: 0, today_visitors: 0, active_visitors: 0, daily: [] },
+    operations: {
+      total_users: 0, total_venues: 0, events_today: 0,
+      pending_reviews: 0, approval_rate: 0, total_registrations: 0,
+      approved_events: 0, rejected_events: 0
+    },
+    reliability: { errors_last_14_days: 0, top_errors: [] }
+  })
+
+  const [analyticsError, setAnalyticsError] = useState('')
 
   const categories =
     Object.entries(
@@ -115,6 +97,23 @@ function AdminDashboard() {
         event =>
           `${event.title} is ${event.status}`
       )
+
+  useEffect(() => {
+
+    const fetchAnalytics = async () => {
+      try {
+        const response = await api.get('/analytics/admin-summary')
+        setAnalytics(response.data)
+        setAnalyticsError('')
+      }
+      catch {
+        setAnalyticsError('Analytics could not be loaded.')
+      }
+    }
+
+    fetchAnalytics()
+
+  }, [])
 
   useEffect(() => {
 
@@ -452,7 +451,7 @@ function AdminDashboard() {
             </span>
 
             <h2>
-              {analytics.eventsToday}
+              {analytics.operations.events_today}
             </h2>
 
           </div>
@@ -466,11 +465,11 @@ function AdminDashboard() {
           <div>
 
             <span>
-              ACTIVE USERS
+              ACTIVE VISITORS
             </span>
 
             <h2>
-              {analytics.activeUsers}
+              {analytics.traffic.active_visitors}
             </h2>
 
           </div>
@@ -488,7 +487,7 @@ function AdminDashboard() {
             </span>
 
             <h2>
-              {analytics.pendingReviews}
+              {analytics.operations.pending_reviews}
             </h2>
 
           </div>
@@ -502,11 +501,11 @@ function AdminDashboard() {
           <div>
 
             <span>
-              VENUE UTILIZATION
+              ACTIVE VENUES
             </span>
 
             <h2>
-              {analytics.venueUtilization}%
+              {analytics.operations.total_venues}
             </h2>
 
           </div>
@@ -633,13 +632,7 @@ function AdminDashboard() {
                 </span>
 
                 <strong>
-                  {approvedEvents.length || allEvents.length
-                    ? `${Math.round(
-                      approvedEvents.length /
-                      Math.max(allEvents.length, 1) *
-                      100
-                    )}%`
-                    : '0%'}
+                  {analytics.operations.approval_rate}%
                 </strong>
 
               </div>
@@ -651,7 +644,7 @@ function AdminDashboard() {
                 </span>
 
                 <strong>
-                  {venues.length}
+                  {analytics.operations.total_venues}
                 </strong>
 
               </div>
@@ -663,7 +656,7 @@ function AdminDashboard() {
                 </span>
 
                 <strong>
-                  {pendingEvents.length}
+                  {analytics.operations.pending_reviews}
                 </strong>
 
               </div>
@@ -1229,6 +1222,36 @@ function AdminDashboard() {
 
         <section className="analytics-panel">
 
+          <div className="analytics-summary">
+            <p>LIVE PLATFORM INTELLIGENCE</p>
+            <h2>Traffic, operations and reliability</h2>
+            <span>Active visitors are unique browsers seen in the last five minutes.</span>
+          </div>
+
+          {analyticsError && (
+            <p className="analytics-error">{analyticsError}</p>
+          )}
+
+          <div className="traffic-chart-card">
+            <p>LAST 14 DAYS</p>
+            <h3>Daily visitor traffic</h3>
+            <div className="traffic-chart" aria-label="Daily visitor traffic chart">
+              {analytics.traffic.daily.map((day) => {
+                const maximum = Math.max(
+                  ...analytics.traffic.daily.map(item => item.visitors),
+                  1
+                )
+                const height = Math.max(8, day.visitors / maximum * 100)
+                return (
+                  <div className="traffic-day" key={day.date} title={`${day.date}: ${day.visitors} visitors, ${day.requests} requests`}>
+                    <span className="traffic-bar" style={{ height: `${height}%` }}></span>
+                    <small>{day.date.slice(5)}</small>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
           <div className="analytics-card">
 
             <BarChart3
@@ -1240,7 +1263,7 @@ function AdminDashboard() {
             </h3>
 
             <p>
-              {analytics.approvalRate}%
+              {analytics.operations.approval_rate}%
               {' '}
               approval rate across
               submitted events.
@@ -1255,14 +1278,13 @@ function AdminDashboard() {
             />
 
             <h3>
-              User Growth
+              Platform accounts
             </h3>
 
             <p>
-              {users.length}
+              {analytics.operations.total_users}
               {' '}
-              platform accounts
-              currently exist.
+              accounts currently exist.
             </p>
 
           </div>
@@ -1278,12 +1300,26 @@ function AdminDashboard() {
             </h3>
 
             <p>
-              {analytics.totalAttendees}
+              {analytics.operations.total_registrations}
               {' '}
-              attendees across
-              tracked events.
+              registrations across all events.
             </p>
 
+          </div>
+
+          <div className="analytics-card reliability-card">
+            <Shield size={24} />
+            <h3>Reliability</h3>
+            <p>{analytics.reliability.errors_last_14_days} server errors in the last 14 days.</p>
+            {analytics.reliability.top_errors.length ? (
+              <ul className="error-list">
+                {analytics.reliability.top_errors.map((error) => (
+                  <li key={`${error.path}-${error.status_code}`}>
+                    <code>{error.status_code}</code> {error.path} <strong>{error.count}</strong>
+                  </li>
+                ))}
+              </ul>
+            ) : <p className="healthy-state">No server errors recorded.</p>}
           </div>
 
         </section>

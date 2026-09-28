@@ -6,8 +6,23 @@ const api = axios.create({
     baseURL: import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 })
 
+const VISITOR_STORAGE_KEY = 'nexusVisitorId'
+
+function getVisitorId() {
+    let visitorId = localStorage.getItem(VISITOR_STORAGE_KEY)
+
+    if (!visitorId) {
+        visitorId = crypto.randomUUID()
+        localStorage.setItem(VISITOR_STORAGE_KEY, visitorId)
+    }
+
+    return visitorId
+}
+
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem('accessToken')
+
+    config.headers['X-Nexus-Visitor'] = getVisitorId()
 
     if (token) {
         config.headers.Authorization = `Bearer ${token}`
