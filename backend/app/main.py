@@ -5,6 +5,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from fastapi import FastAPI
+from sqlalchemy import text
+from app.database import SessionLocal
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -66,6 +68,17 @@ def home():
     return {
         "message": "Welcome to NEXUS!"
     }
+
+
+@fastapi_app.get("/health")
+def health_check():
+    """Health probe for the deployment platform and reverse proxy."""
+    db = SessionLocal()
+    try:
+        db.execute(text("SELECT 1"))
+        return {"status": "ok", "database": "reachable"}
+    finally:
+        db.close()
 
 
 # ---------------------------------------------------------------------------
