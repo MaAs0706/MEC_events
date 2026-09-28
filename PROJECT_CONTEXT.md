@@ -1,571 +1,386 @@
-# NEXUS: Complete Project Context and Handoff
+# NEXUS — Technical Context and Handoff
 
-> **Purpose:** This file is the authoritative handoff context for a new developer or LLM working on NEXUS. Read it fully before making product, schema, security, or deployment changes. Do not assume a feature is complete merely because it appears in the UI.
+> **Audience:** a developer, reviewer, or LLM taking over NEXUS. Read this before changing authentication, schema, authorization, deployment, or business workflows.
+>
+> **Last refreshed:** 2026-09-29. Verify current code and migrations before claiming a feature works.
 
-## 1. Product Definition
+## 1. Product and current position
 
-**NEXUS** is a college event-management platform.
+**NEXUS** is a college event-management platform: **One platform. Every club. Every event. Zero paperwork.**
 
-**Tagline:** One platform. Every club. Every event. Zero paperwork.
+It replaces WhatsApp coordination, paper approval letters, spreadsheets, and informal venue booking with one system for event submission, approvals, discovery, registrations, media, and reporting.
 
-The platform replaces fragmented event management over WhatsApp, paper permission letters, and manual venue coordination. It provides a central system for event creation, venue availability, approvals, student discovery, and registrations.
+The project has a `v0.0.1` release baseline and is now a functional MVP. It is suitable for local development and controlled demos. It is **not yet a fully operated production service**: deployment, monitoring, backup ownership, staff identity/audit design, and security hardening still need work.
 
-### Product Goal
+### Product boundaries
 
-Create a reliable internal college platform where:
+In scope:
 
-- Clubs submit event requests and reserve conflict-free venues.
-- Approvers digitally approve or reject requests.
-- Students discover approved upcoming events and register.
-- Coordinators track registrations and, later, publish post-event galleries and download permission letters.
+- Internal college event request, booking, approval, discovery, and registration workflows.
+- Public viewing of approved current and past events.
+- Coordinator-owned club identity for v1.
+- Letter generation after approval.
 
-### Current Release Position
+Out of scope for v1:
 
-- Released baseline: **v0.0.1**.
-- Current maturity: **core MVP / development release**, not production-ready.
-- The central event lifecycle is implemented, but production operations, testing, media uploads, email, notifications, and PDF permission letters are still incomplete.
+- Payments/ticketing.
+- Native mobile application.
+- Cryptographic signatures. A configured signatory name/title/signature image is a visual institutional signature, not a legal cryptographic one.
+- Multi-college federation. The data model currently represents one college installation.
 
-## 2. Product Scope
+## 2. Current architecture
 
-### In Scope
+```text
+React / Vite browser application
+       │  JWT Authorization header + X-Nexus-Visitor ID
+       ▼
+FastAPI application
+  ├── authentication and role checks
+  ├── business rules / event workflow
+  ├── SQLAlchemy + Alembic
+  ├── Cloudinary server-side uploads
+  ├── Resend password-reset email
+  ├── ReportLab permission-letter generation
+  └── request analytics + in-app notifications
+       │
+       ▼
+Supabase PostgreSQL
 
-- Authentication and role-based access control.
-- Event request and approval workflow.
-- Venue availability and conflict detection.
-- Student discovery and registration.
-- Admin user and venue management.
-- Coordinator attendee visibility.
-- Planned public past-event archive and photo galleries.
+External services:
+Cloudinary = media files     Resend = password-recovery email
+```
 
-### Explicitly Out of Scope for V1
-
-- Mobile application.
-- Payment or ticketing system.
-- Cryptographic/physical digital signatures.
-
-For permission letters, the approver's name and approval date are sufficient for V1.
-
-## 3. User Roles and Intended Capabilities
-
-| Role | Current capabilities | Important future capabilities |
-| --- | --- | --- |
-| Student | Register, log in, browse approved upcoming events, view own registrations | Password reset, notifications, persistent profile settings |
-| Coordinator | Create events, inspect venue availability, see only own managed events, view attendees | Permission-letter download, gallery uploads, notifications, editing workflow |
-| Approver | See pending requests, approve/reject with a reason, view internal event details | Persistent rejected history, notifications, approval audit display |
-| Admin | Manage users, roles, venues, and event details; approve/reject events | Account deactivation, richer reports, production operations |
-
-## 4. Technology Stack
-
-| Layer | Technology |
-| --- | --- |
-| Frontend | React, Vite, React Router, Axios, Framer Motion, Lucide icons |
-| Backend | FastAPI, Python |
-| ORM | SQLAlchemy |
-| Database | PostgreSQL; migration target is Supabase Postgres |
-| Auth | JWT bearer tokens |
-| Password hashing | Passlib + bcrypt |
-| Schema migrations | Alembic (recently added) |
-| Planned media storage | Cloudinary |
-| Planned PDF generation | ReportLab or equivalent |
-| Planned transactional email | Resend or similar provider |
-
-## 5. Repository Layout
+### Source layout
 
 ```text
 NEXUS/
-├── frontend/                 # React/Vite application
-│   └── src/
-│       ├── pages/            # Landing, auth, role dashboards, details, profile
-│       ├── services/api.js   # Axios client and JWT request interceptor
-│       └── services/auth.js  # Sign-out helper
+├── frontend/                         React + Vite client
+│   ├── src/pages/                    landing, auth, dashboards, event details, profile, archive
+│   ├── src/services/api.js           Axios API client, JWT + visitor header interceptors
+│   ├── src/services/auth.js          local sign-out helper
+│   └── src/__tests__/                frontend smoke test(s)
 ├── backend/
-│   ├── app/
-│   │   ├── models/           # User, Event, Registration, Venue
-│   │   ├── routes/           # auth, events, users, venues
-│   │   ├── schemas/          # Pydantic request schemas
-│   │   ├── dependencies.py   # DB, JWT and role dependencies
-│   │   └── main.py           # FastAPI application and CORS
-│   ├── alembic/              # Alembic migration environment
-│   ├── alembic.ini
-│   ├── migrations/           # Legacy SQL; do not extend this for new changes
-│   └── requirements.txt
-├── README.md                 # Public project documentation
-├── AGENTS.md                 # Short product context
-└── PROJECT_CONTEXT.md        # This detailed handoff document
+│   ├── app/main.py                   FastAPI app, CORS, analytics middleware, /health
+│   ├── app/dependencies.py           DB session, JWT user loading, role enforcement
+│   ├── app/models/                   SQLAlchemy models
+│   ├── app/routes/                   HTTP routes and workflow logic
+│   ├── app/schemas/                  Pydantic request validation
+│   ├── app/utils/                    JWT, password, media, email, PDF, analytics helpers
+│   ├── alembic/                      migration environment and version scripts
+│   └── tests/                        backend API tests
+├── docker-compose.yml                backend + nginx-served frontend locally
+├── AGENTS.md                         short product instruction context
+├── README.md                         normal contributor/user documentation
+└── PROJECT_CONTEXT.md                this technical handoff
 ```
 
-## 6. Current Domain Model
-
-### `users`
-
-Current columns:
-
-- `id`
-- `full_name`
-- `email` (unique)
-- `password_hash`
-- `role` (`student`, `coordinator`, `approver`, `admin`)
-
-### `venues`
-
-Current columns:
-
-- `id`
-- `name` (unique)
-- `capacity`
-
-Default seeded venues:
-
-- Main Auditorium — 500
-- Seminar Hall — 120
-- Tech Lab — 80
-- Sports Complex — 800
-
-### `events`
-
-Current columns:
-
-- `id`
-- `title`
-- `description`
-- `category`
-- `venue` (currently a string, not a venue foreign key)
-- `date` (currently a string)
-- `start_time` (currently a string)
-- `end_time` (currently a string)
-- `status` (`pending`, `approved`, `rejected`)
-- `rejection_reason`
-- `reviewed_by` (user foreign key)
-- `reviewed_at` (currently a string)
-- `organizer` (currently free text)
-- `created_by` (user foreign key)
-- `attendees`
-- `capacity`
-- `image` (currently a URL string for event cover image)
-
-### `registrations`
-
-Current columns:
-
-- `id`
-- `event_id` (event foreign key)
-- `student_id` (user foreign key)
-
-Constraint:
-
-- A unique constraint on `(event_id, student_id)` prevents duplicate registrations.
-
-### Planned Models
-
-- `event_photos` / event gallery photos.
-- Password-reset tokens.
-- Notifications.
-- Clubs and coordinator-to-club membership.
-- Profile fields and notification preferences.
-- Audit/history records for approvals and important administrative actions.
-
-## 7. Implemented Backend API
-
-### Authentication
-
-| Method | Endpoint | Access | Notes |
-| --- | --- | --- | --- |
-| POST | `/auth/register` | Public | Creates a student account only. Password is hashed. |
-| POST | `/auth/login` | Public | Returns JWT access token, role, and full name. |
-| GET | `/auth/me` | Authenticated | Returns current user basics. |
-| GET | `/auth/me/registrations` | Authenticated | Returns events the current user registered for. |
-
-### Events
-
-| Method | Endpoint | Access | Notes |
-| --- | --- | --- | --- |
-| POST | `/events` | Coordinator/admin | Creates a pending event; `created_by` is always the authenticated user. |
-| GET | `/events` | Public | Returns approved events only. |
-| GET | `/events/pending` | Approver/admin | Returns all pending events. |
-| GET | `/events/manage` | Coordinator/admin | Coordinators receive their own events; admins receive all. |
-| GET | `/events/availability?date=YYYY-MM-DD` | Coordinator/admin | Returns venue loads and pending/approved bookings for planning. |
-| GET | `/events/{id}` | Conditional | Approved events are public. Pending/rejected events are visible only to their creator coordinator, approvers, or admins. |
-| PUT | `/events/{id}` | Owner coordinator/admin | Full update; event returns to pending. |
-| PATCH | `/events/{id}` | Owner coordinator/admin | Partial update; event returns to pending. |
-| PATCH | `/events/{id}/approve` | Approver/admin | Approves pending events only. |
-| PATCH | `/events/{id}/reject` | Approver/admin | Rejects pending events only; reason required. |
-| POST | `/events/{id}/register` | Student | Approved events only; protects duplicate and capacity. |
-| GET | `/events/{id}/registration-status` | Student | Returns current student's registration state. |
-| GET | `/events/{id}/attendees` | Owner coordinator/admin | Returns attendee names/emails. |
-
-### Users
-
-| Method | Endpoint | Access | Notes |
-| --- | --- | --- | --- |
-| GET | `/users` | Admin | Lists users. |
-| POST | `/users` | Admin | Creates coordinator, approver, admin, or student accounts. |
-| PATCH | `/users/{id}/role` | Admin | Changes role with self-role and final-admin protection. |
-| DELETE | `/users/{id}` | Admin | Deletes only accounts without event/registration history. |
-
-### Venues
-
-| Method | Endpoint | Access | Notes |
-| --- | --- | --- | --- |
-| GET | `/venues` | Public currently | Lists venues. |
-| POST | `/venues` | Admin | Creates venue. |
-| PUT | `/venues/{id}` | Admin | Cannot rename a used venue or reduce capacity below an event capacity. |
-| DELETE | `/venues/{id}` | Admin | Cannot delete a venue used by events. |
-
-## 8. Implemented Frontend
-
-### Public/Landing Experience
-
-- Door-opening NEXUS hero interaction, stored in session storage so browser back navigation returns after the animation.
-- Clicking the NEXUS logo resets the gate animation.
-- Golden NEXUS geometric logo watermark on non-hero pages and post-gate landing content (replaces old campus-outline silhouette).
-- Landing page fetches approved events from the backend.
-- Featured and upcoming landing events are filtered to today or later.
-- Landing metrics use backend event data.
-
-### Dashboards
-
-- Student dashboard fetches approved events, supports filtering/search/date filtering, real registrations, and RSVP status.
-- Coordinator dashboard includes current-date calendar navigation, venue availability display, event creation, own-event list, and attendee inspection.
-- Approver dashboard fetches pending/approved events and supports approval/rejection.
-- Admin dashboard manages users, roles, venues, pending events, and approved events.
-- Event details supports student registration and approver/admin review actions.
-- Event details has a branded loading state (animated NEXUS loader + skeleton shimmer) instead of a blank screen during fetch.
-- Event details has a universal "← Back" button during loading, not-found, and detail views — routes logged-in roles to their dashboard, public users to `/`.
-- Sign out is available across role dashboards and profile pages.
+## 3. Technology choices
+
+| Concern | Current choice | Notes |
+| --- | --- | --- |
+| Client | React 19, Vite, React Router, Axios | `VITE_API_URL` selects API target. |
+| Server | FastAPI / Python | Serves JSON plus generated PDF download. |
+| Persistence | PostgreSQL via SQLAlchemy | Supabase Postgres is currently used remotely. |
+| Schema changes | Alembic | New schema work must be migrations; do not add startup `ALTER TABLE` logic. |
+| Authentication | Signed JWT bearer tokens | Stored in browser local storage today; see security gaps. |
+| Passwords | Passlib bcrypt | Never reversible/decryptable. |
+| Media | Cloudinary | Uploads pass through FastAPI; browser never sees Cloudinary API secret. |
+| Recovery email | Resend HTTPS API | Used for password reset only at present. |
+| PDFs | ReportLab | Creates approved-event permission letters in memory. |
+| Frontend server in containers | Nginx | SPA fallback and `/api/` reverse proxy. |
+
+## 4. Roles and permissions
+
+| Role | Intended and implemented scope |
+| --- | --- |
+| `student` | Register/login, view public approved events and past archive, register for approved events, view own registrations/profile/notifications. |
+| `coordinator` | Create event requests, see availability, manage only events where `created_by` is their ID, view attendees, update club identity, upload/delete permitted event media and gallery photos, download own approved letters. |
+| `approver` | View pending requests and non-public event details, approve/reject pending events, configure the official letter template. |
+| `admin` | All administrative user/venue functions, review actions, event management visibility, analytics, and letter-template management. |
+
+**Important rule:** the backend is authoritative. Frontend routing and hidden buttons are convenience only; backend dependencies must enforce access.
+
+## 5. Main workflows
+
+### Event lifecycle
+
+```text
+Coordinator/admin creates event → pending
+       ├─ approver/admin approves → approved → public and registrable
+       │                               └─ immutable letter template snapshot stored
+       └─ approver/admin rejects → rejected → hidden from public
+
+Coordinator edit of an event → pending again
+```
+
+- Coordinators cannot set status or attendee count directly.
+- `GET /events` returns approved events; landing and upcoming views filter that data to today or later. The separate public `/events/past` archive returns approved events before today.
+- `/events/past` exposes only approved events whose date is before today.
+- Pending/rejected details are only visible to their creator, approver, or admin; unauthorized callers receive `404`, not an existence leak.
+
+### Registrations
+
+```text
+Student → POST /events/{id}/register
+        → lock event row
+        → check approved / capacity / duplicate
+        → create registration
+        → update count and notifications
+```
+
+The database unique constraint and event row lock protect against duplicate registrations and last-seat races in PostgreSQL.
+
+### Media and gallery workflow
+
+- Event cover images, gallery photos, club logos, and letter-template assets are uploaded to Cloudinary through backend routes.
+- The server keeps Cloudinary public IDs so replacements/deletions can remove the correct asset.
+- Gallery endpoints only expose approved past-event photos publicly; upload/delete authorization is restricted to the appropriate coordinator or admin.
+- `PUBLIC_API_URL` is used where the backend needs to construct public URLs.
+
+### Permission-letter workflow
+
+- Admin/approver configures the single college letter template: college name/logo, optional global club logo, signatory name/title/signature image, reference prefix, and body text.
+- A coordinator can set their club name and logo in their profile. In v1, the coordinator account represents a club.
+- At approval time, NEXUS snapshots template/club values into `events.permission_letter_snapshot` so later template edits do not change old approved letters.
+- The event owner can download `GET /events/{id}/permission-letter` only after approval.
+- Current design supports a **global template signature**, not a distinct signature per approver account. Individual approver signature profiles remain future work.
+
+## 6. Database model
 
-### Branding / Watermark
+Model definitions are in `backend/app/models/`. Migrations currently run from `20260831_0001_initial_schema.py` through `20260928_0010_add_coordinator_club_identity.py`.
 
-- **New SVG asset**: `frontend/public/nexus-outline.svg` — user-provided NEXUS geometric logo. All paths are filled golden `#D6A84A`.
-- **Landing page** (`LandingPage.css .landing-content::before`): large centered golden silhouette behind the hero. `mix-blend-mode: screen` removed (incompatible with colored fills); opacity `0.22`; golden `drop-shadow`.
-- **All wrapped pages** (`index.css` `.campus-watermark::before`): same SVG, same styling — covers Login, all dashboards, EventDetails, and Profile.
-- Old `campus-outline.svg` still in `public/` but unreferenced — safe to delete.
-
-**EventDetails loading styles** (`EventDetails.css`): `@keyframes shimmer` for skeleton shimmer; `@keyframes loaderPulse` / `loaderSlide` for the animated NEXUS loader mark and progress bar; `.event-loader-page` full-page loader; `.event-skeleton` / `.skeleton-hero` / `.skeleton-line` / `.skeleton-block` for shimmer preview.
-
-### Current UI Limitations / Static or Partial UX
-
-- Landing-page search input does not search or navigate.
-- Forgot-password link points to `#forgot`; no reset flow exists.
-- Permission-letter download buttons are decorative; PDF generation is not implemented.
-- Profile edits only update local React state; no profile-update API or schema exists.
-- Notification settings only update local React state and reset on refresh.
-- Approver rejected-event list exists only in current client state; it is lost on refresh because there is no rejected-events/history API.
-- Approver detail panel can show review actions for events that are no longer pending; handlers then do nothing because they only search the pending list. Fix this UI condition.
-- Recent activity, achievements, account activation state, and notifications are presentation-only.
-- Frontend routes are not protected by a React route-guard; backend endpoint authorization remains the actual security boundary.
+| Table | Main data / constraints |
+| --- | --- |
+| `users` | `full_name`, unique `email`, `password_hash`, `role`, `class_name`, `phone`, `is_active`, `token_version`, `club_name`, `club_logo_url`, `club_logo_public_id`. |
+| `venues` | unique `name`, `capacity`. |
+| `events` | title, description, category, venue name, date/time strings, status, rejection/reviewer information, free-text organizer, `created_by`, attendee/capacity counts, image URL/public ID, permission-letter snapshot, club logo URL. |
+| `registrations` | `event_id`, `student_id`; unique pair constraint prevents duplicates. |
+| `event_gallery_images` | event ID, media URL/filename, Cloudinary public ID, upload time. |
+| `notifications` | user ID, title/message/link, read state, creation time. |
+| `analytics_events` | timestamp, endpoint/method/status/duration, hashed visitor ID, error flag. No raw IP or email is stored for analytics. |
+| `password_reset_tokens` | user ID, SHA-256 token digest, expiry, one-time `used_at`. Raw token exists only in email/browser URL. |
+| `letter_templates` | the single college-level template and its Cloudinary asset URLs/public IDs. |
 
-## 9. Security and Integrity Work Already Completed
+### Important model debt
 
-### Authentication and Authorization
+- `Event.date`, `start_time`, `end_time`, and `reviewed_at` are strings, not timezone-aware temporal columns.
+- `Event.venue` and `Event.organizer` are strings, not foreign keys.
+- `backend/app/models/club.py` exists but is empty. There is no `clubs` table; one coordinator account is treated as one club identity for v1.
+- `attendees` is maintained as a stored count alongside registrations. Treat registration rows as the source of truth if repairing data.
+
+## 7. API surface
+
+OpenAPI is always the source of truth at `/docs` when the backend is running. This is the working route map.
+
+| Group | Routes |
+| --- | --- |
+| Health | `GET /`, `GET /health` |
+| Auth/profile | `POST /auth/register`, `POST /auth/login`, `GET/PATCH /auth/me`, `PATCH /auth/me/club`, `POST /auth/me/club/logo`, `GET /auth/me/registrations`, `POST /auth/forgot-password`, `POST /auth/reset-password` |
+| Events | `POST/GET /events`, `GET /events/past`, `GET /events/pending`, `GET /events/manage`, `GET /events/availability`, `GET/PUT/PATCH /events/{id}`, `PATCH /events/{id}/approve`, `PATCH /events/{id}/reject` |
+| Event registrations/media | `POST /events/{id}/register`, `GET /events/{id}/registration-status`, `GET /events/{id}/attendees`, `GET /events/{id}/gallery`, `POST/DELETE /events/{id}/gallery...`, `POST/DELETE /events/{id}/image`, `GET /events/{id}/permission-letter` |
+| Users | `GET/POST /users`, `PATCH /users/{id}/role`, `PATCH /users/{id}/status`, `DELETE /users/{id}` |
+| Venues | `GET/POST /venues`, `PUT/DELETE /venues/{id}` |
+| Notifications | `GET /notifications`, `PATCH /notifications/{id}/read`, `PATCH /notifications/read-all` |
+| Analytics | `GET /analytics/admin-summary` (admin only) |
+| Letter template | `GET/PATCH /letter-template`, `POST /letter-template/assets/{asset}` |
 
-- Passwords are stored as bcrypt hashes, not plaintext.
-- JWTs are decoded and the user is reloaded from the database.
-- Role checks are enforced on backend endpoints through `require_role(...)`.
-- Signup always assigns `student`; roles cannot be selected by public registration.
-- Password policy (≥8 chars, letter + digit) enforced server-side and in the signup UI.
-- Login rate limiting: 5 failed attempts per account or 10 per IP within 15 minutes returns `429` (in-memory — swap for Redis in multi-worker deployments).
-- Deactivated accounts (`is_active = False`) are refused at login and at every protected/optional-auth endpoint.
+## 8. Frontend behaviour and design notes
 
-### Event Privacy
+Routes live in `frontend/src/App.jsx`:
 
-The following privacy issue was fixed:
+- Public: landing `/`, past archive `/events/past`, and approved event details `/events/:id`.
+- Auth: `/login`, `/forgot-password`, `/reset-password`.
+- Dashboards: `/dashboard/student`, `/dashboard/coordinator`, `/dashboard/approver`, `/dashboard/admin`.
+- Profile: `/profile`.
 
-- Previously, anyone could request `/events/{id}` and read pending/rejected event details.
-- Now approved event details are public, but pending/rejected events return `404` unless the requester is the event's coordinator, an approver, or an admin.
-- Returning `404` avoids confirming that a hidden event ID exists.
-- Venue availability is coordinator/admin-only, so pending event titles and times are not leaked publicly.
+The landing page has a deliberate door-opening NEXUS introduction. The post-door state is kept in session storage; clicking the NEXUS brand resets that entrance. Non-hero pages use the gold NEXUS outline watermark asset (`frontend/public/nexus-outline.svg`).
 
-### Registration and Resource Integrity
+`frontend/src/services/api.js`:
 
-- Registration uses a database row lock (`SELECT ... FOR UPDATE`) on the event row before checking capacity and creating a registration. This prevents concurrent final-seat overbooking in PostgreSQL.
-- Duplicate registrations are blocked both by application logic and a database unique constraint.
-- Event create/update validates that the venue exists, capacity is at least one, capacity does not exceed venue capacity, and capacity does not drop below current registrations.
-- Event update preserves `attendees`; it no longer resets it to zero while registrations remain.
-- Venue deletion is blocked if any event uses the venue.
-- Venue rename is blocked if the venue is in use.
-- Venue capacity cannot be lowered below the configured capacity of events using it.
-- Admins cannot change their own role, remove the final admin, or delete accounts with event/review/registration history.
+- Reads `VITE_API_URL`, falling back to `http://127.0.0.1:8000`.
+- Adds the JWT as `Authorization: Bearer ...`.
+- Adds a random browser `X-Nexus-Visitor` ID used only as a one-way analytics input on the server.
+- Clears local session data and routes to `/login` after non-login `401` responses.
 
-## 10. Known Security, Reliability, and Design Gaps
+### Frontend limitations to remember
 
-These are real outstanding issues and should be considered before production deployment.
+- JWTs are still stored in `localStorage`; an XSS bug could expose them. Migrating to short-lived access tokens plus secure, httpOnly cookie refresh tokens is a production-hardening task.
+- Route components are not protected by a central React route guard. The backend authorizes requests correctly, but UI redirects/empty states should be improved.
+- In-app notifications are polling/fetch based, not real-time push/WebSockets.
+- Search/filter UI should be verified feature-by-feature before stating it is comprehensive; do not infer backend search exists unless a route is added.
 
-### High Priority
+## 9. Security controls already in place
 
-1. **No automated tests.** There are no repository-owned backend or frontend tests. Add API tests for visibility, role checks, capacity, duplicate registration, locking behavior, deletion blocks, and migration behavior. — *DONE: pytest + Vitest set up; see §15 Development Commands.*
-2. **Loose input validation.** Event date/time fields are strings. Add typed/validated date and time values, positive integer capacity constraints, text length limits, image URL validation, and rejection-reason limits. — *DONE: Pydantic validators enforce exact `YYYY-MM-DD` / `HH:MM` formats (round-trip checked), text min/max lengths, capacity bounds, rejection reason ≤ 500 chars; frontend rejection textareas capped at 500.*
-3. **No password policy or rate limiting.** Add password-strength rules, login throttling/rate limiting, and abuse protection before public exposure. — *DONE: passwords must be ≥8 chars with letter + digit (Pydantic validator, client mirror in Login.jsx); in-memory sliding-window rate limiter blocks a login after 5 failed attempts per account or 10 per IP in 15 min.*
-4. **No account deactivation.** Deletion is blocked for historical users, but there is no `is_active`/archived state to disable accounts safely. — *DONE: `users.is_active` (alembic 20260909_0003, applied); `PATCH /users/{id}/status`; inactive users blocked at login, `get_current_user`, and `get_optional_current_user`; admin toggle in AdminDashboard; guards against self-deactivation and last-active-admin lockout.*
-5. **No automatic JWT-expiry handling in the frontend.** API 401 responses should clear stale tokens and redirect to login. — *DONE: axios response interceptor in `services/api.js` clears tokens and redirects to `/login` on 401 (login/register 401s exempt).*
-6. **No production CORS configuration.** CORS is currently a fixed list of local Vite origins in `backend/app/main.py`. — *DONE: origins come from `CORS_ORIGINS` env var (comma-separated); falls back to local dev origins when unset.*
-7. **Frontend API URL is hardcoded.** `frontend/src/services/api.js` uses `http://127.0.0.1:8000`; replace it with `VITE_API_URL`. — *DONE: `import.meta.env.VITE_API_URL` with local fallback; `frontend/.env.example` and `backend/.env.example` added.*
+### Authentication and account safety
 
-### Medium Priority
+- Passwords are bcrypt hashes; they cannot and must not be decrypted.
+- Public registration always creates a `student`, preventing role escalation through sign-up.
+- Pydantic password policy requires at least 8 characters, a letter, and a digit.
+- Login rate limits are applied per account and IP (currently in-memory: five account failures or ten IP failures per 15 minutes).
+- `is_active=False` users are rejected at login and protected routes.
+- JWT contains and validates a token version. Password reset increments `token_version`, invalidating previously issued tokens.
+- Password reset returns a generic response to avoid account enumeration, stores only a hash of a single-use expiring token, and uses rate limits.
 
-1. **`venue` is a string rather than a foreign key.** This makes venue integrity and renames more complicated. Consider `venue_id` migration in a future schema version.
-2. **`organizer` is free text.** A clubs model and coordinator-to-club relationship are needed for trustworthy club ownership.
-3. **No audit history.** `reviewed_by`/`reviewed_at` store only the latest review. Add an audit table if multi-stage or historical approvals are required.
-4. **No event cancellation workflow.** Define cancellation, student notification, and registration consequences.
-5. **Event edits with registrations need a business rule.** Attendees are now preserved safely, but major edits (date/venue/time) may require coordinator/admin confirmation and student notifications.
-6. **Admin destructive actions lack a confirmation dialog in the frontend.** Backend guards exist, but the UI should ask for confirmation before removal.
-7. **Image URL trust.** Existing cover-image URLs are arbitrary strings. Future uploads should use controlled Cloudinary URLs and file validation.
+### Authorization and privacy
 
-### Production Infrastructure Gaps
+- `get_current_user` decodes the token then reloads the user from the database.
+- Role checks use `require_role(...)` on protected operations.
+- Private event requests are not public through direct ID access.
+- Venue availability is staff-only because it can reveal non-public bookings.
+- Coordinator `/events/manage` results are scoped by `created_by`; admin sees all.
+- Users cannot modify their own role or remove the final admin; deletion is blocked if history would be orphaned.
 
-- HTTPS and reverse proxy (for example Nginx) not configured.
-- No Docker/deployment scripts.
-- No PostgreSQL/Supabase backup and restore procedure documented.
-- No monitoring, structured logging, error reporting, health endpoint, or alerting.
-- No secrets-management strategy beyond local `.env`.
-- No CI pipeline for build, lint, tests, or migrations.
+### Data integrity
 
-## 11. Database Migrations and Supabase Status
+- Registration uses a PostgreSQL row lock and a database unique constraint.
+- Event validation checks venue existence, capacity bounds, and conflict/time rules.
+- Coordinator updates resubmit for review and cannot manipulate status/attendee count.
+- Used venues cannot be deleted/renamed unsafely; capacity cannot be lowered below dependent event capacity.
+- Cloudinary API secret remains server-side. Media routes validate image content and authorization before upload.
 
-### What Changed
+### Privacy-conscious analytics
 
-Alembic was added to replace unsafe runtime schema mutation.
+- API analytics stores a SHA-256-derived visitor identifier rather than raw IP addresses, email addresses, or user IDs.
+- `/analytics/admin-summary` is admin-only.
 
-- `backend/alembic/` is the migration environment.
-- `backend/alembic/versions/20260831_0001_initial_schema.py` creates the initial users, venues, events, and registrations tables plus default venues.
-- `backend/app/main.py` no longer runs `Base.metadata.create_all()` or startup `ALTER TABLE` statements.
-- Do not add future schema changes in `backend/migrations/001_dev_schema_updates.sql`; write a new Alembic revision instead.
+## 10. Security and reliability gaps before a real launch
 
-### Current Supabase State (as of 2026-09-02)
+Treat these as a launch checklist, not optional polish.
 
-- A Supabase project has been created.
-- The direct connection hostname resolves from the current network and `SELECT 1` succeeds.
-- The initial NEXUS Alembic migration **has been successfully applied**: revision `20260831_0001` is current (`alembic_version` table exists), and `users`, `venues`, `events`, and `registrations` all exist.
-- The 4 default venues (Main Auditorium 500, Seminar Hall 120, Tech Lab 80, Sports Complex 800) were seeded by the migration.
-- Three users were copied from the local development database: Aswanth (student), Admin (admin), Aldrin (coordinator). Password hashes transferred intact.
-- The local `events` table contained only dirty test rows (malformed dates like `27/07/2026`, placeholder `string` values, an invalid `Accept` status, empty event times). These were **not imported**; Supabase currently has no events or registrations. Create fresh events through the app for testing.
-- The Supabase database password was rotated after appearing in a local error trace and in chat/terminal output. Keep the connection string private; do not print `DATABASE_URL` in commands — read it via python-dotenv instead.
+### Highest priority
 
-### Row-Level Security (RLS) Decision — No RLS for now
+1. **Replace in-memory rate limits with Redis or another shared store.** They reset on restart and do not coordinate across multiple backend replicas.
+2. **Move browser auth away from local storage.** Use secure, `httpOnly`, `SameSite` cookies for refresh tokens, CSRF protections, and a short-lived access token strategy.
+3. **Establish production monitoring.** Capture errors (for example Sentry), structured logs, uptime checks, and alerts. The internal analytics table is not error monitoring.
+4. **Define backups and restore drills.** Supabase backups are not enough until the owner, retention, restoration procedure, and test cadence are documented.
+5. **Use a real verified college domain for Resend.** Sandbox senders may have recipient restrictions and should not be considered a public-production mail setup.
+6. **Pin and update dependencies deliberately; run vulnerability scanning in CI.**
 
-RLS is intentionally **disabled**. The FastAPI backend connects as the `postgres` superuser (table owner), which bypasses RLS, so enabling it would have no enforcement effect today while adding zero-policy lockout risk if Supabase `anon`/`authenticated` keys are ever used. Application-layer authorization (`require_role`, event privacy 404s) is the security boundary.
+### Important design/security work
 
-Enable RLS only as part of a future change where one of these is true:
+- Add audit records for approval/rejection, role/status changes, venue changes, and letter-template edits.
+- Design event cancellation/rescheduling with required student notifications and safe registration consequences.
+- Use timezone-aware timestamp columns and a college timezone policy.
+- Replace free-text venue/organizer with relational `venue_id` and `club_id` as part of a carefully migrated schema.
+- Build proper `clubs` and coordinator-membership tables to support multiple coordinators per club.
+- Add a per-approver signature/profile model if an individual signatory must appear on each letter.
+- Add image scanning/moderation, stronger size/dimension checks, and retention/deletion policies for media before opening uploads broadly.
+- Add pagination/rate limits to public list/gallery/notification endpoints as data grows.
+- Define retention and user-consent policy for analytics and uploaded student/event images.
+- Run production with HTTPS only, strict CORS for exact frontend origins, and no wildcard secrets/configuration.
 
-- The backend connects with a dedicated non-owner role (`SET ROLE`/`rls_app`).
-- The frontend starts talking to Supabase via the `anon`/`authenticated` keys (PostgREST), which makes RLS mandatory.
+## 11. Testing and verification
 
-Policies must be defined **before** RLS is enabled, and this decision should be revisited alongside any transition to Supabase Auth.
-
-### Migration Commands
-
-Run from `backend/` after `DATABASE_URL` is confirmed:
+Current automated coverage includes backend pytest files for authentication, events/privacy/registrations, validation, analytics, and letter templates, plus a frontend Landing Page test. The suite previously passed with **57 backend tests**; run it again after changes rather than relying on that historical number.
 
 ```bash
-./.venv/bin/alembic current
-./.venv/bin/alembic upgrade head
-./.venv/bin/alembic current
+cd backend
+./.venv/bin/pytest
+
+cd ../frontend
+npm run test -- --run
+npm run build
 ```
 
-Expected result after a successful migration:
+Test architecture:
 
-- `alembic_version` table exists.
-- Revision `20260831_0001` is current.
-- `users`, `venues`, `events`, and `registrations` exist.
+- Backend uses an isolated in-memory SQLite database with FastAPI dependency overrides.
+- Production race protection uses PostgreSQL row locks, which SQLite does not fully simulate. Add PostgreSQL integration tests before relying on concurrency guarantees at scale.
 
-### Local Data Migration (DONE, selective)
+Recommended next tests:
 
-Completed on 2026-09-02:
+- Token version invalidation after password reset.
+- Media upload authorization and deletion ownership.
+- Permission-letter snapshot immutability.
+- Public/private event detail and gallery privacy.
+- Venue conflict edge cases and time validation.
+- Full browser flows using Playwright/Cypress.
+- Alembic upgrade from an empty database and from prior production revisions.
 
-1. Local database was backed up with `pg_dump` (`nexus.dump`).
-2. Schema migration (`20260831_0001`) was applied to the empty Supabase project.
-3. Imported selectively with IDs preserved: 3 users only (Aswanth/student, Admin/admin, Aldrin/coordinator). Venues already existed from the migration seed.
-4. The 5 local events and 1 registration were skipped because they contained dirty test data (see Supabase State above).
-
-Do not copy database credentials into the frontend or commit `.env` files.
-
-## 12. Planned Public Past Events and Event Gallery Feature
-
-This is the next requested product feature, but it is **not implemented yet**.
-
-### Requirements
-
-- Past approved events should be publicly visible without login.
-- Add a dedicated `/events/past` page linked from the landing page.
-- A past event is normally an approved event whose date/time has ended.
-- Each past event should have a public gallery on its details page.
-- Only the event's creating coordinator or an admin can upload/delete gallery photos.
-- Uploads are allowed only after the event has ended.
-- Pending/rejected event galleries must never be public.
-
-### Recommended Design
-
-Use Cloudinary for files; do not store image bytes in PostgreSQL.
-
-Create an `event_photos` table with at least:
-
-- `id`
-- `event_id` (foreign key)
-- `image_url` / Cloudinary `secure_url`
-- `cloudinary_public_id` (for deletion)
-- `caption` (optional)
-- `uploaded_by` (user foreign key)
-- `created_at`
-
-Recommended API:
-
-| Method | Endpoint | Access |
-| --- | --- | --- |
-| GET | `/events/past` | Public, approved ended events only |
-| GET | `/events/{id}/photos` | Public only when event is approved and ended |
-| POST | `/events/{id}/photos` | Event owner coordinator/admin; multipart upload; ended events only |
-| DELETE | `/events/{id}/photos/{photo_id}` | Event owner coordinator/admin |
-
-### Cloudinary Requirements
-
-Before implementing a real upload button, configure these backend-only environment variables:
-
-```env
-CLOUDINARY_CLOUD_NAME=...
-CLOUDINARY_API_KEY=...
-CLOUDINARY_API_SECRET=...
-```
-
-Never send the API secret to React. The backend must validate file type and size, verify event ownership/status/end time, upload to Cloudinary, then save the returned URL/ID to PostgreSQL.
-
-## 13. Other Planned Features
-
-### Permission Letter PDF
-
-- Generate a PDF after approval.
-- Include event, venue, date/time, organizer, approver, and approval date.
-- Save file metadata/location and allow only the owner coordinator/admin to download it.
-- Use ReportLab or equivalent.
-
-### Forgot Password
-
-- `POST /auth/forgot-password`: always return a generic success message.
-- Create a random token, store only its hash, expiry, and used timestamp.
-- Email reset link through Resend or similar provider.
-- `POST /auth/reset-password`: validate unused token, set bcrypt password hash, mark token used.
-- Add rate limits and token expiry.
-
-### Notifications
-
-- Persist notifications in the database.
-- Notify coordinators when events are approved/rejected.
-- Notify approvers about new pending requests.
-- Notify students of material event changes/cancellation.
-- Add email delivery only after in-app notifications are reliable.
-
-### Profile and Account Settings
-
-- Add profile columns or a profile table.
-- Add authenticated profile read/update endpoints.
-- Persist notification preferences.
-- Add `is_active` to deactivate rather than delete historical accounts.
-
-### Clubs
-
-- Create clubs table.
-- Link coordinators to clubs.
-- Replace free-text event organizer with club relationship.
-- Support admin management of clubs and coordinator access.
-
-## 14. Recommended Implementation Order
-
-1. Finish Supabase Session Pooler connection, rotate exposed database password, and apply initial Alembic migration.
-2. Add backend test infrastructure and tests for all existing security/integrity rules.
-3. Tighten Pydantic validation and add frontend 401 handling/route guards.
-4. Add production configuration: `VITE_API_URL`, environment-driven CORS, secrets, health checks, logging, backup plan.
-5. Implement public past-event archive and Cloudinary event galleries.
-6. Implement permission-letter PDF generation.
-7. Implement persistent profiles/settings and forgot-password email flow.
-8. Implement notifications and clubs.
-9. Add Docker/Nginx/HTTPS/CI and deploy.
-
-## 15. Development Commands
+## 12. Local development operations
 
 ### Backend
 
-Run from `backend/`:
+Run from `backend`, not `backend/app`:
 
 ```bash
-./.venv/bin/uvicorn app.main:app --reload
-./.venv/bin/python -m compileall app
+source .venv/bin/activate
 ./.venv/bin/alembic upgrade head
-./.venv/bin/pytest                          # run all backend tests
-./.venv/bin/pytest --cov=app --cov-report=term-missing  # coverage
+uvicorn app.main:app --reload
 ```
+
+If `ModuleNotFoundError: No module named 'app'` occurs, it usually means Uvicorn was started from `backend/app`. Go back to `backend` and run the supported command.
 
 ### Frontend
 
-Run from `frontend/`:
-
 ```bash
+cd frontend
 npm run dev
-npm run build
-npm test      # Vitest (unit/component tests)
 ```
 
-### Test Suite
+If Vite reports CSS/JS module MIME errors, it normally means a source import resolves to the HTML fallback (a missing/incorrect file path) or Vite needs to be restarted after a file rename. Do not “fix” this by changing MIME headers; locate the broken import/network request.
 
-Backend (pytest): fixtures in `backend/tests/conftest.py` use a fresh in-memory
-SQLite DB per test with fake signed-in users (`login_as`). Test files:
-`tests/test_events.py` (API behavior), `tests/test_validation.py` (input rules).
+### Supabase
 
-Frontend (Vitest + Testing Library): `frontend/src/setupTests.js` loads
-jest-dom matchers; tests render components with mocked API/framer-motion.
-Example: `frontend/src/__tests__/LandingPage.test.jsx`.
+- `DATABASE_URL` belongs only in backend `.env`.
+- Use the Supabase Session Pooler connection string for environments where the direct hostname is not reachable (common on some local IPv4/DNS networks).
+- URL-encode special characters in the database password when placing it in a connection URL.
+- After a schema change: create/review Alembic migration, then run `./.venv/bin/alembic upgrade head` against the intended database.
 
-Do **not** run `uvicorn main:app` from inside `backend/app`; imports use the package path `app.*` and require the backend directory as the working directory.
+## 13. Container and deployment state
 
-### Frontend
+Already present:
 
-Run from `frontend/`:
+- `backend/Dockerfile`: Python 3.12 FastAPI image on port 8000.
+- `frontend/Dockerfile`: Node 22 Vite build, then Nginx static serving.
+- `frontend/nginx.conf`: SPA fallback and `/api/` proxy to backend.
+- `docker-compose.yml`: local two-service composition.
+- `GET /health`: checks the API and database `SELECT 1`.
 
-```bash
-npm run dev -- --force
-npm run build
-npm run lint
+### Safe deployment shapes
+
+**Preview/demo now**
+
+```text
+Cloudflare Pages or Vercel → frontend
+Render or Cloud Run        → backend Docker image
+Supabase                   → database
+Cloudinary / Resend        → external services
 ```
 
-The production frontend build has passed recently. Lint has known unused-import errors and a React Hook dependency warning that should be cleaned up before CI is introduced.
+With separately hosted frontend and backend, set `VITE_API_URL` to the exact public backend URL and `CORS_ORIGINS`/`FRONTEND_URL` to the exact frontend origin.
 
-### Database Shell
+**College Kubernetes later**
 
-From `backend/`:
-
-```bash
-set -a
-source .env
-set +a
-psql "$DATABASE_URL"
+```text
+Ingress / Cloudflare
+   ├── frontend deployment + service
+   └── backend deployment + service
+          └── Supabase or managed Postgres
 ```
 
-Useful PostgreSQL commands:
+Use Kubernetes Secrets for credentials, ConfigMaps for non-secret configuration, a one-time Alembic migration Job, `/health` probes, resource limits, centralized logs, HTTPS, and a documented database backup/restore plan. Cloudflare Tunnel can expose services without opening inbound server ports.
 
-```sql
-\dt
-\d users
-\d events
-SELECT id, full_name, email, role FROM users ORDER BY id;
-SELECT id, title, status, date, venue, attendees, capacity FROM events ORDER BY id;
-\q
-```
+Do not run Alembic automatically in every API replica at startup. Use a controlled one-time migration step.
 
-## 16. Sensitive Data Rules
+## 14. Work roadmap
 
-- Never commit `.env`, `.env.local`, database URLs, API keys, Cloudinary secrets, JWT secrets, or password-reset tokens.
-- Never place backend secrets in React/Vite environment variables unless they are explicitly safe public values (for example `VITE_API_URL`).
-- Password hashes cannot be decrypted. Reset a forgotten password by generating a new bcrypt hash and updating the user record, or by implementing the reset-token flow.
-- Rotate secrets if they appear in terminal output, issue descriptions, screenshots, chat messages, or git commits.
+Prioritize in this order unless product needs change:
 
-## 17. Definition of Done for Production Readiness
+1. Production operations: deploy preview, then add monitoring, backups, domain/HTTPS, exact CORS, secrets management, and CI.
+2. Security hardening: shared rate limiting, cookie-based auth/CSRF strategy, audit logs, upload policy.
+3. Data model: clubs/multiple coordinators, relational venue IDs, real datetime/timezone fields.
+4. Workflow completeness: cancellation/reschedule, approval history, staff-specific signature ownership, emailed event notifications.
+5. Experience: live/realtime notifications, event search/pagination, attendance QR/check-in, richer accessibility and browser E2E tests.
+6. Future expansion: multi-college tenancy only after every record is explicitly scoped by organization and authorization is redesigned for it.
 
-NEXUS should not be described as production-ready until all of the following are true:
+## 15. Rules for future contributors / LLMs
 
-- Database is hosted, migrated, backed up, and restore-tested.
-- No schema-changing startup SQL remains.
-- Tests cover critical authentication, authorization, booking, registration, and deletion rules.
-- Secrets are environment-managed and rotated if exposed.
-- Frontend API URL and CORS are environment-specific.
-- HTTPS is enabled behind a production reverse proxy.
-- Error logging/monitoring and health checks exist.
-- User-facing incomplete buttons are either implemented or removed.
-- Permission letters, password reset, and media uploads have their intended authorization and storage rules.
-
+- Inspect the actual route, schema, model, migration, and tests before changing a business rule.
+- Do not add hardcoded event data or placeholder arrays as a fallback for production features.
+- Do not commit `.env`, secrets, Cloudinary credentials, database URLs, tokens, or reset links.
+- New persistent schema changes require Alembic migrations; never use runtime schema mutation as a substitute.
+- Preserve authorization rules on the backend even if a frontend page hides a button.
+- Do not make unrequested destructive schema/database changes. Back up production data before migrations.
+- Check `git status` before editing: a dirty worktree may contain user changes that must be preserved.
+- Update this document and README whenever a feature changes materially, especially role scope, environment setup, database schema, deployment requirements, or security posture.

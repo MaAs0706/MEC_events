@@ -1,497 +1,218 @@
 # NEXUS
 
-### College Event Management Platform
+> **One platform. Every club. Every event. Zero paperwork.**
 
-> One platform. Every club. Every event. Zero paperwork.
+NEXUS is a college event-management platform. It gives clubs, students, approvers, and administrators one shared place to plan events, manage venue availability, obtain approvals, register attendees, and publish event memories.
 
-NEXUS is a full-stack college event management platform where club coordinators submit event requests, approvers review them digitally, students discover and register for approved events, and admins manage the platform.
+## What NEXUS does
 
----
+- Coordinators submit event requests and see venue availability before booking.
+- Approvers and admins approve or reject requests digitally.
+- Students discover approved events, register in one click, and receive in-app confirmations.
+- Coordinators track registrations, view attendee lists, upload event galleries, and download approved-event permission letters.
+- Admins manage people, roles, venues, letter branding, and platform analytics.
 
-## What problem does NEXUS solve?
+## Roles
 
-College event management is often scattered across WhatsApp messages, printed approval letters, spreadsheets, and informal venue discussions.
+| Role | What they can do |
+| --- | --- |
+| Student | Browse current and past approved events, register, see registered events, manage their profile and notifications. |
+| Coordinator | Create and resubmit events, check availability, manage only their own events, view attendees, add a club identity/logo, upload post-event gallery photos, and download approval letters. |
+| Approver | Review pending events, approve or reject with a reason, receive notifications, and configure the official letter template. |
+| Admin | Manage users, roles, account status, venues, letter-template branding, platform analytics, and event reviews. |
 
-NEXUS brings the process into one shared system:
+## Current status
 
-- Clubs can check venue/date availability before submitting an event.
-- Events go through a digital approval workflow.
-- Students see only approved upcoming events.
-- Students can register for events in one click.
-- Coordinators can track registrations and attendees.
-- Admins can manage users, roles, venues, and event visibility.
+NEXUS is an active MVP with the main product workflow working end-to-end:
 
----
+```text
+Coordinator creates request
+        ↓
+Venue/date availability is checked
+        ↓
+Event is pending review
+        ↓
+Approver or admin approves / rejects
+        ↓
+Approved event becomes public
+        ↓
+Students register
+        ↓
+Coordinator tracks attendees and can publish photos after the event
+```
 
-## User roles
+Implemented highlights:
 
-### Student
+- JWT authentication, secure password hashing, role-based access control, account activation controls, and password recovery through Resend.
+- Private pending/rejected event details; public users can access only approved events.
+- Capacity-safe registrations with duplicate-registration protection.
+- Venue management and daily availability/load visualization.
+- Cloudinary-backed cover-image, gallery-image, club-logo, and letter-template asset uploads.
+- In-app notifications for requests, reviews, and registrations.
+- PDF permission letters generated after approval, using the configured college template and the submitting club’s identity.
+- Admin request analytics that do not retain raw IP addresses.
+- Responsive dashboard layouts, Docker files, health check, Alembic migrations, backend tests, and a frontend smoke test.
 
-- Browse approved upcoming events.
-- Search and filter events.
-- View event details.
-- Register/RSVP for events.
-- See joined events and upcoming schedule.
+For the complete developer handoff—including database model, API, security decisions, deployment state, and remaining work—read [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
 
-### Club Coordinator
-
-- View a shared venue calendar.
-- Move between months and pick dates.
-- See venue availability and booking load.
-- Create event requests.
-- Events are automatically submitted as `pending`.
-- Manage only their own events.
-- View attendee lists for their events.
-
-### Approver
-
-- View pending event requests.
-- Open event details.
-- Approve or reject events.
-- Add rejection remarks.
-
-### Admin
-
-- Manage users and roles.
-- Create student/coordinator/approver/admin accounts.
-- Manage venues and capacities.
-- View pending and approved events.
-- Approve or reject pending events.
-
----
-
-## Current feature status
-
-### Implemented
-
-- JWT authentication.
-- Password hashing with bcrypt/passlib.
-- Role-based authorization.
-- Student registration and login.
-- Admin-created platform accounts.
-- Event creation by coordinator/admin.
-- Event ownership through `created_by`.
-- Coordinator event management.
-- Shared calendar with month navigation.
-- Venue availability endpoint.
-- Approval/rejection workflow.
-- Student-facing approved event feed.
-- Student event registration.
-- Duplicate registration prevention.
-- Capacity enforcement.
-- Coordinator attendee view.
-- Admin user management.
-- Admin venue management.
-- Admin event overview.
-- CORS configuration for local frontend ports.
-- Dark themed React UI with role dashboards.
-
-### Planned / not finished yet
-
-- Permission letter PDF generation.
-- Notifications.
-- Forgot password email flow.
-- Cloudinary signed image uploads.
-- Real Alembic migrations.
-- Production deployment configuration.
-- PostgreSQL backups.
-
----
-
-## Tech stack
+## Technology
 
 | Layer | Technology |
 | --- | --- |
-| Frontend | React + Vite |
-| Backend | FastAPI |
-| Database | PostgreSQL |
-| ORM | SQLAlchemy |
-| Validation | Pydantic |
-| Authentication | JWT |
-| Password Hashing | Passlib + bcrypt |
-| Styling | CSS |
+| Frontend | React, Vite, React Router, Axios, Framer Motion |
+| Backend | Python, FastAPI, SQLAlchemy, Pydantic |
+| Database | PostgreSQL, currently Supabase Postgres |
+| Authentication | JWT bearer tokens, Passlib/bcrypt |
+| Media | Cloudinary |
+| Email | Resend |
+| PDFs | ReportLab |
+| Migrations | Alembic |
+| Containers | Docker and Docker Compose |
 
----
+## Quick start
 
-## Project structure
+### Prerequisites
 
-```text
-NEXUS/
-├── backend/
-│   ├── app/
-│   │   ├── models/
-│   │   ├── routes/
-│   │   ├── schemas/
-│   │   ├── utils/
-│   │   ├── database.py
-│   │   ├── dependencies.py
-│   │   └── main.py
-│   ├── migrations/
-│   └── requirements.txt
-│
-├── frontend/
-│   ├── public/
-│   ├── src/
-│   │   ├── pages/
-│   │   ├── services/
-│   │   ├── App.jsx
-│   │   └── main.jsx
-│   └── package.json
-│
-└── README.md
-```
+- Python 3.12+ (the Docker image uses Python 3.12)
+- Node.js 22+ (the Docker image uses Node 22)
+- A PostgreSQL database, locally or from Supabase
 
----
-
-## Backend setup
-
-Go to the backend folder:
+### 1. Set up the backend
 
 ```bash
 cd backend
-```
-
-Create and activate a virtual environment:
-
-```bash
 python3 -m venv .venv
 source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
 ```
 
-Install dependencies:
+Fill in the required values in `backend/.env`. At minimum, local development needs `DATABASE_URL` and `SECRET_KEY`.
+
+Apply the schema:
 
 ```bash
-pip install -r requirements.txt
+./.venv/bin/alembic upgrade head
 ```
 
-Create a `.env` file inside `backend/`:
-
-```env
-DATABASE_URL=postgresql://postgres:your_password@localhost:5432/nexus
-JWT_SECRET_KEY=replace-with-a-long-random-secret
-```
-
-Run the backend:
+Start the API from the **`backend` directory**:
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-Backend runs at:
+The backend runs at `http://127.0.0.1:8000` and its interactive API documentation is at `http://127.0.0.1:8000/docs`.
 
-```text
-http://127.0.0.1:8000
-```
+> If `ModuleNotFoundError: No module named 'app'` appears, Uvicorn was likely started from `backend/app`. Return to `backend` and use the command above.
 
-API docs:
+### 2. Set up the frontend
 
-```text
-http://127.0.0.1:8000/docs
-```
-
----
-
-## Frontend setup
-
-Go to the frontend folder:
+In another terminal:
 
 ```bash
 cd frontend
-```
-
-Install dependencies:
-
-```bash
 npm install
-```
-
-Run the frontend:
-
-```bash
+cp .env.example .env.local
 npm run dev
 ```
 
-Frontend runs at:
+For local development, set this in `frontend/.env.local`:
 
-```text
-http://localhost:5173
+```env
+VITE_API_URL=http://127.0.0.1:8000
 ```
 
-Build for production:
+Open `http://localhost:5173`.
 
-```bash
-npm run build
-```
+### 3. Create the first admin
 
----
-
-## Important API endpoints
-
-### Authentication
-
-| Method | Endpoint | Description |
-| --- | --- | --- |
-| `POST` | `/auth/register` | Register student account |
-| `POST` | `/auth/login` | Login and receive JWT |
-| `GET` | `/auth/me` | Get current logged-in user |
-| `GET` | `/auth/me/registrations` | Get current user's registered events |
-
-### Events
-
-| Method | Endpoint | Description |
-| --- | --- | --- |
-| `POST` | `/events` | Create event request |
-| `GET` | `/events` | Get approved events |
-| `GET` | `/events/pending` | Get pending events |
-| `GET` | `/events/manage` | Get coordinator/admin managed events |
-| `GET` | `/events/availability` | Get venue availability for a date |
-| `GET` | `/events/{event_id}` | Get event details |
-| `PUT` | `/events/{event_id}` | Replace event |
-| `PATCH` | `/events/{event_id}` | Partially update event |
-| `PATCH` | `/events/{event_id}/approve` | Approve pending event |
-| `PATCH` | `/events/{event_id}/reject` | Reject pending event |
-| `POST` | `/events/{event_id}/register` | Student registers for event |
-| `GET` | `/events/{event_id}/registration-status` | Check if student registered |
-| `GET` | `/events/{event_id}/attendees` | Coordinator/admin attendee list |
-
-### Venues
-
-| Method | Endpoint | Description |
-| --- | --- | --- |
-| `GET` | `/venues` | List venues |
-| `POST` | `/venues` | Create venue |
-| `PUT` | `/venues/{venue_id}` | Update venue |
-| `DELETE` | `/venues/{venue_id}` | Delete venue |
-
-### Users
-
-| Method | Endpoint | Description |
-| --- | --- | --- |
-| `GET` | `/users` | Admin lists users |
-| `POST` | `/users` | Admin creates user |
-| `PATCH` | `/users/{user_id}/role` | Admin updates role |
-| `DELETE` | `/users/{user_id}` | Admin deletes user |
-
----
-
-## Main workflows
-
-### Coordinator creates an event
-
-```text
-Login as coordinator
-→ Open calendar
-→ Choose month/date
-→ Select venue
-→ Check availability
-→ Fill event details
-→ Submit event
-→ Event status becomes pending
-```
-
-### Admin or approver reviews event
-
-```text
-Login as approver/admin
-→ Open pending reviews
-→ View event details
-→ Approve or reject
-→ If approved, students can see it
-→ If rejected, students cannot see it
-```
-
-### Student registers for event
-
-```text
-Login as student
-→ Browse upcoming approved events
-→ Open event details or click RSVP
-→ Register
-→ Registration count updates
-→ Coordinator can see attendee list
-```
-
----
-
-## First admin account
-
-Public registration creates student accounts only.
-
-To use the admin dashboard, create one admin user directly in PostgreSQL or through a temporary script.
-
-Important: the password must be stored as a bcrypt hash, not plain text.
-
-Example hash generation:
+Public sign-up intentionally creates **student** accounts only. Create the initial admin safely with a bcrypt hash:
 
 ```bash
 cd backend
-python3 -c "from app.utils.security import hash_password; print(hash_password('admin123'))"
+source .venv/bin/activate
+python -c "from getpass import getpass; from app.utils.security import hash_password; print(hash_password(getpass('New admin password: ')))"
 ```
 
-Then insert the user into PostgreSQL:
+Insert that generated hash into PostgreSQL using an admin database tool or SQL console. Never store a plain-text password in the database. Once an admin exists, use the Admin dashboard to create staff accounts.
 
-```sql
-INSERT INTO users (full_name, email, password_hash, role)
-VALUES (
-  'Admin User',
-  'admin@nexus.local',
-  'PASTE_BCRYPT_HASH_HERE',
-  'admin'
-);
+## Environment variables
+
+Copy [backend/.env.example](backend/.env.example) and keep the real `.env` file private.
+
+| Variable | Purpose |
+| --- | --- |
+| `DATABASE_URL` | PostgreSQL/Supabase connection string. |
+| `SECRET_KEY` | Long, random JWT signing secret. Never reuse a development secret in production. |
+| `ALGORITHM` | JWT algorithm; currently `HS256`. |
+| `CORS_ORIGINS` | Comma-separated browser origins allowed to call the backend. |
+| `PUBLIC_API_URL` | Public backend URL used when returning media URLs. |
+| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Server-side media storage credentials. |
+| `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `FRONTEND_URL` | Password-recovery email configuration. |
+| `VITE_API_URL` | Frontend-only API base URL. This is safe to expose because it is just a URL. |
+
+Never commit `.env`, `.env.local`, Supabase passwords, Cloudinary secrets, JWT secrets, Resend keys, or password-reset links.
+
+## Testing and checks
+
+Backend tests run against an isolated in-memory SQLite database; they never use the configured Supabase database.
+
+```bash
+cd backend
+./.venv/bin/pytest
 ```
 
----
-
-## Current development notes
-
-- The frontend currently calls the backend at `http://127.0.0.1:8000`.
-- The backend reads `DATABASE_URL` from `.env`.
-- Local CORS is configured for Vite development ports.
-- Some development schema update SQL still exists and should be replaced with Alembic migrations before production.
-
----
-
-## Production-readiness checklist
-
-Before hosting NEXUS publicly or on a college server:
-
-- Move all secrets to `.env`.
-- Use a strong `JWT_SECRET_KEY`.
-- Move frontend API base URL to a Vite environment variable.
-- Replace startup `ALTER TABLE` logic with Alembic migrations.
-- Restrict CORS to the real frontend domain.
-- Use HTTPS.
-- Use a production database such as Supabase Postgres or server-hosted PostgreSQL.
-- Add database backups.
-- Add signed Cloudinary uploads for event images.
-- Add forgot password email flow.
-- Add permission letter PDF generation.
-- Add logging and error monitoring.
-
----
-
-## Contributing
-
-NEXUS is currently at `v0.0.1`, which means the core MVP works, but there are many useful areas where contributors can help.
-
-If you want to contribute:
-
-1. Fork the repository.
-2. Create a new branch.
-3. Set up the backend and frontend locally.
-4. Pick an open issue or propose a new one.
-5. Make a focused change.
-6. Test your change.
-7. Open a pull request with a clear description.
-
-Suggested branch names:
-
-```text
-feature/permission-letter
-feature/forgot-password
-fix/student-dashboard-filter
-docs/setup-guide
-```
-
-### Good first contribution areas
-
-These are suitable for new contributors:
-
-- Improve README setup instructions.
-- Add screenshots/GIFs of the app.
-- Improve empty states in dashboards.
-- Improve mobile responsiveness.
-- Clean up repeated CSS.
-- Improve form validation messages.
-- Add better loading states.
-- Add frontend error messages instead of generic alerts.
-- Improve accessibility, labels, focus states, and keyboard navigation.
-
-### Feature contribution areas
-
-These are larger features contributors can work on:
-
-- Permission letter PDF generation with ReportLab.
-- Forgot password flow with email reset links.
-- Cloudinary signed image uploads.
-- Notification system.
-- Alembic database migrations.
-- Production `.env` configuration cleanup.
-- Supabase/PostgreSQL deployment guide.
-- Better admin analytics.
-- Coordinator resubmission flow after rejection.
-- Student cancellation/unregister flow.
-
-### Contribution guidelines
-
-Please keep pull requests focused. A good pull request should solve one clear problem.
-
-Before opening a PR:
-
-- Run the frontend build:
+Frontend checks:
 
 ```bash
 cd frontend
+npm run test -- --run
 npm run build
 ```
 
-- Compile the backend:
+Run these before opening a pull request.
+
+## Docker
+
+For a local containerized production-like setup:
 
 ```bash
-cd backend
-python3 -m compileall app
+cp backend/.env.example backend/.env
+# Fill backend/.env with real values first.
+docker compose up --build
 ```
 
-- Mention what you changed.
-- Mention how you tested it.
-- Add screenshots for UI changes when possible.
+The frontend is served at `http://localhost`; Nginx forwards `/api/*` to the FastAPI container. The health endpoint is `GET /health`.
 
-### Issue labels we recommend
+## Deployment overview
+
+For a non-college public preview, a practical setup is:
 
 ```text
-good first issue
-frontend
-backend
-documentation
-bug
-feature
-security
-deployment
-help wanted
+Cloudflare Pages or Vercel  →  React frontend
+Render / Cloud Run          →  FastAPI backend container
+Supabase                    →  PostgreSQL
+Cloudinary                  →  images
+Resend                      →  password reset email
 ```
 
----
+For the college’s Kubernetes environment, deploy the existing backend and frontend images as separate workloads, keep secrets in Kubernetes Secrets, run Alembic as a one-time migration job, and place HTTPS/ingress in front of the services. Cloudflare Tunnel is a good option if the college does not want to expose a public server IP.
 
-## Possible deployment options
+Before a real launch, ensure the production CORS origins, domain, HTTPS, backups, monitoring, and error reporting are configured. The detailed checklist is in [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
 
-### Simple cloud deployment
+## Contributing
 
-```text
-Frontend: Vercel / Netlify
-Backend: Render / Railway / Fly.io
-Database: Supabase / Neon / Railway PostgreSQL
-```
+Contributions are welcome. Please keep each pull request focused on one clear improvement.
 
-### College server deployment
+1. Fork the repository and create a branch.
+2. Set up the backend and frontend locally.
+3. Check existing issues or open one before starting a larger feature.
+4. Make the change with tests where practical.
+5. Run the checks above.
+6. Open a pull request explaining what changed, how it was tested, and screenshots for UI changes.
 
-```text
-Browser
-  ↓
-https://nexus.college.edu
-  ↓
-Nginx
-  ├── React frontend
-  └── /api → FastAPI backend
-          ↓
-      PostgreSQL / Supabase
-```
+Good contribution areas include accessibility, test coverage, API error UX, audit history, staff signature management, club/multi-coordinator modeling, cancellation flows, and production monitoring.
 
----
+## License
 
-## V1 out of scope
-
-- Mobile app.
-- Payment/ticketing system.
-- Physical or cryptographic digital signatures.
-
-For v1 permission letters, approver name and date are enough.
+No license has been selected yet. Do not assume third parties may reuse or redistribute the project until a license is added.
