@@ -482,6 +482,10 @@ body {
   font-size: 14px;
 }
 
+.nav-past-mobile {
+  display: none;
+}
+
 .nav-join {
   background: #ff3131;
   color: white;
@@ -854,38 +858,260 @@ body {
 
 @media(max-width: 768px) {
 
+  .landing-content::before {
+    width: 132vw;
+    height: 68vw;
+    opacity: 0.14;
+  }
+
+  .nexus-gate {
+    perspective: 760px;
+  }
+
+  .gate-logo {
+    font-size: clamp(3.45rem, 17vw, 5.2rem);
+    letter-spacing: -0.1em;
+  }
+
+  .door-panel::before {
+    inset: 9% 7%;
+    border-radius: 14px;
+  }
+
+  .door-panel::after {
+    width: 7px;
+    height: 62px;
+  }
+
+  .door-left::after {
+    right: 18px;
+  }
+
+  .door-right::after {
+    left: 18px;
+  }
+
+  .door-frame {
+    width: calc(100vw - 48px);
+    height: min(78svh, 640px);
+    border-radius: 22px;
+  }
+
+  .door-frame::before {
+    inset: 13px;
+    border-radius: 15px;
+  }
+
+  .gate-hint {
+    bottom: max(30px, env(safe-area-inset-bottom));
+    font-size: 9px;
+    letter-spacing: 0.24em;
+  }
+
   .nav-search {
     display: none;
   }
 
+  .nav-inner {
+    height: 66px;
+    padding: 0 18px;
+  }
+
+  .logo {
+    font-size: 18px;
+    letter-spacing: 1.5px;
+  }
+
+  .nav-right {
+    gap: 10px;
+  }
+
+  .nav-past-desktop {
+    display: none;
+  }
+
+  .nav-past-mobile {
+    display: inline;
+  }
+
+  .nav-signin {
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .nav-join {
+    padding: 10px 12px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
   .hero-title {
-    font-size: 4rem;
+    font-size: clamp(2.7rem, 13vw, 3.75rem);
+    letter-spacing: -0.075em;
+    line-height: 0.94;
+    margin-bottom: 20px;
   }
 
   .hero-buttons {
     flex-direction: column;
-  }
-
-  .hero-stats {
-    flex-wrap: wrap;
-    gap: 30px;
+    gap: 10px;
+    margin-bottom: 46px;
   }
 
   .hero-section,
   .featured-section {
-    padding-left: 20px;
-    padding-right: 20px;
+    padding-left: 24px;
+    padding-right: 24px;
   }
+
+  .hero-section {
+    padding-top: 58px;
+    padding-bottom: 48px;
+  }
+
+  .hero-badge {
+    margin-bottom: 24px;
+    font-size: 9px;
+    letter-spacing: 0.23em;
+  }
+
+  .hero-description {
+    margin-bottom: 28px;
+    font-size: 15px;
+    line-height: 1.65;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    display: flex;
+    min-height: 54px;
+    align-items: center;
+    justify-content: center;
+    padding: 13px 18px;
+  }
+
+  /* Scoped selector prevents dashboard styles from changing the landing stats. */
+  .landing-content .hero-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px 16px;
+    padding-top: 24px;
+  }
+
+  .landing-content .stat {
+    min-width: 0;
+  }
+
+  .stat-number {
+    font-size: 2.35rem;
+    line-height: 1;
+  }
+
+  .stat-label {
+    margin-top: 7px;
+    font-size: 9px;
+    line-height: 1.4;
+    letter-spacing: 0.18em;
+  }
+
+  .hero-right {
+    margin-top: -4px;
+  }
+
+  .live-card {
+    width: 100%;
+    padding: 22px;
+    border-radius: 12px;
+  }
+
+  .live-header {
+    margin-bottom: 20px;
+    font-size: 9px;
+    letter-spacing: 0.22em;
+  }
+
+  .live-event {
+    padding: 17px 0;
+  }
+
+  .live-event h4 {
+    font-size: 18px;
+    line-height: 1.2;
+  }
+
+  .live-event p {
+    font-size: 13px;
+  }
+
+  .featured-section {
+    padding-top: 42px;
+    padding-bottom: 56px;
+  }
+
+  .section-heading {
+    margin-bottom: 26px;
+  }
+
+  .section-heading span {
+    font-size: 9px;
+    letter-spacing: 0.22em;
+  }
+
+  .section-heading h2 {
+    margin-top: 10px;
+    font-size: 2.25rem;
+    line-height: 1;
+  }
+
+  .events-grid {
+    gap: 18px;
+  }
+
+  .event-image {
+    height: 190px;
+  }
+
+  .event-content {
+    padding: 20px;
+  }
+
+  .event-content h3 {
+    margin: 11px 0 8px;
+    font-size: 23px;
+    line-height: 1.1;
+  }
+
+  .event-content p {
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .event-meta {
+    gap: 12px;
+    margin-top: 20px;
+    font-size: 11px;
+  }
+
+}
+
+@media(max-width: 360px) {
 
   .nav-inner {
-    padding: 0 20px;
+    padding: 0 14px;
   }
 
-  .nav-actions { gap: 8px; }
-  .nav-actions .signin-link { display: none; }
-  .hero-title { font-size: clamp(3.1rem, 16vw, 4.5rem); }
-  .hero-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
-  .hero-stat:last-child { grid-column: 1 / -1; }
-  .live-card { width: 100%; }
+  .nav-right {
+    gap: 8px;
+  }
+
+  .nav-join {
+    padding: 9px 10px;
+  }
+
+  .hero-section,
+  .featured-section {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
 
 }

@@ -176,15 +176,58 @@ def test_reset_password_rejects_expired_token(client, set_registered_password, d
 # ---------------------------------------------------------------------------
 
 
-def test_login_success_returns_token(client, set_registered_password):
+def test_login_sets_httponly_cookie_session(client, set_registered_password):
     response = client.post(
         "/auth/login",
         json={"email": "ada@test.com", "password": "StrongPass1"},
     )
 
     assert response.status_code == 200
-    assert response.json()["access_token"]
+    assert "access_token" not in response.json()
     assert response.json()["role"] == "student"
+    assert response.json()["csrf_token"]
+    set_cookie = response.headers["set-cookie"].lower()
+    assert "nexus_access=" in set_cookie
+    assert "httponly" in set_cookie
+    assert client.get("/auth/me").status_code == 200
+
+
+def test_cookie_session_requires_csrf_on_writes(client, set_registered_password):
+    login = client.post(
+        "/auth/login",
+        json={"email": "ada@test.com", "password": "StrongPass1"},
+    )
+    csrf_token = login.json()["csrf_token"]
+
+    blocked = client.patch("/auth/me", json={"full_name": "Ada Updated"})
+    assert blocked.status_code == 403
+
+    allowed = client.patch(
+        "/auth/me",
+        json={"full_name": "Ada Updated"},
+        headers={"X-CSRF-Token": csrf_token},
+    )
+    assert allowed.status_code == 200
+    assert allowed.json()["name"] == "Ada Updated"
+
+
+def test_logout_clears_cookie_session(client, set_registered_password):
+    login = client.post(
+        "/auth/login",
+        json={"email": "ada@test.com", "password": "StrongPass1"},
+    )
+    response = client.post(
+        "/auth/logout",
+        headers={"X-CSRF-Token": login.json()["csrf_token"]},
+    )
+    assert response.status_code == 200
+    assert client.get("/auth/me").status_code == 401
+
+
+def test_api_responses_include_security_headers(client):
+    response = client.get("/")
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["x-frame-options"] == "DENY"
 
 
 def test_login_wrong_password_is_401(client, set_registered_password):
@@ -275,7 +318,7 @@ def test_deactivated_user_cannot_use_existing_token(client, db):
         "/auth/login",
         json={"email": "rootadmin@test.com", "password": "StrongPass1"},
     )
-    admin_headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+    admin_headers = {"X-CSRF-Token": login.json()["csrf_token"]}
 
     response = client.patch(
         f"/users/{student.id}/status",

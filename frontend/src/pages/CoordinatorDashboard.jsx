@@ -52,9 +52,6 @@ function CoordinatorDashboard() {
   const [formError, setFormError] =
     useState('')
 
-  const [attendeesByEvent, setAttendeesByEvent] =
-    useState({})
-
   const [formData, setFormData] =
     useState({
       title: '',
@@ -472,32 +469,6 @@ function CoordinatorDashboard() {
     }
   }
 
-  const toggleAttendees = async (eventId) => {
-      if (attendeesByEvent[eventId]) {
-        setAttendeesByEvent((current) => ({
-        ...current,
-        [eventId]: null
-      }))
-
-      return
-      }
-
-      try {
-      const response = await api.get(
-        `/events/${eventId}/attendees`
-      )
-
-      setAttendeesByEvent((current) => ({
-        ...current,
-        [eventId]: response.data
-      }))
-    }
-    catch {
-      setFormError('Unable to load attendees')
-    }
-
-  }
-
   const selectedVenueAvailability =
     availability.find(
       item =>
@@ -576,7 +547,7 @@ function CoordinatorDashboard() {
               to="/profile"
             >
               {
-                localStorage.getItem(
+                sessionStorage.getItem(
                   'userName'
                 ) || 'Coordinator'
               }
@@ -1443,51 +1414,12 @@ function CoordinatorDashboard() {
 
                     </div>
 
-                    <button
+                    <Link
+                      to={`/events/${event.id}/attendees`}
                       className="attendees-toggle"
-                      type="button"
-                      onClick={() =>
-                        toggleAttendees(event.id)
-                      }
                     >
-                      {attendeesByEvent[event.id]
-                        ? 'Hide attendees'
-                        : 'View attendees'}
-                    </button>
-
-                    {attendeesByEvent[event.id] && (
-
-                      <div className="attendees-list">
-
-                        {attendeesByEvent[event.id].length ? (
-                          attendeesByEvent[event.id].map(
-                            attendee => (
-                              <div key={attendee.id}>
-                                <strong>
-                                  {attendee.full_name}
-                                </strong>
-
-                                <span>
-                                  {attendee.class_name
-                                    ? `${attendee.class_name} • `
-                                    : ''}
-                                  {attendee.phone
-                                    ? `${attendee.phone} • `
-                                    : ''}
-                                  {attendee.email}
-                                </span>
-                              </div>
-                            )
-                          )
-                        ) : (
-                          <p>
-                            No registrations yet.
-                          </p>
-                        )}
-
-                      </div>
-
-                    )}
+                      View attendee list
+                    </Link>
 
                     <Link
                       to={`/events/${event.id}`}

@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import api from '../services/api'
+import { storeSessionMetadata } from '../services/auth'
 import './Login.css'
 
 function Login() {
@@ -87,25 +88,11 @@ function Login() {
           }
         )
 
-        localStorage.setItem(
-          'accessToken',
-          response.data.access_token
-        )
-
-        localStorage.setItem(
-          'userEmail',
-          formData.email
-        )
-
-        localStorage.setItem(
-          'userName',
-          response.data.full_name
-        )
-
-        localStorage.setItem(
-          'userRole',
-          response.data.role
-        )
+        storeSessionMetadata({
+          email: formData.email,
+          fullName: response.data.full_name,
+          role: response.data.role
+        })
 
         navigateByRole(response.data.role)
       }
@@ -173,25 +160,11 @@ function Login() {
           }
         )
 
-        localStorage.setItem(
-          'accessToken',
-          response.data.access_token
-        )
-
-        localStorage.setItem(
-          'userEmail',
-          formData.email
-        )
-
-        localStorage.setItem(
-          'userName',
-          response.data.full_name
-        )
-
-        localStorage.setItem(
-          'userRole',
-          response.data.role
-        )
+        storeSessionMetadata({
+          email: formData.email,
+          fullName: response.data.full_name,
+          role: response.data.role
+        })
 
         navigateByRole(response.data.role)
       }
@@ -516,13 +489,13 @@ function Login() {
               <div className="form-group">
 
                 <label>
-                  Class
+                  Class / year
                 </label>
 
                 <input
                   type="text"
                   name="className"
-                  placeholder="e.g. CSE 3rd Year"
+                  placeholder="e.g. CSE · 3rd year"
                   value={formData.className}
                   onChange={
                     handleInputChange

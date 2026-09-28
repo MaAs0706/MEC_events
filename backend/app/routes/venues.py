@@ -9,6 +9,7 @@ from app.models.event import Event
 from app.models.venue import Venue
 from app.schemas.venue import VenueCreate
 from app.schemas.venue import VenueUpdate
+from app.utils.audit import record_audit
 
 
 router = APIRouter(prefix="/venues")
@@ -47,6 +48,12 @@ def create_venue(
     )
 
     db.add(new_venue)
+    db.flush()
+    record_audit(
+        db, actor_user_id=current_user.id, action="venue.created",
+        target_type="venue", target_id=new_venue.id,
+        summary=f"Admin created venue {new_venue.name} with capacity {new_venue.capacity}.",
+    )
     db.commit()
     db.refresh(new_venue)
 
@@ -105,8 +112,14 @@ def update_venue(
             detail="Venue capacity cannot be lower than an event using it"
         )
 
+    previous_name = existing_venue.name
     existing_venue.name = venue.name
     existing_venue.capacity = venue.capacity
+    record_audit(
+        db, actor_user_id=current_user.id, action="venue.updated",
+        target_type="venue", target_id=existing_venue.id,
+        summary=f"Admin updated venue {previous_name} to capacity {existing_venue.capacity}.",
+    )
 
     db.commit()
     db.refresh(existing_venue)
@@ -146,6 +159,11 @@ def delete_venue(
             detail="This venue is used by events and cannot be removed"
         )
 
+    record_audit(
+        db, actor_user_id=current_user.id, action="venue.deleted",
+        target_type="venue", target_id=existing_venue.id,
+        summary=f"Admin deleted venue {existing_venue.name}.",
+    )
     db.delete(existing_venue)
     db.commit()
 

@@ -68,7 +68,7 @@ function UserProfile() {
         }
       )
 
-      localStorage.setItem(
+      sessionStorage.setItem(
         'userName',
         response.data.name
       )
@@ -149,13 +149,13 @@ function UserProfile() {
         setUserData((currentData) => ({
           ...currentData,
           name:
-            localStorage.getItem('userName') ||
+            sessionStorage.getItem('userName') ||
             '',
           email:
-            localStorage.getItem('userEmail') ||
+            sessionStorage.getItem('userEmail') ||
             '',
           role:
-            localStorage.getItem('userRole') ||
+            sessionStorage.getItem('userRole') ||
             ''
         }))
       }
@@ -412,7 +412,7 @@ function UserProfile() {
                   <div className="form-group">
 
                     <label>
-                      Class
+                      Class / year
                     </label>
 
                     <input
@@ -495,7 +495,7 @@ function UserProfile() {
                   <div className="info-item">
 
                     <span className="info-label">
-                      Class
+                      Class / year
                     </span>
 
                     <span className="info-value">

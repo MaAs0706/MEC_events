@@ -1,4 +1,5 @@
 import os
+import secrets
 from time import perf_counter
 from pathlib import Path
 
@@ -17,6 +18,7 @@ from app.routes.analytics import router as analytics_router
 from app.routes.notifications import router as notification_router
 from app.routes.letter_templates import router as letter_template_router
 from app.utils.analytics import record_request
+from app.utils.session import ACCESS_COOKIE_NAME, CSRF_COOKIE_NAME, CSRF_HEADER_NAME
 
 from app.routes.events import router as event_router
 
@@ -39,6 +41,50 @@ fastapi_app.mount(
     StaticFiles(directory=str(UPLOADS_DIR)),
     name="uploads"
 )
+
+
+SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
+CSRF_EXEMPT_PATHS = {
+    "/auth/login",
+    "/auth/register",
+    "/auth/forgot-password",
+    "/auth/reset-password",
+    "/auth/csrf",
+}
+
+
+@fastapi_app.middleware("http")
+async def require_csrf_for_cookie_sessions(request, call_next):
+    """Reject cross-site writes made with an automatically sent session cookie.
+
+    Explicit Bearer-token clients remain supported for the API/docs. The CSRF
+    check applies only to cookie sessions, whose browser credential would
+    otherwise be attached to a malicious cross-site request automatically.
+    """
+    if (
+        request.method not in SAFE_METHODS
+        and request.url.path not in CSRF_EXEMPT_PATHS
+        and request.cookies.get(ACCESS_COOKIE_NAME)
+    ):
+        cookie_token = request.cookies.get(CSRF_COOKIE_NAME)
+        header_token = request.headers.get(CSRF_HEADER_NAME)
+        if not cookie_token or not header_token or not secrets.compare_digest(cookie_token, header_token):
+            from fastapi.responses import JSONResponse
+            return JSONResponse(status_code=403, content={"detail": "CSRF validation failed"})
+    return await call_next(request)
+
+
+@fastapi_app.middleware("http")
+async def add_security_headers(request, call_next):
+    """Defence-in-depth headers for API responses and generated downloads."""
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "no-referrer")
+    response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    if os.getenv("APP_ENV", "development").lower() == "production":
+        response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+    return response
 
 
 @fastapi_app.middleware("http")

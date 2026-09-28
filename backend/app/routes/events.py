@@ -19,10 +19,13 @@ from app.schemas.event import EventCreate
 from app.utils.media_storage import delete_image, MediaStorageError, upload_image
 from app.utils.permission_letter import build_permission_letter
 from app.utils.notifications import create_notification
+from app.utils.audit import record_audit
+from app.utils.rate_limit import allow_upload, record_upload
 
 import json
 import os
 from io import BytesIO
+from PIL import Image, UnidentifiedImageError
 
 BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 UPLOAD_DIR = os.path.join(BACKEND_DIR, "uploads", "events")
@@ -30,6 +33,7 @@ GALLERY_UPLOAD_DIR = os.path.join(BACKEND_DIR, "uploads", "gallery")
 PUBLIC_API_URL = os.getenv("PUBLIC_API_URL", "http://127.0.0.1:8000").rstrip("/")
 
 MAX_SIZE = 5 * 1024 * 1024
+MAX_IMAGE_PIXELS = 20_000_000
 MAX_GALLERY_IMAGES = 20
 router = APIRouter()
 
@@ -196,6 +200,23 @@ def validate_image(file: UploadFile) -> bytes:
     if file.content_type == "image/webp" and contents[8:12] != b"WEBP":
         raise HTTPException(status_code=400, detail="File must be a valid WebP image")
 
+    # Header signatures alone are not enough: reject malformed files and
+    # decompression-bomb-sized images before they reach Cloudinary.
+    try:
+        with Image.open(BytesIO(contents)) as image:
+            image.verify()
+        with Image.open(BytesIO(contents)) as image:
+            width, height = image.size
+            if width < 1 or height < 1 or width * height > MAX_IMAGE_PIXELS:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Image dimensions must be below 20 megapixels",
+                )
+    except HTTPException:
+        raise
+    except (UnidentifiedImageError, OSError, SyntaxError, ValueError, Image.DecompressionBombError):
+        raise HTTPException(status_code=400, detail="File must be a readable image")
+
     return contents
 
 
@@ -285,6 +306,11 @@ def create_event(
     db.add(new_event)
     db.commit()
     db.refresh(new_event)
+    record_audit(
+        db, actor_user_id=current_user.id, action="event.created",
+        target_type="event", target_id=new_event.id,
+        summary=f"{current_user.role.title()} created event request {new_event.title}.",
+    )
     for reviewer in db.query(User).filter(User.role.in_(["approver", "admin"]), User.is_active.is_(True)).all():
         create_notification(db, reviewer.id, "New event request", f"{new_event.title} needs review.", f"/events/{new_event.id}")
     db.commit()
@@ -576,6 +602,11 @@ def update_event(
     event.organizer = updated_event.organizer
     event.capacity = updated_event.capacity
     event.image = updated_event.image
+    record_audit(
+        db, actor_user_id=current_user.id, action="event.updated",
+        target_type="event", target_id=event.id,
+        summary=f"{current_user.role.title()} replaced event {event.title}; it returned to pending review.",
+    )
 
     db.commit()
     db.refresh(event)
@@ -655,6 +686,11 @@ def update_event(
     for key, value in update_data.items():
         setattr(event, key, value)
     event.status="pending"    
+    record_audit(
+        db, actor_user_id=current_user.id, action="event.updated",
+        target_type="event", target_id=event.id,
+        summary=f"{current_user.role.title()} updated event {event.title}; it returned to pending review.",
+    )
 
     db.commit()
 
@@ -694,6 +730,11 @@ def approve_event(
     event.reviewed_at = datetime.now(timezone.utc).isoformat()
     event.permission_letter_snapshot = json.dumps(letter_template_snapshot(db, event, current_user))
     create_notification(db, event.created_by, "Event approved", f"{event.title} has been approved.", f"/events/{event.id}")
+    record_audit(
+        db, actor_user_id=current_user.id, action="event.approved",
+        target_type="event", target_id=event.id,
+        summary=f"{current_user.role.title()} approved event {event.title}.",
+    )
 
 
     db.commit()
@@ -733,6 +774,11 @@ def reject_event(
     event.reviewed_by = current_user.id
     event.reviewed_at = datetime.now(timezone.utc).isoformat()
     create_notification(db, event.created_by, "Event rejected", f"{event.title} was rejected. Review the feedback and resubmit when ready.", f"/events/{event.id}")
+    record_audit(
+        db, actor_user_id=current_user.id, action="event.rejected",
+        target_type="event", target_id=event.id,
+        summary=f"{current_user.role.title()} rejected event {event.title}.",
+    )
 
     db.commit()
     db.refresh(event)
@@ -793,6 +839,11 @@ def register_for_event(
     event.attendees += 1
 
     db.add(registration)
+    record_audit(
+        db, actor_user_id=current_user.id, action="event.registered",
+        target_type="event", target_id=event.id,
+        summary=f"Student registered for event {event.title}.",
+    )
     create_notification(db, current_user.id, "Registration confirmed", f"You are registered for {event.title}.", f"/events/{event.id}")
     if event.created_by != current_user.id:
         create_notification(db, event.created_by, "New event registration", f"A student registered for {event.title}.", f"/events/{event.id}")
@@ -901,6 +952,10 @@ def upload_event_image(
             detail="You can only upload images for your own events"
         )
 
+    if not allow_upload(current_user.id):
+        raise HTTPException(status_code=429, detail="Too many uploads. Try again later.")
+    record_upload(current_user.id)
+
     contents = validate_image(file)
     try:
         uploaded = upload_image(contents, "nexus/events/covers")
@@ -911,6 +966,11 @@ def upload_event_image(
     old_public_id = event.image_public_id
     event.image = uploaded["url"]
     event.image_public_id = uploaded["public_id"]
+    record_audit(
+        db, actor_user_id=current_user.id, action="event.cover_uploaded",
+        target_type="event", target_id=event.id,
+        summary=f"{current_user.role.title()} uploaded a cover image for {event.title}.",
+    )
     try:
         db.commit()
         db.refresh(event)
@@ -957,6 +1017,10 @@ def upload_gallery_image(
     if image_count >= MAX_GALLERY_IMAGES:
         raise HTTPException(status_code=400, detail="An event gallery can contain at most 20 images")
 
+    if not allow_upload(current_user.id):
+        raise HTTPException(status_code=429, detail="Too many uploads. Try again later.")
+    record_upload(current_user.id)
+
     contents = validate_image(file)
     try:
         uploaded = upload_image(contents, "nexus/events/gallery")
@@ -970,6 +1034,11 @@ def upload_gallery_image(
         uploaded_at=datetime.now(timezone.utc).isoformat(),
     )
     db.add(gallery_image)
+    record_audit(
+        db, actor_user_id=current_user.id, action="event.gallery_uploaded",
+        target_type="event", target_id=event.id,
+        summary=f"{current_user.role.title()} added a gallery image to {event.title}.",
+    )
     db.commit()
     db.refresh(gallery_image)
     return {"id": gallery_image.id, "image": gallery_image_url(gallery_image.filename), "uploaded_at": gallery_image.uploaded_at}
@@ -1000,6 +1069,11 @@ def delete_gallery_image(
         except MediaStorageError as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
 
+    record_audit(
+        db, actor_user_id=current_user.id, action="event.gallery_deleted",
+        target_type="event", target_id=event.id,
+        summary=f"{current_user.role.title()} removed a gallery image from {event.title}.",
+    )
     db.delete(image)
     db.commit()
     image_path = os.path.join(GALLERY_UPLOAD_DIR, image.filename)

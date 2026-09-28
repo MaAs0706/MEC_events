@@ -8,6 +8,8 @@ from app.dependencies import get_db, require_role
 from app.models.letter_template import LetterTemplate
 from app.schemas.letter_template import LetterTemplateUpdate
 from app.utils.media_storage import MediaStorageError, upload_image
+from app.utils.audit import record_audit
+from app.utils.rate_limit import allow_upload, record_upload
 
 
 router = APIRouter(prefix="/letter-template")
@@ -59,6 +61,11 @@ def update_template(
     for key, value in changes.model_dump(exclude_unset=True).items():
         setattr(template, key, value)
     template.updated_at = datetime.now(timezone.utc).isoformat()
+    record_audit(
+        db, actor_user_id=current_user.id, action="letter_template.updated",
+        target_type="letter_template", target_id=template.id,
+        summary="Staff member updated the official permission-letter template.",
+    )
     db.commit()
     db.refresh(template)
     return serialize(template)
@@ -78,11 +85,13 @@ def upload_template_asset(
     }
     if asset not in fields:
         raise HTTPException(status_code=404, detail="Unknown letter template asset")
+    if not allow_upload(current_user.id):
+        raise HTTPException(status_code=429, detail="Too many uploads. Try again later.")
+    record_upload(current_user.id)
+    from app.routes.events import validate_image
     if file.content_type not in ALLOWED_IMAGE_TYPES:
         raise HTTPException(status_code=400, detail="Use a JPEG, PNG, or WebP image")
-    contents = file.file.read(MAX_IMAGE_BYTES + 1)
-    if not contents or len(contents) > MAX_IMAGE_BYTES:
-        raise HTTPException(status_code=400, detail="Image must be smaller than 5MB")
+    contents = validate_image(file)
     try:
         uploaded = upload_image(contents, "nexus/letter-template")
     except MediaStorageError as exc:
@@ -95,6 +104,11 @@ def upload_template_asset(
     setattr(template, url_field, uploaded["url"])
     setattr(template, id_field, uploaded["public_id"])
     template.updated_at = datetime.now(timezone.utc).isoformat()
+    record_audit(
+        db, actor_user_id=current_user.id, action="letter_template.asset_uploaded",
+        target_type="letter_template", target_id=template.id,
+        summary=f"Staff member uploaded the {asset} letter-template asset.",
+    )
     db.commit()
     db.refresh(template)
     return serialize(template)

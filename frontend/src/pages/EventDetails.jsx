@@ -36,7 +36,7 @@ function EventDetails() {
   const [galleryUploading, setGalleryUploading] = useState(false)
 
   const role =
-    localStorage.getItem('userRole')
+    sessionStorage.getItem('userRole')
 
   const dashboardRoutes = {
 

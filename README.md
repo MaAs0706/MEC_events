@@ -43,7 +43,7 @@ Coordinator tracks attendees and can publish photos after the event
 
 Implemented highlights:
 
-- JWT authentication, secure password hashing, role-based access control, account activation controls, and password recovery through Resend.
+- HttpOnly cookie sessions with CSRF protection, secure password hashing, role-based access control, account activation controls, and password recovery through Resend.
 - Private pending/rejected event details; public users can access only approved events.
 - Capacity-safe registrations with duplicate-registration protection.
 - Venue management and daily availability/load visualization.
@@ -51,6 +51,7 @@ Implemented highlights:
 - In-app notifications for requests, reviews, and registrations.
 - PDF permission letters generated after approval, using the configured college template and the submitting club’s identity.
 - Admin request analytics that do not retain raw IP addresses.
+- Append-only audit records for security-relevant user, venue, event, media, and letter-template actions.
 - Responsive dashboard layouts, Docker files, health check, Alembic migrations, backend tests, and a frontend smoke test.
 
 For the complete developer handoff—including database model, API, security decisions, deployment state, and remaining work—read [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md).
@@ -62,7 +63,7 @@ For the complete developer handoff—including database model, API, security dec
 | Frontend | React, Vite, React Router, Axios, Framer Motion |
 | Backend | Python, FastAPI, SQLAlchemy, Pydantic |
 | Database | PostgreSQL, currently Supabase Postgres |
-| Authentication | JWT bearer tokens, Passlib/bcrypt |
+| Authentication | HttpOnly JWT cookie sessions, CSRF protection, Passlib/bcrypt |
 | Media | Cloudinary |
 | Email | Resend |
 | PDFs | ReportLab |
@@ -149,9 +150,11 @@ Copy [backend/.env.example](backend/.env.example) and keep the real `.env` file 
 | `PUBLIC_API_URL` | Public backend URL used when returning media URLs. |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Server-side media storage credentials. |
 | `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `FRONTEND_URL` | Password-recovery email configuration. |
+| `REDIS_URL`, `REQUIRE_REDIS` | Shared production rate limiting; set `REQUIRE_REDIS=true` when Redis is provisioned. |
+| `APP_ENV`, `SESSION_COOKIE_*` | Secure browser-session cookie settings; production requires HTTPS. |
 | `VITE_API_URL` | Frontend-only API base URL. This is safe to expose because it is just a URL. |
 
-Never commit `.env`, `.env.local`, Supabase passwords, Cloudinary secrets, JWT secrets, Resend keys, or password-reset links.
+Never commit `.env`, `.env.local`, Supabase passwords, Cloudinary secrets, JWT secrets, Resend keys, or password-reset links. Browser sessions are now cookie-based; the frontend does not receive or store an access token.
 
 ## Testing and checks
 

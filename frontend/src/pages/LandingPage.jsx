@@ -417,8 +417,9 @@ const totalRegistrations =
           </div>
 
           <div className="nav-right">
-            <Link to="/events/past" className="nav-signin">
-              Past events
+            <Link to="/events/past" className="nav-signin nav-past-events">
+              <span className="nav-past-desktop">Past events</span>
+              <span className="nav-past-mobile">Past</span>
             </Link>
             <Link to="/login" className="nav-signin">
               Sign in
@@ -500,7 +501,7 @@ const totalRegistrations =
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
               >
-                <Link to="/login" className="btn-primary">
+                <Link to="/events" className="btn-primary">
                   Explore Events
                 </Link>
 

@@ -5,6 +5,7 @@ import os
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 os.environ["SECRET_KEY"] = "test-secret-key"
 os.environ["ALGORITHM"] = "HS256"
+os.environ["ACCESS_TOKEN_EXPIRE_MINUTES"] = "60"
 
 import pytest
 from sqlalchemy import create_engine
@@ -18,6 +19,7 @@ from app.models.user import User
 from app.models.event import Event
 from app.models.event_gallery_image import EventGalleryImage  # noqa: F401
 from app.models.analytics_event import AnalyticsEvent  # noqa: F401
+from app.models.audit_log import AuditLog  # noqa: F401
 from app.models.notification import Notification  # noqa: F401
 from app.models.password_reset_token import PasswordResetToken  # noqa: F401
 from app.models.letter_template import LetterTemplate  # noqa: F401

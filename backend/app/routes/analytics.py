@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.dependencies import get_db, require_role
 from app.models.analytics_event import AnalyticsEvent
+from app.models.audit_log import AuditLog
 from app.models.event import Event
 from app.models.registration import Registration
 from app.models.user import User
@@ -21,6 +22,37 @@ def utc_now() -> datetime:
 def as_utc(value: datetime) -> datetime:
     """SQLite test databases may return naive datetimes; treat them as UTC."""
     return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value
+
+
+@router.get("/audit-logs")
+def get_audit_logs(
+    limit: int = 100,
+    current_user: User = Depends(require_role(["admin"])),
+    db: Session = Depends(get_db),
+):
+    """Return recent security-relevant actions without exposing credentials."""
+    safe_limit = min(max(limit, 1), 200)
+    rows = db.query(AuditLog).order_by(AuditLog.id.desc()).limit(safe_limit).all()
+    actor_ids = {row.actor_user_id for row in rows if row.actor_user_id is not None}
+    actors = {
+        user.id: user.full_name
+        for user in db.query(User).filter(User.id.in_(actor_ids)).all()
+    } if actor_ids else {}
+    return {
+        "items": [
+            {
+                "id": row.id,
+                "action": row.action,
+                "target_type": row.target_type,
+                "target_id": row.target_id,
+                "summary": row.summary,
+                "actor_user_id": row.actor_user_id,
+                "actor_name": actors.get(row.actor_user_id),
+                "created_at": row.created_at.isoformat(),
+            }
+            for row in rows
+        ]
+    }
 
 
 @router.get("/admin-summary")

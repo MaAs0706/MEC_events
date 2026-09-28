@@ -168,9 +168,21 @@ def test_coordinator_can_add_a_gallery_photo_after_event(
     )
     monkeypatch.setattr("app.routes.events.delete_image", lambda public_id: None)
 
+    from io import BytesIO
+    from PIL import Image
+
+    image_bytes = BytesIO()
+    Image.new("RGB", (1, 1), "white").save(image_bytes, format="PNG")
+
     response = client.post(
         f"/events/{event.id}/gallery",
-        files={"file": ("photo.png", b"\x89PNG\r\n\x1a\nminimal", "image/png")},
+        files={
+            "file": (
+                "photo.png",
+                image_bytes.getvalue(),
+                "image/png",
+            )
+        },
     )
 
     assert response.status_code == 200
@@ -312,6 +324,33 @@ def test_student_cannot_register_twice(client, db, coordinator, student,
     # Assert: "already registered".
     assert response.status_code == 400
     assert "already registered" in response.json()["detail"]
+
+
+def test_coordinator_can_view_only_their_event_attendees(
+        client, db, coordinator, student, login_as, sample_venue):
+    """The attendee list exposes useful registration details to its owner."""
+    from app.models.registration import Registration
+
+    event = create_event(
+        db, title="Open House", status="approved", created_by=coordinator.id
+    )
+    student.class_name = "CSE · 3rd year"
+    student.phone = "9876543210"
+    db.add(Registration(event_id=event.id, student_id=student.id))
+    event.attendees = 1
+    db.commit()
+
+    login_as(coordinator)
+    response = client.get(f"/events/{event.id}/attendees")
+
+    assert response.status_code == 200
+    assert response.json() == [{
+        "id": student.id,
+        "full_name": student.full_name,
+        "email": student.email,
+        "class_name": "CSE · 3rd year",
+        "phone": "9876543210",
+    }]
 
 
 def test_registration_rejected_when_capacity_full(client, db, coordinator,

@@ -12,6 +12,7 @@ from app.schemas.user import UserCreate
 from app.schemas.user import UserRoleUpdate
 from app.schemas.user import UserStatusUpdate
 from app.utils.security import hash_password
+from app.utils.audit import record_audit
 
 
 router = APIRouter(prefix="/users")
@@ -83,6 +84,12 @@ def create_user(
     )
 
     db.add(new_user)
+    db.flush()
+    record_audit(
+        db, actor_user_id=current_user.id, action="user.created",
+        target_type="user", target_id=new_user.id,
+        summary=f"Admin created a {new_user.role} account for {new_user.email}.",
+    )
     db.commit()
     db.refresh(new_user)
 
@@ -140,7 +147,13 @@ def update_user_role(
             detail="At least one admin account must remain"
         )
 
+    previous_role = user.role
     user.role = role_update.role
+    record_audit(
+        db, actor_user_id=current_user.id, action="user.role_updated",
+        target_type="user", target_id=user.id,
+        summary=f"Admin changed {user.email} from {previous_role} to {user.role}.",
+    )
 
     db.commit()
     db.refresh(user)
@@ -194,6 +207,11 @@ def update_user_status(
         )
 
     user.is_active = status_update.is_active
+    record_audit(
+        db, actor_user_id=current_user.id, action="user.status_updated",
+        target_type="user", target_id=user.id,
+        summary=f"Admin {'activated' if user.is_active else 'deactivated'} {user.email}.",
+    )
 
     db.commit()
     db.refresh(user)
@@ -258,6 +276,11 @@ def delete_user(
             )
         )
 
+    record_audit(
+        db, actor_user_id=current_user.id, action="user.deleted",
+        target_type="user", target_id=user.id,
+        summary=f"Admin deleted {user.email}.",
+    )
     db.delete(user)
     db.commit()
 

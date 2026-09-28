@@ -1,0 +1,37 @@
+.public-events-page { min-height: 100vh; padding: 0 4vw 72px; color: #fff; background: #050505; }
+.public-events-nav { height: 88px; display: flex; align-items: center; justify-content: space-between; gap: 20px; border-bottom: 1px solid #1d1d1d; }
+.public-events-logo { color: #fff; font-size: 26px; font-weight: 900; letter-spacing: 2px; }
+.public-events-nav > div { display: flex; align-items: center; gap: 18px; }
+.public-events-archive { color: #aaa; font-size: 14px; }
+.public-events-join { padding: 11px 15px; border-radius: 8px; background: #ff3131; color: #fff; font-size: 13px; font-weight: 800; }
+.public-events-header { max-width: 760px; padding: 84px 0 52px; }
+.public-events-header > span, .public-events-section-heading > span, .public-event-content > span { color: #ff3131; font-size: 11px; font-weight: 800; letter-spacing: .24em; }
+.public-events-header h1 { margin: 14px 0 18px; font-size: clamp(3.3rem, 8vw, 6.6rem); line-height: .9; letter-spacing: -.07em; }
+.public-events-header p { max-width: 560px; color: #aaa; font-size: 18px; line-height: 1.65; }
+.public-events-section { margin-top: 52px; }
+.public-events-archive-section { padding-top: 18px; border-top: 1px solid #1d1d1d; }
+.public-events-section-heading { margin-bottom: 24px; }
+.public-events-section-heading h2 { margin-top: 10px; font-size: clamp(2rem, 4vw, 3.3rem); line-height: 1; }
+.public-events-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+.public-event-card { overflow: hidden; color: inherit; background: #101010; border: 1px solid #242424; border-radius: 16px; transition: transform .2s ease, border-color .2s ease; }
+.public-event-card:hover { transform: translateY(-4px); border-color: #7c2424; }
+.public-event-image { height: 200px; background-color: #111; background-position: center; background-size: cover; }
+.public-event-image-fallback { background: radial-gradient(circle at 30% 20%, rgba(255,49,49,.22), transparent 48%), #111; }
+.public-event-content { padding: 20px; }
+.public-event-content h2 { margin: 10px 0 8px; font-size: 22px; line-height: 1.1; }
+.public-event-content p, .public-events-state { color: #aaa; }
+.public-events-state { padding: 24px 0; }
+@media (max-width: 600px) {
+  .public-events-page { padding: 0 20px 56px; }
+  .public-events-nav { height: 68px; }
+  .public-events-logo { font-size: 19px; }
+  .public-events-nav > div { gap: 11px; }
+  .public-events-archive { font-size: 12px; }
+  .public-events-join { padding: 9px 10px; font-size: 11px; }
+  .public-events-header { padding: 56px 0 34px; }
+  .public-events-header h1 { font-size: 3.1rem; }
+  .public-events-header p { font-size: 15px; }
+  .public-events-section { margin-top: 38px; }
+  .public-events-grid { grid-template-columns: 1fr; gap: 16px; }
+  .public-event-image { height: 180px; }
+}

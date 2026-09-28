@@ -4,7 +4,8 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, File, UploadFile
+from fastapi import APIRouter, File, Response, UploadFile
+from fastapi.responses import JSONResponse
 from fastapi import Depends
 from fastapi import HTTPException
 from fastapi import Request
@@ -32,6 +33,9 @@ from app.utils.rate_limit import allow_password_reset_request
 from app.utils.rate_limit import record_password_reset_request
 from app.utils.email import send_password_reset_email
 from app.utils.media_storage import MediaStorageError, upload_image
+from app.utils.rate_limit import allow_upload, record_upload
+from app.utils.audit import record_audit
+from app.utils.session import clear_session_cookies, issue_csrf_token, set_csrf_cookie, set_session_cookies
 
 from app.dependencies import get_current_user
 router = APIRouter(prefix="/auth")
@@ -89,6 +93,12 @@ def update_me(
         else:
             setattr(current_user, key, value)
 
+    if update_data:
+        record_audit(
+            db, actor_user_id=current_user.id, action="profile.updated",
+            target_type="user", target_id=current_user.id,
+            summary="User updated their profile.",
+        )
     db.commit()
     db.refresh(current_user)
 
@@ -113,6 +123,11 @@ def update_my_club(
     if current_user.role != "coordinator":
         raise HTTPException(status_code=403, detail="Only coordinators can manage a club profile")
     current_user.club_name = update.club_name.strip()
+    record_audit(
+        db, actor_user_id=current_user.id, action="club.profile.updated",
+        target_type="user", target_id=current_user.id,
+        summary="Coordinator updated their club name.",
+    )
     db.commit(); db.refresh(current_user)
     return {"club_name": current_user.club_name, "club_logo_url": current_user.club_logo_url}
 
@@ -125,11 +140,11 @@ def upload_my_club_logo(
 ):
     if current_user.role != "coordinator":
         raise HTTPException(status_code=403, detail="Only coordinators can manage a club profile")
-    if file.content_type not in {"image/jpeg", "image/png", "image/webp"}:
-        raise HTTPException(status_code=400, detail="Use a JPEG, PNG, or WebP image")
-    contents = file.file.read(5 * 1024 * 1024 + 1)
-    if not contents or len(contents) > 5 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="Image must be smaller than 5MB")
+    if not allow_upload(current_user.id):
+        raise HTTPException(status_code=429, detail="Too many uploads. Try again later.")
+    record_upload(current_user.id)
+    from app.routes.events import validate_image
+    contents = validate_image(file)
     try:
         uploaded = upload_image(contents, "nexus/clubs")
     except MediaStorageError as exc:
@@ -138,6 +153,11 @@ def upload_my_club_logo(
     # its URL and must remain reproducible.
     current_user.club_logo_url = uploaded["url"]
     current_user.club_logo_public_id = uploaded["public_id"]
+    record_audit(
+        db, actor_user_id=current_user.id, action="club.logo.uploaded",
+        target_type="user", target_id=current_user.id,
+        summary="Coordinator uploaded a club logo.",
+    )
     db.commit(); db.refresh(current_user)
     return {"club_name": current_user.club_name, "club_logo_url": current_user.club_logo_url}
 
@@ -213,12 +233,28 @@ def login_user(
             "token_version": existing_user.token_version,
         }
     )
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
+    csrf_token = issue_csrf_token()
+    response = JSONResponse({
         "role": existing_user.role,
         "full_name": existing_user.full_name,
-    }
+        "csrf_token": csrf_token,
+    })
+    set_session_cookies(response, access_token, csrf_token)
+    return response
+
+
+@router.get("/csrf")
+def issue_csrf(response: Response):
+    """Issue a CSRF value for an existing or freshly created browser session."""
+    csrf_token = issue_csrf_token()
+    set_csrf_cookie(response, csrf_token)
+    return {"csrf_token": csrf_token}
+
+
+@router.post("/logout")
+def logout(response: Response):
+    clear_session_cookies(response)
+    return {"message": "Signed out"}
 
 
 @router.post("/forgot-password")
@@ -266,6 +302,7 @@ def request_password_reset(
 @router.post("/reset-password")
 def reset_password(
     reset_data: PasswordResetConfirm,
+    response: Response,
     db: Session = Depends(get_db),
 ):
     token_hash = hashlib.sha256(reset_data.token.encode("utf-8")).hexdigest()
@@ -292,6 +329,7 @@ def reset_password(
         PasswordResetToken.used_at.is_(None),
     ).update({PasswordResetToken.used_at: now}, synchronize_session=False)
     db.commit()
+    clear_session_cookies(response)
     return {"message": "Password reset successfully. You can now sign in."}
 
 

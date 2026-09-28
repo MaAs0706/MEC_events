@@ -29,7 +29,7 @@ function StudentDashboard() {
 
   const navigate = useNavigate()
   const userName =
-    localStorage.getItem('userName') ||
+    sessionStorage.getItem('userName') ||
     'Student'
 
   /* STATES */

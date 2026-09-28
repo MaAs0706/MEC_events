@@ -20,7 +20,7 @@ import './ApproverDashboard.css'
 function ApproverDashboard() {
 
   const navigate = useNavigate()
-  const approverName = localStorage.getItem('userName') || 'Approver'
+  const approverName = sessionStorage.getItem('userName') || 'Approver'
 
   const [activeTab, setActiveTab] =
     useState('pending')

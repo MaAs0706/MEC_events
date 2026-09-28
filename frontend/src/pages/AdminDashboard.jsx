@@ -25,7 +25,7 @@ import './AdminDashboard.css'
 function AdminDashboard() {
 
   const navigate = useNavigate()
-  const adminName = localStorage.getItem('userName') || 'Administrator'
+  const adminName = sessionStorage.getItem('userName') || 'Administrator'
 
   const [activeTab, setActiveTab] =
     useState('overview')

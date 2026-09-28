@@ -32,7 +32,7 @@ Out of scope for v1:
 
 ```text
 React / Vite browser application
-       │  JWT Authorization header + X-Nexus-Visitor ID
+       │  HttpOnly session cookie + CSRF header + X-Nexus-Visitor ID
        ▼
 FastAPI application
   ├── authentication and role checks
@@ -82,7 +82,7 @@ NEXUS/
 | Server | FastAPI / Python | Serves JSON plus generated PDF download. |
 | Persistence | PostgreSQL via SQLAlchemy | Supabase Postgres is currently used remotely. |
 | Schema changes | Alembic | New schema work must be migrations; do not add startup `ALTER TABLE` logic. |
-| Authentication | Signed JWT bearer tokens | Stored in browser local storage today; see security gaps. |
+| Authentication | Signed JWT cookie sessions | Browser JWT is `HttpOnly`; explicit Bearer tokens remain supported for API clients/docs. |
 | Passwords | Passlib bcrypt | Never reversible/decryptable. |
 | Media | Cloudinary | Uploads pass through FastAPI; browser never sees Cloudinary API secret. |
 | Recovery email | Resend HTTPS API | Used for password reset only at present. |
@@ -181,7 +181,7 @@ OpenAPI is always the source of truth at `/docs` when the backend is running. Th
 | Users | `GET/POST /users`, `PATCH /users/{id}/role`, `PATCH /users/{id}/status`, `DELETE /users/{id}` |
 | Venues | `GET/POST /venues`, `PUT/DELETE /venues/{id}` |
 | Notifications | `GET /notifications`, `PATCH /notifications/{id}/read`, `PATCH /notifications/read-all` |
-| Analytics | `GET /analytics/admin-summary` (admin only) |
+| Analytics | `GET /analytics/admin-summary`, `GET /analytics/audit-logs` (admin only) |
 | Letter template | `GET/PATCH /letter-template`, `POST /letter-template/assets/{asset}` |
 
 ## 8. Frontend behaviour and design notes
@@ -198,13 +198,15 @@ The landing page has a deliberate door-opening NEXUS introduction. The post-door
 `frontend/src/services/api.js`:
 
 - Reads `VITE_API_URL`, falling back to `http://127.0.0.1:8000`.
-- Adds the JWT as `Authorization: Bearer ...`.
+- Uses `withCredentials` so the browser sends the `HttpOnly` session cookie; it never reads the JWT.
+- Fetches a non-sensitive CSRF value from `/auth/csrf` and sends it as `X-CSRF-Token` on state-changing requests.
 - Adds a random browser `X-Nexus-Visitor` ID used only as a one-way analytics input on the server.
 - Clears local session data and routes to `/login` after non-login `401` responses.
 
 ### Frontend limitations to remember
 
-- JWTs are still stored in `localStorage`; an XSS bug could expose them. Migrating to short-lived access tokens plus secure, httpOnly cookie refresh tokens is a production-hardening task.
+- Session metadata (name/role/email) is kept in `sessionStorage` only for display and navigation. It is not an authorization source; the backend reloads the user for every protected request.
+- The current cookie session is a single JWT with a configured expiry, rather than an access-token/refresh-token rotation design. Consider rotation and device/session revocation for a larger deployment.
 - Route components are not protected by a central React route guard. The backend authorizes requests correctly, but UI redirects/empty states should be improved.
 - In-app notifications are polling/fetch based, not real-time push/WebSockets.
 - Search/filter UI should be verified feature-by-feature before stating it is comprehensive; do not infer backend search exists unless a route is added.
@@ -219,6 +221,7 @@ The landing page has a deliberate door-opening NEXUS introduction. The post-door
 - Login rate limits are applied per account and IP (currently in-memory: five account failures or ten IP failures per 15 minutes).
 - `is_active=False` users are rejected at login and protected routes.
 - JWT contains and validates a token version. Password reset increments `token_version`, invalidating previously issued tokens.
+- Browser JWTs are issued as `HttpOnly` cookies. JavaScript does not receive the token, and state-changing cookie-session requests require a matching CSRF cookie/header pair.
 - Password reset returns a generic response to avoid account enumeration, stores only a hash of a single-use expiring token, and uses rate limits.
 
 ### Authorization and privacy
@@ -237,6 +240,8 @@ The landing page has a deliberate door-opening NEXUS introduction. The post-door
 - Coordinator updates resubmit for review and cannot manipulate status/attendee count.
 - Used venues cannot be deleted/renamed unsafely; capacity cannot be lowered below dependent event capacity.
 - Cloudinary API secret remains server-side. Media routes validate image content and authorization before upload.
+- Uploads are throttled per authenticated user, limited to 5 MB, and validated against image signatures rather than trusting filename alone.
+- Audit logs record security-relevant profile/club, event, registration, media, user, venue, and letter-template actions without storing secrets.
 
 ### Privacy-conscious analytics
 
@@ -249,12 +254,12 @@ Treat these as a launch checklist, not optional polish.
 
 ### Highest priority
 
-1. **Replace in-memory rate limits with Redis or another shared store.** They reset on restart and do not coordinate across multiple backend replicas.
-2. **Move browser auth away from local storage.** Use secure, `httpOnly`, `SameSite` cookies for refresh tokens, CSRF protections, and a short-lived access token strategy.
-3. **Establish production monitoring.** Capture errors (for example Sentry), structured logs, uptime checks, and alerts. The internal analytics table is not error monitoring.
-4. **Define backups and restore drills.** Supabase backups are not enough until the owner, retention, restoration procedure, and test cadence are documented.
-5. **Use a real verified college domain for Resend.** Sandbox senders may have recipient restrictions and should not be considered a public-production mail setup.
-6. **Pin and update dependencies deliberately; run vulnerability scanning in CI.**
+1. **Provision Redis and set `REQUIRE_REDIS=true`.** The code supports Redis-backed rate limits, but local in-memory fallback remains until a Redis URL is configured.
+2. **Establish production monitoring.** Capture errors (for example Sentry), structured logs, uptime checks, and alerts. The internal analytics table and audit log are not error monitoring.
+3. **Define backups and restore drills.** Supabase backups are not enough until the owner, retention, restoration procedure, and test cadence are documented.
+4. **Use a real verified college domain for Resend.** Sandbox senders may have recipient restrictions and should not be considered a public-production mail setup.
+5. **Pin and update dependencies deliberately; run vulnerability scanning in CI.**
+6. **Move from a single session JWT to access/refresh rotation if device-level revocation or long-lived sessions become required.**
 
 ### Important design/security work
 
@@ -324,6 +329,7 @@ If Vite reports CSS/JS module MIME errors, it normally means a source import res
 
 - `DATABASE_URL` belongs only in backend `.env`.
 - Use the Supabase Session Pooler connection string for environments where the direct hostname is not reachable (common on some local IPv4/DNS networks).
+- The backend limits its SQLAlchemy pool to three steady and two overflow connections by default. Restart the backend after changing this setting so stale pools are released.
 - URL-encode special characters in the database password when placing it in a connection URL.
 - After a schema change: create/review Alembic migration, then run `./.venv/bin/alembic upgrade head` against the intended database.
 
