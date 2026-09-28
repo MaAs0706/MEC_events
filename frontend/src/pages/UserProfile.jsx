@@ -30,7 +30,9 @@ function UserProfile() {
       email: '',
       phone: '',
       role: '',
-      className: ''
+      className: '',
+      clubName: '',
+      clubLogoUrl: ''
     })
 
   const [myRsvps, setMyRsvps] =
@@ -38,6 +40,9 @@ function UserProfile() {
 
   const [saveMessage, setSaveMessage] =
     useState('')
+
+  const [clubMessage, setClubMessage] = useState('')
+  const [clubSaving, setClubSaving] = useState(false)
 
   const initials = userData.name
     .split(' ')
@@ -87,6 +92,31 @@ function UserProfile() {
 
   }
 
+  const handleSaveClub = async (event) => {
+    event.preventDefault()
+    setClubSaving(true); setClubMessage('')
+    try {
+      const response = await api.patch('/auth/me/club', { club_name: userData.clubName })
+      setUserData(current => ({ ...current, clubName: response.data.club_name, clubLogoUrl: response.data.club_logo_url || current.clubLogoUrl }))
+      setClubMessage('Club profile saved.')
+    } catch (error) {
+      setClubMessage(error.response?.data?.detail || 'Unable to save club profile.')
+    } finally { setClubSaving(false) }
+  }
+
+  const handleClubLogoUpload = async (file) => {
+    if (!file) return
+    setClubMessage('Uploading logo…')
+    const data = new FormData(); data.append('file', file)
+    try {
+      const response = await api.post('/auth/me/club/logo', data)
+      setUserData(current => ({ ...current, clubName: response.data.club_name || current.clubName, clubLogoUrl: response.data.club_logo_url }))
+      setClubMessage('Club logo uploaded.')
+    } catch (error) {
+      setClubMessage(error.response?.data?.detail || 'Unable to upload club logo.')
+    }
+  }
+
   useEffect(() => {
 
     const fetchProfile = async () => {
@@ -105,6 +135,8 @@ function UserProfile() {
           name: profileResponse.data.name,
           email: profileResponse.data.email,
           role: profileResponse.data.role,
+          clubName: profileResponse.data.club_name || '',
+          clubLogoUrl: profileResponse.data.club_logo_url || '',
           className:
             profileResponse.data.class_name || '',
           phone:
@@ -151,7 +183,7 @@ function UserProfile() {
         <div className="nav-right">
 
           <Link
-            to="/dashboard/student"
+            to={userData.role === 'coordinator' ? '/dashboard/coordinator' : userData.role === 'approver' ? '/dashboard/approver' : userData.role === 'admin' ? '/dashboard/admin' : '/dashboard/student'}
             className="back-btn"
           >
             Back to Dashboard
@@ -206,7 +238,7 @@ function UserProfile() {
               <div className="header-info">
 
                 <p className="profile-tag">
-                  STUDENT PROFILE
+                  {userData.role === 'coordinator' ? 'CLUB COORDINATOR PROFILE' : 'STUDENT PROFILE'}
                 </p>
 
                 <h1>
@@ -293,6 +325,12 @@ function UserProfile() {
               <User size={16} />
               Profile
             </button>
+
+            {userData.role === 'coordinator' && (
+              <button className={`profile-tab ${activeTab === 'club' ? 'active' : ''}`} onClick={() => setActiveTab('club')}>
+                Club Identity
+              </button>
+            )}
 
             <button
               className={`profile-tab ${
@@ -484,6 +522,31 @@ function UserProfile() {
 
             </div>
 
+          )}
+
+          {activeTab === 'club' && userData.role === 'coordinator' && (
+            <div className="content-card club-profile-card">
+              <div className="card-header">
+                <h2>Club Identity</h2>
+                <p>Your logo is used automatically on permission letters for events you submit.</p>
+              </div>
+              <form className="profile-form" onSubmit={handleSaveClub}>
+                <div className="form-group full-width">
+                  <label>Club name</label>
+                  <input value={userData.clubName} onChange={(event) => setUserData(current => ({ ...current, clubName: event.target.value }))} placeholder="MEC MUNSoc" required />
+                </div>
+                <div className="form-group full-width club-logo-upload">
+                  <label>Club logo</label>
+                  <div className="club-logo-row">
+                    {userData.clubLogoUrl ? <img src={userData.clubLogoUrl} alt="Club logo" /> : <div className="club-logo-placeholder">No logo</div>}
+                    <input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => handleClubLogoUpload(event.target.files?.[0])} />
+                  </div>
+                  <small>Use a transparent PNG where possible. Maximum 5MB.</small>
+                </div>
+                {clubMessage && <p className="form-error">{clubMessage}</p>}
+                <button type="submit" className="save-btn" disabled={clubSaving}>{clubSaving ? 'Saving…' : 'Save Club Identity'}</button>
+              </form>
+            </div>
           )}
 
           {/* RSVPS */}

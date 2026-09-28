@@ -274,6 +274,12 @@ body {
   font-weight: 800;
 }
 
+.card-header p { color: rgba(255,255,255,.55); margin-top: 8px; line-height: 1.55; }
+.club-logo-row { display: flex; align-items: center; gap: 16px; }
+.club-logo-row img, .club-logo-placeholder { width: 96px; height: 72px; object-fit: contain; border-radius: 10px; background: #151515; border: 1px solid rgba(255,255,255,.08); }
+.club-logo-placeholder { display: grid; place-items: center; color: rgba(255,255,255,.4); font-size: 12px; }
+.club-logo-upload small { color: rgba(255,255,255,.45); font-size: 12px; }
+
 /* FORM */
 
 .profile-form {

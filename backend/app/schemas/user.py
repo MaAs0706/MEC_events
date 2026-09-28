@@ -64,3 +64,7 @@ class ProfileUpdate(BaseModel):
     email: Optional[EmailStr] = None
     class_name: Optional[str] = Field(default=None, max_length=100)
     phone: Optional[str] = Field(default=None, max_length=20)
+
+
+class ClubProfileUpdate(BaseModel):
+    club_name: str = Field(min_length=2, max_length=150)

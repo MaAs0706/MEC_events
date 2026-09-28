@@ -63,3 +63,8 @@ class User(Base):
         default=0,
         server_default="0",
     )
+
+    # A coordinator account represents its club's identity in v1.
+    club_name = Column(String(150), nullable=True)
+    club_logo_url = Column(String(1000), nullable=True)
+    club_logo_public_id = Column(String(500), nullable=True)

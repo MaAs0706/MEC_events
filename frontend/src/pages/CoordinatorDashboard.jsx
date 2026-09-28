@@ -571,15 +571,16 @@ function CoordinatorDashboard() {
 
             <NotificationBell />
 
-            <button
+            <Link
               className="user-menu"
+              to="/profile"
             >
               {
                 localStorage.getItem(
                   'userName'
                 ) || 'Coordinator'
               }
-            </button>
+            </Link>
 
             <button
               className="signout-btn"

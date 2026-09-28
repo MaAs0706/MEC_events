@@ -49,6 +49,12 @@
   color: rgba(255,255,255,0.5);
 }
 
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .user-menu {
   background: #111;
   border: none;
@@ -60,6 +66,7 @@
   border-radius: 999px;
 
   cursor: pointer;
+  text-decoration: none;
 }
 
 /* =========================

@@ -1,109 +1,97 @@
-"""PDF generation for an approved NEXUS event permission letter."""
-
+"""Generate the official, downloadable NEXUS approved-event letter."""
 from io import BytesIO
+from datetime import datetime
 
-from reportlab.lib.colors import HexColor, white
+import requests
+from reportlab.lib.colors import HexColor
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
+from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
 
-
 PAGE_WIDTH, PAGE_HEIGHT = A4
-RED = HexColor("#D92525")
-INK = HexColor("#151515")
-MUTED = HexColor("#B8B8B8")
-LINE = HexColor("#D9D9D9")
+INK, ACCENT, MUTED, LINE = HexColor("#181818"), HexColor("#B71C1C"), HexColor("#666666"), HexColor("#D7D7D7")
 
 
-def _wrap_text(text: str, font: str, size: int, max_width: float) -> list[str]:
-    words = (text or "").split()
-    lines, line = [], ""
+def _wrap(text, font, size, width):
+    words, lines, current = (text or "").split(), [], ""
     for word in words:
-        candidate = f"{line} {word}".strip()
-        if line and stringWidth(candidate, font, size) > max_width:
-            lines.append(line)
-            line = word
+        candidate = f"{current} {word}".strip()
+        if current and stringWidth(candidate, font, size) > width:
+            lines.append(current); current = word
         else:
-            line = candidate
-    if line:
-        lines.append(line)
+            current = candidate
+    if current: lines.append(current)
     return lines or [""]
 
 
-def build_permission_letter(event, approver_name: str, approver_role: str) -> bytes:
-    """Return a one-page, printable permission letter for an approved event."""
-    stream = BytesIO()
-    pdf = canvas.Canvas(stream, pagesize=A4)
-    margin = 22 * mm
-    content_width = PAGE_WIDTH - (2 * margin)
+def _draw_remote_image(pdf, url, x, y, max_width, max_height):
+    """Draw configured Cloudinary asset without failing a valid letter."""
+    if not url: return False
+    try:
+        response = requests.get(url, timeout=5); response.raise_for_status()
+        image = ImageReader(BytesIO(response.content))
+        width, height = image.getSize(); scale = min(max_width / width, max_height / height)
+        draw_width, draw_height = width * scale, height * scale
+        pdf.drawImage(image, x, y + max_height - draw_height, draw_width, draw_height, mask="auto")
+        return True
+    except Exception:
+        return False
 
-    pdf.setFillColor(INK)
-    pdf.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, fill=1, stroke=0)
-    pdf.setFillColor(white)
-    pdf.setFont("Helvetica-Bold", 21)
-    pdf.drawString(margin, PAGE_HEIGHT - 32 * mm, "NEXUS.")
-    pdf.setFont("Helvetica", 8)
-    pdf.setFillColor(HexColor("#C9C9C9"))
-    pdf.drawRightString(PAGE_WIDTH - margin, PAGE_HEIGHT - 29 * mm, "COLLEGE EVENT MANAGEMENT PLATFORM")
-    pdf.setStrokeColor(RED)
-    pdf.setLineWidth(2)
-    pdf.line(margin, PAGE_HEIGHT - 37 * mm, PAGE_WIDTH - margin, PAGE_HEIGHT - 37 * mm)
 
-    y = PAGE_HEIGHT - 57 * mm
-    pdf.setFillColor(RED)
-    pdf.setFont("Helvetica-Bold", 9)
-    pdf.drawString(margin, y, "OFFICIAL PERMISSION LETTER")
-    y -= 14 * mm
+def _display_date(value):
+    try: return datetime.fromisoformat((value or "").replace("Z", "+00:00")).strftime("%d %B %Y")
+    except ValueError: return datetime.now().strftime("%d %B %Y")
 
-    pdf.setFillColor(white)
-    pdf.setFont("Helvetica-Bold", 24)
-    for line in _wrap_text(event.title, "Helvetica-Bold", 24, content_width):
-        pdf.drawString(margin, y, line)
-        y -= 10 * mm
 
-    y -= 4 * mm
-    pdf.setFillColor(HexColor("#D0D0D0"))
-    pdf.setFont("Helvetica", 11)
-    date_label = f"{event.date} | {event.start_time} - {event.end_time}"
-    pdf.drawString(margin, y, date_label)
-    y -= 7 * mm
-    pdf.drawString(margin, y, f"Venue: {event.venue}")
-    y -= 15 * mm
-
-    pdf.setStrokeColor(LINE)
-    pdf.setLineWidth(0.5)
-    pdf.line(margin, y, PAGE_WIDTH - margin, y)
-    y -= 13 * mm
-
-    pdf.setFillColor(white)
-    pdf.setFont("Helvetica", 11)
-    body = (
-        f"This is to certify that the event organized by {event.organizer} has been "
-        "reviewed and granted permission to proceed as stated above. The organizing "
-        "team must follow all applicable college policies, venue requirements, and "
-        "safety instructions."
+def _body(event, body_text):
+    text = body_text or (
+        "This is to certify that permission has been granted to {{organizer}} to conduct "
+        "{{event_title}} at {{venue}} on {{event_date}} from {{start_time}} to {{end_time}}. "
+        "The organising team shall comply with all applicable college policies, venue "
+        "requirements, and safety instructions."
     )
-    for line in _wrap_text(body, "Helvetica", 11, content_width):
-        pdf.drawString(margin, y, line)
-        y -= 6.5 * mm
+    for key, value in {
+        "{{event_title}}": event.title, "{{organizer}}": event.organizer,
+        "{{venue}}": event.venue, "{{event_date}}": _display_date(event.date),
+        "{{start_time}}": event.start_time, "{{end_time}}": event.end_time,
+    }.items(): text = text.replace(key, value or "")
+    return text
 
-    y -= 17 * mm
-    pdf.setFillColor(RED)
-    pdf.setFont("Helvetica-Bold", 9)
-    pdf.drawString(margin, y, "APPROVED BY")
-    y -= 7 * mm
-    pdf.setFillColor(white)
-    pdf.setFont("Helvetica-Bold", 13)
-    pdf.drawString(margin, y, approver_name or "NEXUS Administration")
-    y -= 6 * mm
-    pdf.setFillColor(HexColor("#C9C9C9"))
-    pdf.setFont("Helvetica", 10)
-    pdf.drawString(margin, y, (approver_role or "Approver").title())
 
-    pdf.setFillColor(MUTED)
-    pdf.setFont("Helvetica", 8)
-    pdf.drawRightString(PAGE_WIDTH - margin, 18 * mm, "Generated by NEXUS - valid for this approved event only")
-    pdf.showPage()
-    pdf.save()
-    return stream.getvalue()
+def build_permission_letter(event, approver_name, approver_role, template=None):
+    """Return a white A4 approved-event letter, branded from its snapshot."""
+    template = template or {}; stream = BytesIO(); pdf = canvas.Canvas(stream, pagesize=A4)
+    margin = 22 * mm; content_width = PAGE_WIDTH - 2 * margin; logo_y = PAGE_HEIGHT - 37 * mm
+    if not _draw_remote_image(pdf, template.get("club_logo_url"), margin, logo_y, 32 * mm, 22 * mm):
+        pdf.setFillColor(ACCENT); pdf.setFont("Helvetica-Bold", 12); pdf.drawString(margin, logo_y + 9 * mm, event.organizer[:34].upper())
+
+    college_name = template.get("college_name") or "Govt. Model Engineering College, Kochi"
+    _draw_remote_image(pdf, template.get("college_logo_url"), PAGE_WIDTH - margin - 31 * mm, logo_y, 30 * mm, 22 * mm)
+    pdf.setFillColor(INK); pdf.setFont("Helvetica-Bold", 9)
+    for index, line in enumerate(_wrap(college_name, "Helvetica-Bold", 9, 46 * mm)[:3]):
+        pdf.drawRightString(PAGE_WIDTH - margin, logo_y - 4 * mm - index * 4.2 * mm, line)
+
+    header_y = PAGE_HEIGHT - 52 * mm; pdf.setStrokeColor(ACCENT); pdf.setLineWidth(1.5); pdf.line(margin, header_y, PAGE_WIDTH - margin, header_y)
+    y = header_y - 14 * mm; prefix = (template.get("reference_prefix") or "NEXUS").upper()
+    pdf.setFillColor(MUTED); pdf.setFont("Helvetica", 9)
+    pdf.drawString(margin, y, f"Ref: {prefix}/{datetime.now().year}/{event.id:04d}")
+    pdf.drawRightString(PAGE_WIDTH - margin, y, f"Date: {_display_date(template.get('approved_at') or event.reviewed_at)}")
+    y -= 14 * mm; pdf.setFillColor(ACCENT); pdf.setFont("Helvetica-Bold", 11); pdf.drawCentredString(PAGE_WIDTH / 2, y, "EVENT APPROVAL & PERMISSION LETTER")
+    y -= 13 * mm; pdf.setFillColor(INK); pdf.setFont("Times-Roman", 11); pdf.drawString(margin, y, "To Whom It May Concern,")
+    y -= 13 * mm; pdf.setFont("Times-Bold", 11)
+    for line in _wrap(f"Subject: Approval for {event.title}", "Times-Bold", 11, content_width): pdf.drawString(margin, y, line); y -= 6.2 * mm
+    y -= 5 * mm; pdf.setFont("Times-Roman", 11)
+    for paragraph in _body(event, template.get("body_text")).split("\n"):
+        for line in _wrap(paragraph, "Times-Roman", 11, content_width): pdf.drawString(margin, y, line); y -= 6.4 * mm
+        y -= 4 * mm
+    y -= 6 * mm; pdf.drawString(margin, y, "This letter is digitally generated by NEXUS and is valid for the approved event stated above.")
+    y -= 24 * mm; signature_drawn = _draw_remote_image(pdf, template.get("signature_url"), margin, y - 5 * mm, 42 * mm, 16 * mm)
+    if signature_drawn: y -= 18 * mm
+    pdf.setStrokeColor(LINE); pdf.setLineWidth(0.5); pdf.line(margin, y, margin + 58 * mm, y); y -= 5 * mm
+    pdf.setFillColor(INK); pdf.setFont("Helvetica-Bold", 10); pdf.drawString(margin, y, template.get("signatory_name") or approver_name or "NEXUS Administration")
+    y -= 4.8 * mm; pdf.setFont("Helvetica", 9); pdf.setFillColor(MUTED); pdf.drawString(margin, y, template.get("signatory_title") or (approver_role or "Approver").title())
+    pdf.setStrokeColor(LINE); pdf.line(margin, 18 * mm, PAGE_WIDTH - margin, 18 * mm); pdf.setFillColor(MUTED); pdf.setFont("Helvetica", 7.5)
+    pdf.drawCentredString(PAGE_WIDTH / 2, 12 * mm, "NEXUS · College Event Management Platform")
+    pdf.showPage(); pdf.save(); return stream.getvalue()

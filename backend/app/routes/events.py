@@ -7,7 +7,8 @@ from sqlalchemy.orm import Session
 from app.models.event import Event 
 from app.models.event_gallery_image import EventGalleryImage
 from app.models.registration import Registration
-from app.models.user import User 
+from app.models.user import User
+from app.models.letter_template import LetterTemplate
 from app.models.venue import Venue
 
 from app.schemas.event import EventUpdate
@@ -19,6 +20,7 @@ from app.utils.media_storage import delete_image, MediaStorageError, upload_imag
 from app.utils.permission_letter import build_permission_letter
 from app.utils.notifications import create_notification
 
+import json
 import os
 from io import BytesIO
 
@@ -156,6 +158,22 @@ def can_manage_event(event: Event, current_user: User) -> bool:
     return current_user.role == "admin" or event.created_by == current_user.id
 
 
+def letter_template_snapshot(db: Session, event: Event, approver: User) -> dict:
+    """Freeze the official template values used for this approval."""
+    template = db.query(LetterTemplate).first()
+    return {
+        "college_name": template.college_name if template else "Govt. Model Engineering College, Kochi",
+        "college_logo_url": template.college_logo_url if template else None,
+        "club_logo_url": event.club_logo_url or (template.club_logo_url if template else None),
+        "signature_url": template.signature_url if template else None,
+        "signatory_name": (template.signatory_name if template and template.signatory_name else approver.full_name),
+        "signatory_title": (template.signatory_title if template and template.signatory_title else approver.role.title()),
+        "reference_prefix": template.reference_prefix if template else "NEXUS",
+        "body_text": template.body_text if template else None,
+        "approved_at": event.reviewed_at,
+    }
+
+
 def validate_image(file: UploadFile) -> bytes:
     """Validate image bytes rather than trusting only the browser MIME type."""
     contents = file.file.read(MAX_SIZE + 1)
@@ -256,11 +274,12 @@ def create_event(
         start_time=event.start_time,
         end_time=event.end_time,
         status="pending",
-        organizer=event.organizer,
+        organizer=(current_user.club_name if current_user.role == "coordinator" and current_user.club_name else event.organizer),
         created_by=current_user.id,
         attendees=0,
         capacity=event.capacity,
-        image=event.image
+        image=event.image,
+        club_logo_url=current_user.club_logo_url if current_user.role == "coordinator" else None,
     )
 
     db.add(new_event)
@@ -468,10 +487,18 @@ def download_permission_letter(
         raise HTTPException(status_code=400, detail="A permission letter is available only after approval")
 
     reviewer = db.query(User).filter(User.id == event.reviewed_by).first()
+    # Older approved events predate snapshots, so render them with today's
+    # configured template. New approvals always use their frozen snapshot.
+    snapshot = (
+        json.loads(event.permission_letter_snapshot)
+        if event.permission_letter_snapshot
+        else letter_template_snapshot(db, event, reviewer or current_user)
+    )
     pdf = build_permission_letter(
         event,
         reviewer.full_name if reviewer else "NEXUS Administration",
         reviewer.role if reviewer else "Approver",
+        template=snapshot,
     )
     safe_title = "".join(char if char.isalnum() else "-" for char in event.title).strip("-")
     return StreamingResponse(
@@ -665,6 +692,7 @@ def approve_event(
     event.rejection_reason = None
     event.reviewed_by = current_user.id
     event.reviewed_at = datetime.now(timezone.utc).isoformat()
+    event.permission_letter_snapshot = json.dumps(letter_template_snapshot(db, event, current_user))
     create_notification(db, event.created_by, "Event approved", f"{event.title} has been approved.", f"/events/{event.id}")
 
 

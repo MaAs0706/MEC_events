@@ -15,6 +15,7 @@ from app.routes.users import router as user_router
 from app.routes.venues import router as venue_router
 from app.routes.analytics import router as analytics_router
 from app.routes.notifications import router as notification_router
+from app.routes.letter_templates import router as letter_template_router
 from app.utils.analytics import record_request
 
 from app.routes.events import router as event_router
@@ -29,6 +30,7 @@ fastapi_app.include_router(user_router)
 fastapi_app.include_router(venue_router)
 fastapi_app.include_router(analytics_router)
 fastapi_app.include_router(notification_router)
+fastapi_app.include_router(letter_template_router)
 
 UPLOADS_DIR = Path(__file__).resolve().parent.parent / "uploads"
 

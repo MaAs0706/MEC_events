@@ -4,7 +4,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
-from fastapi import APIRouter
+from fastapi import APIRouter, File, UploadFile
 from fastapi import Depends
 from fastapi import HTTPException
 from fastapi import Request
@@ -23,6 +23,7 @@ from app.schemas.user import UserLogin
 from app.schemas.user import PasswordResetConfirm
 from app.schemas.user import PasswordResetRequest
 from app.schemas.user import ProfileUpdate
+from app.schemas.user import ClubProfileUpdate
 from app.utils.security import verify_password
 from app.utils.rate_limit import check_login_allowed
 from app.utils.rate_limit import record_failed_login
@@ -30,6 +31,7 @@ from app.utils.rate_limit import record_successful_login
 from app.utils.rate_limit import allow_password_reset_request
 from app.utils.rate_limit import record_password_reset_request
 from app.utils.email import send_password_reset_email
+from app.utils.media_storage import MediaStorageError, upload_image
 
 from app.dependencies import get_current_user
 router = APIRouter(prefix="/auth")
@@ -50,7 +52,9 @@ def get_me(
         "email": current_user.email,
         "role": current_user.role,
         "class_name": current_user.class_name,
-        "phone": current_user.phone
+        "phone": current_user.phone,
+        "club_name": current_user.club_name,
+        "club_logo_url": current_user.club_logo_url,
     }
 
 @router.patch("/me")
@@ -94,8 +98,48 @@ def update_me(
         "email": current_user.email,
         "role": current_user.role,
         "class_name": current_user.class_name,
-        "phone": current_user.phone
+        "phone": current_user.phone,
+        "club_name": current_user.club_name,
+        "club_logo_url": current_user.club_logo_url,
     }
+
+
+@router.patch("/me/club")
+def update_my_club(
+    update: ClubProfileUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if current_user.role != "coordinator":
+        raise HTTPException(status_code=403, detail="Only coordinators can manage a club profile")
+    current_user.club_name = update.club_name.strip()
+    db.commit(); db.refresh(current_user)
+    return {"club_name": current_user.club_name, "club_logo_url": current_user.club_logo_url}
+
+
+@router.post("/me/club/logo")
+def upload_my_club_logo(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if current_user.role != "coordinator":
+        raise HTTPException(status_code=403, detail="Only coordinators can manage a club profile")
+    if file.content_type not in {"image/jpeg", "image/png", "image/webp"}:
+        raise HTTPException(status_code=400, detail="Use a JPEG, PNG, or WebP image")
+    contents = file.file.read(5 * 1024 * 1024 + 1)
+    if not contents or len(contents) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image must be smaller than 5MB")
+    try:
+        uploaded = upload_image(contents, "nexus/clubs")
+    except MediaStorageError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    # Old assets are retained because a previously approved PDF can snapshot
+    # its URL and must remain reproducible.
+    current_user.club_logo_url = uploaded["url"]
+    current_user.club_logo_public_id = uploaded["public_id"]
+    db.commit(); db.refresh(current_user)
+    return {"club_name": current_user.club_name, "club_logo_url": current_user.club_logo_url}
 
 @router.get("/me/registrations")
 def get_my_registrations(

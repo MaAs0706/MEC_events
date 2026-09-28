@@ -16,7 +16,8 @@ import {
   Calendar,
   BarChart3,
   UserCheck,
-  LogOut
+  LogOut,
+  FileText
 } from 'lucide-react'
 
 import './AdminDashboard.css'
@@ -75,6 +76,10 @@ function AdminDashboard() {
 
   const [analyticsError, setAnalyticsError] = useState('')
 
+  const [letterTemplate, setLetterTemplate] = useState({ college_name: '', signatory_name: '', signatory_title: '', reference_prefix: 'NEXUS', body_text: '', college_logo_url: '', club_logo_url: '', signature_url: '' })
+  const [letterStatus, setLetterStatus] = useState('')
+  const [letterSaving, setLetterSaving] = useState(false)
+
   const categories =
     Object.entries(
       allEvents.reduce(
@@ -116,6 +121,37 @@ function AdminDashboard() {
     fetchAnalytics()
 
   }, [])
+
+  useEffect(() => {
+    api.get('/letter-template').then(response => setLetterTemplate(response.data)).catch(() => setLetterStatus('Unable to load letter settings.'))
+  }, [])
+
+  const updateLetterField = (event) => setLetterTemplate(current => ({ ...current, [event.target.name]: event.target.value }))
+
+  const saveLetterTemplate = async (event) => {
+    event.preventDefault(); setLetterSaving(true); setLetterStatus('')
+    try {
+      const response = await api.patch('/letter-template', {
+        college_name: letterTemplate.college_name,
+        signatory_name: letterTemplate.signatory_name || null,
+        signatory_title: letterTemplate.signatory_title || null,
+        reference_prefix: letterTemplate.reference_prefix,
+        body_text: letterTemplate.body_text || null
+      })
+      setLetterTemplate(response.data); setLetterStatus('Official letter settings saved.')
+    } catch (error) { setLetterStatus(error.response?.data?.detail || 'Unable to save letter settings.') }
+    finally { setLetterSaving(false) }
+  }
+
+  const uploadLetterAsset = async (asset, file) => {
+    if (!file) return
+    setLetterStatus('Uploading image…')
+    const data = new FormData(); data.append('file', file)
+    try {
+      const response = await api.post(`/letter-template/assets/${asset}`, data)
+      setLetterTemplate(response.data); setLetterStatus('Image uploaded. Save the text settings when ready.')
+    } catch (error) { setLetterStatus(error.response?.data?.detail || 'Image upload failed.') }
+  }
 
   useEffect(() => {
 
@@ -597,6 +633,14 @@ function AdminDashboard() {
           Analytics
         </button>
 
+        <button
+          className={activeTab === 'letter' ? 'active' : ''}
+          onClick={() => setActiveTab('letter')}
+        >
+          <FileText size={15} />
+          Letter Template
+        </button>
+
       </section>
 
       {/* OVERVIEW */}
@@ -1073,6 +1117,38 @@ function AdminDashboard() {
 
         </section>
 
+      )}
+
+      {activeTab === 'letter' && (
+        <section className="letter-template-panel">
+          <div className="letter-template-intro">
+            <p>OFFICIAL DOCUMENT SETTINGS</p>
+            <h2>Approved-event permission letter</h2>
+            <span>Settings are captured when an event is approved, so later edits never change an existing letter.</span>
+          </div>
+          <form className="letter-template-form" onSubmit={saveLetterTemplate}>
+            <div className="letter-text-settings">
+              <label>College name<input name="college_name" value={letterTemplate.college_name || ''} onChange={updateLetterField} required /></label>
+              <label>Reference prefix<input name="reference_prefix" value={letterTemplate.reference_prefix || ''} onChange={updateLetterField} required /></label>
+              <label>Authorised signatory<input name="signatory_name" value={letterTemplate.signatory_name || ''} onChange={updateLetterField} placeholder="Principal / authorised officer" /></label>
+              <label>Designation<input name="signatory_title" value={letterTemplate.signatory_title || ''} onChange={updateLetterField} placeholder="Principal" /></label>
+              <label className="letter-body">Approval wording<textarea name="body_text" value={letterTemplate.body_text || ''} onChange={updateLetterField} placeholder="Leave blank for NEXUS's default wording. Variables: {{event_title}}, {{organizer}}, {{venue}}, {{event_date}}, {{start_time}}, {{end_time}}" /></label>
+              <button type="submit" disabled={letterSaving}>{letterSaving ? 'Saving…' : 'Save letter settings'}</button>
+              {letterStatus && <p className="letter-status">{letterStatus}</p>}
+            </div>
+            <div className="letter-assets">
+              {[
+                ['club-logo', 'Fallback club logo — top left', letterTemplate.club_logo_url],
+                ['college-logo', 'College logo — top right', letterTemplate.college_logo_url],
+                ['signature', 'Authorised signature', letterTemplate.signature_url]
+              ].map(([asset, label, url]) => <label className="letter-asset" key={asset}>
+                <span>{label}</span>
+                {url ? <img src={url} alt="" /> : <div className="letter-asset-empty">No image uploaded</div>}
+                <input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => uploadLetterAsset(asset, event.target.files?.[0])} />
+              </label>)}
+            </div>
+          </form>
+        </section>
       )}
 
       {/* EVENTS */}

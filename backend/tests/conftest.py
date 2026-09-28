@@ -20,6 +20,7 @@ from app.models.event_gallery_image import EventGalleryImage  # noqa: F401
 from app.models.analytics_event import AnalyticsEvent  # noqa: F401
 from app.models.notification import Notification  # noqa: F401
 from app.models.password_reset_token import PasswordResetToken  # noqa: F401
+from app.models.letter_template import LetterTemplate  # noqa: F401
 from app.models.venue import Venue
 from app.models.registration import Registration  # noqa: F401
 
