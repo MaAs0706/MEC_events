@@ -54,3 +54,12 @@ class User(Base):
         default=True,
         server_default="true"
     )
+
+    # Incremented after a password reset to invalidate all previously issued
+    # JWTs for this account.
+    token_version = Column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default="0",
+    )

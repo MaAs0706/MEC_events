@@ -9,6 +9,8 @@ import AdminDashboard from './pages/AdminDashboard'
 import EventDetails from './pages/EventDetails'
 import UserProfile from './pages/UserProfile'
 import PastEvents from './pages/PastEvents'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 
 import './index.css'
 
@@ -26,6 +28,8 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<WatermarkPage><Login /></WatermarkPage>} />
+        <Route path="/forgot-password" element={<WatermarkPage><ForgotPassword /></WatermarkPage>} />
+        <Route path="/reset-password" element={<WatermarkPage><ResetPassword /></WatermarkPage>} />
         <Route path="/dashboard/student" element={<WatermarkPage><StudentDashboard /></WatermarkPage>} />
         <Route path="/dashboard/coordinator" element={<WatermarkPage><CoordinatorDashboard /></WatermarkPage>} />
         <Route path="/dashboard/approver" element={<WatermarkPage><ApproverDashboard /></WatermarkPage>} />

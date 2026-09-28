@@ -4,9 +4,12 @@ Follows the Arrange / Act / Assert pattern. The password-hash fixtures create
 real bcrypt hashes so the /auth/login endpoint can verify them.
 """
 import pytest
+from datetime import datetime, timedelta, timezone
+from unittest.mock import patch
 
+from app.models.password_reset_token import PasswordResetToken
 from app.models.user import User
-from app.utils.security import hash_password
+from app.utils.security import hash_password, verify_password
 from tests.conftest import make_user
 
 
@@ -80,6 +83,92 @@ def test_admin_create_user_rejects_weak_password(client, admin, login_as):
     response = client.post("/users", json=payload)
 
     assert response.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# Password recovery
+# ---------------------------------------------------------------------------
+
+
+def test_forgot_password_is_generic_and_sends_for_active_user(
+        client, set_registered_password, db):
+    with patch("app.routes.auth.send_password_reset_email", return_value=True) as send:
+        response = client.post("/auth/forgot-password", json={"email": "ada@test.com"})
+
+    assert response.status_code == 200
+    assert response.json()["message"] == (
+        "If an account exists for that email, a reset link has been sent."
+    )
+    assert send.call_count == 1
+    token = db.query(PasswordResetToken).one()
+    assert token.token_hash not in str(send.call_args)
+    assert token.used_at is None
+
+
+def test_forgot_password_does_not_reveal_unknown_email(client, db):
+    with patch("app.routes.auth.send_password_reset_email") as send:
+        response = client.post("/auth/forgot-password", json={"email": "unknown@test.com"})
+
+    assert response.status_code == 200
+    assert response.json()["message"] == (
+        "If an account exists for that email, a reset link has been sent."
+    )
+    assert send.call_count == 0
+    assert db.query(PasswordResetToken).count() == 0
+
+
+def test_reset_password_consumes_token_and_changes_password(
+        client, set_registered_password, db):
+    import hashlib
+    from app.utils.jwt import create_access_token
+
+    raw_token = "x" * 48
+    previous_token = create_access_token({
+        "user_id": set_registered_password.id,
+        "role": set_registered_password.role,
+        "token_version": set_registered_password.token_version,
+    })
+    db.add(PasswordResetToken(
+        user_id=set_registered_password.id,
+        token_hash=hashlib.sha256(raw_token.encode()).hexdigest(),
+        expires_at=datetime.now(timezone.utc) + timedelta(minutes=10),
+    ))
+    db.commit()
+
+    response = client.post("/auth/reset-password", json={
+        "token": raw_token,
+        "password": "NewStrongPass2",
+    })
+
+    assert response.status_code == 200
+    db.refresh(set_registered_password)
+    assert verify_password("NewStrongPass2", set_registered_password.password_hash)
+    assert set_registered_password.token_version == 1
+    assert client.get(
+        "/auth/me", headers={"Authorization": f"Bearer {previous_token}"}
+    ).status_code == 401
+    assert client.post("/auth/reset-password", json={
+        "token": raw_token,
+        "password": "AnotherPass3",
+    }).status_code == 400
+
+
+def test_reset_password_rejects_expired_token(client, set_registered_password, db):
+    import hashlib
+
+    raw_token = "y" * 48
+    db.add(PasswordResetToken(
+        user_id=set_registered_password.id,
+        token_hash=hashlib.sha256(raw_token.encode()).hexdigest(),
+        expires_at=datetime.now(timezone.utc) - timedelta(seconds=1),
+    ))
+    db.commit()
+
+    response = client.post("/auth/reset-password", json={
+        "token": raw_token,
+        "password": "NewStrongPass2",
+    })
+    assert response.status_code == 400
 
 
 # ---------------------------------------------------------------------------

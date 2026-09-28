@@ -82,6 +82,9 @@ def get_current_user(
             detail="Account has been deactivated"
         )
 
+    if payload.get("token_version") != user.token_version:
+        raise credentials_exception
+
     return user                
 
 
@@ -126,6 +129,9 @@ def get_optional_current_user(
         raise credentials_exception
 
     if not user.is_active:
+        raise credentials_exception
+
+    if payload.get("token_version") != user.token_version:
         raise credentials_exception
 
     return user

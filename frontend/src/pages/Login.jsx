@@ -425,7 +425,7 @@ function Login() {
                 <button
                   type="button"
                   className="forgot-link"
-                  onClick={() => setError('Password reset email is not configured yet. Contact an administrator for help.')}
+                  onClick={() => navigate('/forgot-password')}
                 >
                   Forgot password?
                 </button>

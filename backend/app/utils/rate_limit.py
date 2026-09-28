@@ -68,3 +68,31 @@ def record_failed_login(email: str, ip: str) -> None:
 def record_successful_login(email: str, ip: str) -> None:
     clear_failures(login_key_for_ip(ip))
     clear_failures(login_key_for_account(email))
+
+
+# Password reset requests are deliberately stricter than sign-in failures.
+# These keys use the shared, in-process limiter; production multi-worker
+# deployments should move the same policy to Redis.
+RESET_ACCOUNT_MAX_ATTEMPTS = 3
+RESET_IP_MAX_ATTEMPTS = 8
+RESET_WINDOW_SECONDS = 60 * 60
+
+
+def reset_key_for_account(email: str) -> str:
+    return f"password-reset:account:{email.strip().lower()}"
+
+
+def reset_key_for_ip(ip: str) -> str:
+    return f"password-reset:ip:{ip}"
+
+
+def allow_password_reset_request(email: str, ip: str) -> bool:
+    return not (
+        is_limited(reset_key_for_account(email), RESET_ACCOUNT_MAX_ATTEMPTS, RESET_WINDOW_SECONDS)
+        or is_limited(reset_key_for_ip(ip), RESET_IP_MAX_ATTEMPTS, RESET_WINDOW_SECONDS)
+    )
+
+
+def record_password_reset_request(email: str, ip: str) -> None:
+    record_failure(reset_key_for_account(email))
+    record_failure(reset_key_for_ip(ip))

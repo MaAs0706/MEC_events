@@ -38,6 +38,17 @@ class UserLogin(BaseModel):
     password: str
 
 
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+
+class PasswordResetConfirm(BaseModel):
+    token: str = Field(min_length=32, max_length=256)
+    password: str
+
+    validate_password = field_validator("password")(_validate_password_strength)
+
+
 class UserRoleUpdate(BaseModel):
     role: str
 
