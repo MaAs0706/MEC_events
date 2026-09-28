@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import {
   Link,
   useNavigate
@@ -95,6 +95,13 @@ function CoordinatorDashboard() {
 
   const [availability, setAvailability] =
     useState([])
+
+  const [availabilityLoading, setAvailabilityLoading] =
+    useState(false)
+
+  // Availability does not need another round trip when a coordinator returns
+  // to a date they have already inspected during this dashboard session.
+  const availabilityCache = useRef(new Map())
 
   const visibleYear =
     visibleMonth.getFullYear()
@@ -237,22 +244,64 @@ function CoordinatorDashboard() {
 
   useEffect(() => {
 
+    // A create/edit can change bookings. Clear cached dates before fetching
+    // again so the next calendar view always represents the latest data.
+    availabilityCache.current.clear()
+
+  }, [myEvents])
+
+  useEffect(() => {
+
+    let stillCurrent = true
+
     const fetchAvailability = async () => {
+
+      const cachedAvailability =
+        availabilityCache.current.get(selectedDateValue)
+
+      if (cachedAvailability) {
+        setAvailability(cachedAvailability)
+        setAvailabilityLoading(false)
+        return
+      }
+
+      setAvailability([])
+      setAvailabilityLoading(true)
 
       try {
         const response = await api.get(
           `/events/availability?date=${selectedDateValue}`
         )
 
-        setAvailability(response.data)
+        availabilityCache.current.set(
+          selectedDateValue,
+          response.data
+        )
+
+        if (stillCurrent) {
+          setAvailability(response.data)
+        }
       }
       catch {
-        setAvailability([])
+        if (stillCurrent) {
+          setAvailability([])
+        }
+      }
+      finally {
+        if (stillCurrent) {
+          setAvailabilityLoading(false)
+        }
       }
 
     }
 
     fetchAvailability()
+
+    return () => {
+      // Do not let a slower request for the previously selected date replace
+      // the data shown for a newer selection.
+      stillCurrent = false
+    }
 
   }, [selectedDateValue, myEvents])
 
@@ -867,6 +916,12 @@ function CoordinatorDashboard() {
                       }
                     )}
                   </h2>
+
+                  {availabilityLoading && (
+                    <p className="availability-loading">
+                      Updating venue availability…
+                    </p>
+                  )}
 
                   <div className="venue-availability-list">
 

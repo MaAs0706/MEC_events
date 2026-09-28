@@ -2,6 +2,7 @@
   min-height: 100vh;
   background: #050505;
   color: white;
+  overflow-x: clip;
 }
 
 /* =========================
@@ -383,6 +384,12 @@
   font-size: 2rem;
 
   margin-bottom: 24px;
+}
+
+.availability-loading {
+  margin: -14px 0 18px;
+  color: rgba(255,255,255,0.48);
+  font-size: 12px;
 }
 
 .detail-row {
@@ -1034,22 +1041,40 @@
 
 @media (max-width: 768px) {
 
-  .nav-content { padding: 0 16px; gap: 10px; }
+  .coordinator-nav { height: 66px; }
+  .nav-content { min-width: 0; padding: 0 16px; gap: 10px; }
+  .logo { flex: 0 0 auto; font-size: 1.15rem; }
   .dashboard-title { display: none; }
-  .nav-actions { gap: 8px; }
-  .user-menu { max-width: 92px; overflow: hidden; text-overflow: ellipsis; }
+  .nav-actions { min-width: 0; margin-left: auto; gap: 9px; }
+  .user-menu { display: none; }
+  .nav-actions .signout-btn {
+    width: 42px;
+    min-height: 42px;
+    padding: 0;
+    font-size: 0;
+  }
+  .nav-actions .signout-btn svg { width: 18px; height: 18px; }
 
   .coordinator-content {
     grid-template-columns: 1fr;
+    min-width: 0;
   }
 
   .coordinator-sidebar {
-    flex-direction: row;
-    overflow-x: auto;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding: 10px 14px;
+    gap: 8px;
+    border-right: 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
   }
 
+  .nav-tab { min-width: 0; justify-content: center; gap: 7px; padding: 11px 6px; border-radius: 11px; font-size: 12px; }
+  .nav-tab svg { width: 16px; height: 16px; flex: 0 0 auto; }
+
   .coordinator-main {
-    padding: 20px;
+    min-width: 0;
+    padding: 28px 16px 44px;
   }
 
   .analytics-grid {
@@ -1058,23 +1083,44 @@
 
   .calendar-header {
     flex-direction: column;
-    gap: 20px;
+    gap: 18px;
     align-items: flex-start;
+    margin-bottom: 22px;
   }
+
+  .calendar-header h1 { font-size: clamp(2.15rem, 11vw, 2.8rem); line-height: .96; }
+  .calendar-header p { margin-top: 10px; font-size: 14px; }
 
   .venue-selector { width: 100%; min-width: 0; }
 
   .calendar-card,
   .date-panel,
   .event-request-form { padding: 18px; border-radius: 16px; }
+  .calendar-layout, .calendar-card, .date-panel, .calendar-section { min-width: 0; }
 
-  .calendar-month-header { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .calendar-month-header { display: grid; grid-template-columns: 38px minmax(0, 1fr); align-items: start; gap: 12px; }
+  .calendar-month-header h2 { font-size: clamp(1.45rem, 7vw, 1.8rem); line-height: 1.05; }
+  .calendar-month-header span { display: block; line-height: 1.45; }
   .calendar-month-actions { width: 100%; justify-content: space-between; }
+  .calendar-month-actions { grid-column: 1 / -1; }
   .calendar-grid { gap: 4px; }
-  .calendar-day { width: min(11vw, 46px); height: min(11vw, 46px); border-radius: 11px; }
+  .calendar-day { width: min(10.8vw, 44px); height: min(10.8vw, 44px); border-radius: 11px; }
   .weekdays { margin-top: 18px; margin-bottom: 10px; }
   .weekdays span { font-size: 10px; letter-spacing: 0; }
+  .calendar-legend { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 18px; font-size: 11px; line-height: 1.35; }
+  .date-panel { margin-top: 0; }
+  .date-panel h2 { font-size: clamp(1.65rem, 8vw, 2.15rem); line-height: 1.05; overflow-wrap: anywhere; }
+  .venue-slot-card { padding: 13px; }
+  .venue-slot-card div:first-child { min-width: 0; }
+  .venue-slot-card strong, .venue-slot-card span { min-width: 0; overflow-wrap: anywhere; }
+  .venue-slot-card span { text-align: right; font-size: 12px; }
   .form-grid { grid-template-columns: 1fr; }
   .image-upload-preview { min-height: 200px; }
+
+  .event-top, .permission-card { align-items: flex-start; gap: 14px; }
+  .event-top h2 { font-size: 1.55rem; overflow-wrap: anywhere; }
+  .workflow { gap: 8px; }
+  .workflow-step { padding: 8px 10px; font-size: 12px; }
+  .attendees-toggle, .details-link, .edit-event-btn { margin-right: 6px; }
 
 }

@@ -2,8 +2,17 @@ import axios from "axios";
 
 // The browser never stores the access JWT. FastAPI sets it as an HttpOnly
 // cookie, while this client holds only the non-sensitive CSRF value in memory.
+// During local development, keep the API hostname identical to the page
+// hostname. `localhost` and `127.0.0.1` are different browser sites, so a
+// SameSite session cookie set by one is not reliably sent to the other.
+const localApiUrl =
+  typeof window !== "undefined" &&
+  ["localhost", "127.0.0.1"].includes(window.location.hostname)
+    ? `${window.location.protocol}//${window.location.hostname}:8000`
+    : "http://127.0.0.1:8000";
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://127.0.0.1:8000",
+  baseURL: import.meta.env.VITE_API_URL || localApiUrl,
   withCredentials: true,
 });
 
