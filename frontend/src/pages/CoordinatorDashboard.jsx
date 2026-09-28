@@ -431,6 +431,30 @@ function CoordinatorDashboard() {
 
   }
 
+  const handleDownloadLetter = async (event) => {
+    setFormError('')
+    try {
+      const response = await api.get(
+        `/events/${event.id}/permission-letter`,
+        { responseType: 'blob' }
+      )
+      const url = URL.createObjectURL(response.data)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${event.title}-permission-letter.pdf`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+    }
+    catch (error) {
+      setFormError(
+        error.response?.data?.detail ||
+        'Unable to download the permission letter'
+      )
+    }
+  }
+
   const toggleAttendees = async (eventId) => {
       if (attendeesByEvent[eventId]) {
         setAttendeesByEvent((current) => ({
@@ -1481,7 +1505,11 @@ function CoordinatorDashboard() {
 
                         </div>
 
-                        <button className="download-btn">
+                        <button
+                          type="button"
+                          className="download-btn"
+                          onClick={() => handleDownloadLetter(event)}
+                        >
 
                           <Download
                             size={16}

@@ -369,11 +369,15 @@ body {
 }
 
 .forgot-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: rgba(255,255,255,0.45);
 
   text-decoration: none;
 
   transition: 0.3s ease;
+  cursor: pointer;
 }
 
 .forgot-link:hover {

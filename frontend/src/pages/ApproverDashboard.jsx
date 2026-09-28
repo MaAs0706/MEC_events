@@ -19,6 +19,7 @@ import './ApproverDashboard.css'
 function ApproverDashboard() {
 
   const navigate = useNavigate()
+  const approverName = localStorage.getItem('userName') || 'Approver'
 
   const [activeTab, setActiveTab] =
     useState('pending')
@@ -175,7 +176,7 @@ const [rejectedEvents, setRejectedEvents] =
         <div className="nav-right">
 
           <button className="approver-user">
-            Approver
+            {approverName}
           </button>
 
           <button

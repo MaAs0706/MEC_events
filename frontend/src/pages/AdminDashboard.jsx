@@ -23,6 +23,7 @@ import './AdminDashboard.css'
 function AdminDashboard() {
 
   const navigate = useNavigate()
+  const adminName = localStorage.getItem('userName') || 'Administrator'
 
   const [activeTab, setActiveTab] =
     useState('overview')
@@ -394,7 +395,7 @@ function AdminDashboard() {
 
             <Shield size={16} />
 
-            Administrator
+            {adminName}
 
           </button>
 

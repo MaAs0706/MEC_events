@@ -9,8 +9,6 @@ import { signOut } from '../services/auth'
 import {
   User,
   CalendarDays,
-  Shield,
-  Trophy,
   LogOut
 } from 'lucide-react'
 
@@ -32,36 +30,22 @@ function UserProfile() {
       email: '',
       phone: '',
       role: '',
-      joinDate: '',
-      bio: '',
-      department: '',
-      semester: '',
       className: ''
     })
 
   const [myRsvps, setMyRsvps] =
     useState([])
 
-  const [settings, setSettings] =
-    useState({
-      emailNotifications: true,
-      smsNotifications: false,
-      eventReminders: true,
-      twoFactor: false,
-      profileVisibility: 'public'
-    })
-
-  const handleSettingChange = (key) => {
-
-    setSettings((prev) => ({
-      ...prev,
-      [key]: !prev[key]
-    }))
-
-  }
-
   const [saveMessage, setSaveMessage] =
     useState('')
+
+  const initials = userData.name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase() || 'N'
 
   const handleSaveProfile = async (e) => {
 
@@ -214,7 +198,7 @@ function UserProfile() {
               <div className="avatar">
 
                 <div className="avatar-ring">
-                  AM
+                  {initials}
                 </div>
 
               </div>
@@ -324,20 +308,6 @@ function UserProfile() {
               My RSVPs
             </button>
 
-            <button
-              className={`profile-tab ${
-                activeTab === 'settings'
-                  ? 'active'
-                  : ''
-              }`}
-              onClick={() =>
-                setActiveTab('settings')
-              }
-            >
-              <Shield size={16} />
-              Settings
-            </button>
-
           </div>
 
           {/* PROFILE TAB */}
@@ -441,66 +411,6 @@ function UserProfile() {
 
                   </div>
 
-                  <div className="form-group">
-
-                    <label>
-                      Department
-                    </label>
-
-                    <input
-                      type="text"
-                      value={userData.department}
-                      onChange={(e) =>
-                        setUserData({
-                          ...userData,
-                          department:
-                            e.target.value
-                        })
-                      }
-                    />
-
-                  </div>
-
-                  <div className="form-group">
-
-                    <label>
-                      Semester
-                    </label>
-
-                    <input
-                      type="text"
-                      value={userData.semester}
-                      onChange={(e) =>
-                        setUserData({
-                          ...userData,
-                          semester:
-                            e.target.value
-                        })
-                      }
-                    />
-
-                  </div>
-
-                  <div className="form-group full-width">
-
-                    <label>
-                      Bio
-                    </label>
-
-                    <textarea
-                      rows="4"
-                      value={userData.bio}
-                      onChange={(e) =>
-                        setUserData({
-                          ...userData,
-                          bio:
-                            e.target.value
-                        })
-                      }
-                    />
-
-                  </div>
-
                   {saveMessage && (
                     <p className="form-error">
                       {saveMessage}
@@ -528,18 +438,6 @@ function UserProfile() {
 
                     <span className="info-value">
                       {userData.name}
-                    </span>
-
-                  </div>
-
-                  <div className="info-item">
-
-                    <span className="info-label">
-                      Department
-                    </span>
-
-                    <span className="info-value">
-                      {userData.department}
                     </span>
 
                   </div>
@@ -576,30 +474,6 @@ function UserProfile() {
 
                     <span className="info-value">
                       {userData.phone || '—'}
-                    </span>
-
-                  </div>
-
-                  <div className="info-item">
-
-                    <span className="info-label">
-                      Semester
-                    </span>
-
-                    <span className="info-value">
-                      {userData.semester}
-                    </span>
-
-                  </div>
-
-                  <div className="info-item full-width">
-
-                    <span className="info-label">
-                      Bio
-                    </span>
-
-                    <span className="info-value">
-                      {userData.bio}
                     </span>
 
                   </div>
@@ -675,135 +549,7 @@ function UserProfile() {
 
           )}
 
-          {/* SETTINGS */}
-
-          {activeTab === 'settings' && (
-
-            <div className="content-card">
-
-              <div className="card-header">
-
-                <h2>
-                  Settings
-                </h2>
-
-              </div>
-
-              <div className="settings-group">
-
-                <div className="setting-item">
-
-                  <div>
-
-                    <h4>
-                      Email Notifications
-                    </h4>
-
-                    <p>
-                      Receive event updates
-                    </p>
-
-                  </div>
-
-                  <label className="toggle-switch">
-
-                    <input
-                      type="checkbox"
-                      checked={
-                        settings.emailNotifications
-                      }
-                      onChange={() =>
-                        handleSettingChange(
-                          'emailNotifications'
-                        )
-                      }
-                    />
-
-                    <span className="slider"></span>
-
-                  </label>
-
-                </div>
-
-                <div className="setting-item">
-
-                  <div>
-
-                    <h4>
-                      Event Reminders
-                    </h4>
-
-                    <p>
-                      Get reminders before events
-                    </p>
-
-                  </div>
-
-                  <label className="toggle-switch">
-
-                    <input
-                      type="checkbox"
-                      checked={
-                        settings.eventReminders
-                      }
-                      onChange={() =>
-                        handleSettingChange(
-                          'eventReminders'
-                        )
-                      }
-                    />
-
-                    <span className="slider"></span>
-
-                  </label>
-
-                </div>
-
-              </div>
-
-            </div>
-
-          )}
-
         </div>
-
-        {/* RIGHT SIDEBAR */}
-
-        <aside className="profile-sidebar">
-
-          <div className="sidebar-card">
-
-            <h3>
-              Recent Activity
-            </h3>
-
-            <div className="activity-item">
-
-              <span className="activity-dot"></span>
-
-              No recent activity yet.
-
-            </div>
-
-          </div>
-
-          <div className="sidebar-card">
-
-            <h3>
-              Achievements
-            </h3>
-
-            <div className="achievement-item">
-
-              <Trophy size={18} />
-
-              Achievements will appear here once activity tracking is connected.
-
-            </div>
-
-          </div>
-
-        </aside>
 
       </div>
 

@@ -16,7 +16,6 @@ function Login() {
       email: '',
       password: '',
       name: '',
-      role: 'student',
       className: '',
       phone: ''
     })
@@ -255,34 +254,9 @@ function Login() {
 
           </p>
 
-          <div className="live-feed">
-
-            <div className="feed-item">
-
-              <span className="feed-dot"></span>
-
-              240 students browsing events
-
-            </div>
-
-            <div className="feed-item">
-
-              <span className="feed-dot"></span>
-
-              4 events starting tonight
-
-            </div>
-
-            <div className="feed-item">
-
-              <span className="feed-dot"></span>
-
-              Hackathon registrations
-              closing soon
-
-            </div>
-
-          </div>
+          <p className="login-description">
+            Sign in to discover events, manage requests, and stay connected to campus life.
+          </p>
 
         </motion.div>
 
@@ -407,41 +381,6 @@ function Login() {
               <div className="form-group">
 
                 <label>
-                  I am a
-                </label>
-
-                <select
-                  name="role"
-                  value={formData.role}
-                  onChange={
-                    handleInputChange
-                  }
-                >
-
-                  <option value="student">
-                    Student
-                  </option>
-
-
-                  <option value="coordinator">
-                    Event Coordinator
-                  </option>
-
-                  <option value="approver">
-                    Approver
-                  </option>
-
-                  <option value="admin">
-                    Administrator
-                  </option>
-
-                </select>
-
-              </div>
-
-              <div className="form-group">
-
-                <label>
                   Password
                 </label>
 
@@ -483,12 +422,13 @@ function Login() {
 
                 </p>
 
-                <a
-                  href="#forgot"
+                <button
+                  type="button"
                   className="forgot-link"
+                  onClick={() => setError('Password reset email is not configured yet. Contact an administrator for help.')}
                 >
                   Forgot password?
-                </a>
+                </button>
 
               </div>
 
@@ -606,40 +546,6 @@ function Login() {
                     handleInputChange
                   }
                 />
-
-              </div>
-
-              <div className="form-group">
-
-                <label>
-                  I am a
-                </label>
-
-                <select
-                  name="role"
-                  value={formData.role}
-                  onChange={
-                    handleInputChange
-                  }
-                >
-
-                  <option value="student">
-                    Student
-                  </option>
-
-                  <option value="coordinator">
-                    Event Coordinator
-                  </option>
-
-                  <option value="approver">
-                    Approver
-                  </option>
-
-                  <option value="admin">
-                    Administrator
-                  </option>
-
-                </select>
 
               </div>
 
