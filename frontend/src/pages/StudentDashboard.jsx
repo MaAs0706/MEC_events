@@ -4,9 +4,9 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import api from '../services/api'
 import { signOut } from '../services/auth'
+import NotificationBell from '../components/NotificationBell'
 import {
   Search,
-  Bell,
   User,
   LogOut
 } from 'lucide-react'
@@ -294,19 +294,7 @@ function StudentDashboard() {
 
         <div className="nav-right">
 
-          <button
-            className="icon-btn"
-            title="Notifications"
-            onClick={() => {
-              document
-                .querySelector('.activity-sidebar')
-                ?.scrollIntoView({
-                  behavior: 'smooth'
-                })
-            }}
-          >
-            <Bell size={18} />
-          </button>
+          <NotificationBell />
 
           <button
             className="profile-btn"
