@@ -92,7 +92,7 @@ describe('LandingPage', () => {
     renderLandingPage()
 
     // Assert: the loading screen is visible, and events are NOT yet shown.
-    expect(screen.getByText('Loading Events...')).toBeInTheDocument()
+    expect(screen.getByText('Preparing your campus events')).toBeInTheDocument()
     expect(screen.queryByText('Hackathon')).not.toBeInTheDocument()
   })
 

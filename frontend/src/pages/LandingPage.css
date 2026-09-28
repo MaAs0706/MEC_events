@@ -12,6 +12,114 @@ body {
   color: white;
 }
 
+.loading-screen {
+  position: relative;
+  display: grid;
+  min-height: 100svh;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 49, 49, 0.12), transparent 25%),
+    radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+    #050505;
+  background-size: auto, 28px 28px, auto;
+}
+
+.loading-content {
+  position: relative;
+  z-index: 1;
+  width: min(430px, calc(100vw - 48px));
+  text-align: center;
+}
+
+.loading-eyebrow {
+  margin-bottom: 18px;
+  color: rgba(255,255,255,0.48);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.27em;
+}
+
+.loading-logo {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(4rem, 13vw, 7rem);
+  font-weight: 900;
+  letter-spacing: -0.1em;
+  line-height: 0.9;
+  text-shadow: 0 0 44px rgba(255, 49, 49, 0.24);
+}
+
+.loading-door {
+  display: flex;
+  height: 76px;
+  margin: 30px auto 22px;
+  gap: 3px;
+  width: 116px;
+}
+
+.loading-door span {
+  flex: 1;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: linear-gradient(135deg, rgba(255,255,255,0.09), rgba(255,49,49,0.05));
+}
+
+.loading-door span:first-child {
+  transform-origin: right;
+  animation: loading-door-left 1.35s ease-in-out infinite alternate;
+}
+
+.loading-door span:last-child {
+  transform-origin: left;
+  animation: loading-door-right 1.35s ease-in-out infinite alternate;
+}
+
+.loading-progress {
+  height: 2px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.12);
+}
+
+.loading-progress span {
+  display: block;
+  width: 38%;
+  height: 100%;
+  border-radius: inherit;
+  background: #ff3131;
+  animation: loading-progress 1.2s ease-in-out infinite;
+}
+
+.loading-copy {
+  margin-top: 14px;
+  color: rgba(255,255,255,0.58);
+  font-size: 14px;
+}
+
+.loading-ambient {
+  position: absolute;
+  width: 42vw;
+  height: 42vw;
+  border: 1px solid rgba(255,49,49,0.12);
+  transform: rotate(45deg);
+}
+
+.loading-ambient-left { left: -24vw; bottom: -24vw; }
+.loading-ambient-right { right: -24vw; top: -24vw; }
+
+@keyframes loading-door-left {
+  to { transform: perspective(220px) rotateY(31deg); }
+}
+
+@keyframes loading-door-right {
+  to { transform: perspective(220px) rotateY(-31deg); }
+}
+
+@keyframes loading-progress {
+  0% { transform: translateX(-110%); }
+  100% { transform: translateX(390%); }
+}
+
 .landing-wrapper {
   min-height: 100vh;
   background: #050505;

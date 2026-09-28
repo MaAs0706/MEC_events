@@ -9,6 +9,7 @@ import os
 
 import cloudinary
 import cloudinary.uploader
+from cloudinary.exceptions import NotAllowed
 
 
 class MediaStorageError(RuntimeError):
@@ -46,6 +47,11 @@ def upload_image(contents: bytes, folder: str) -> dict[str, str]:
             use_filename=False,
             tags=["nexus"],
         )
+    except NotAllowed as exc:
+        raise MediaStorageError(
+            "The configured Cloudinary key is not allowed to upload images. "
+            "An administrator must grant it asset-create permission."
+        ) from exc
     except Exception as exc:
         raise MediaStorageError("Image upload failed. Please try again.") from exc
 

@@ -289,12 +289,27 @@ const totalRegistrations =
   )
 
   if (loading) {
-  return (
-    <div className="loading-screen">
-      Loading Events...
-    </div>
-  )
-}
+    return (
+      <main className="loading-screen" aria-busy="true" aria-live="polite">
+        <div className="loading-ambient loading-ambient-left" />
+        <div className="loading-ambient loading-ambient-right" />
+        <section className="loading-content">
+          <p className="loading-eyebrow">
+            CAMPUS EVENT PLATFORM
+          </p>
+          <h1 className="loading-logo">NEXUS.</h1>
+          <div className="loading-door" aria-hidden="true">
+            <span />
+            <span />
+          </div>
+          <div className="loading-progress" aria-hidden="true">
+            <span />
+          </div>
+          <p className="loading-copy">Preparing your campus events</p>
+        </section>
+      </main>
+    )
+  }
 
   return (
     <div className="landing-wrapper">
