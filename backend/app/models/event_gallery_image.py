@@ -16,4 +16,5 @@ class EventGalleryImage(Base):
         index=True,
     )
     filename = Column(String, nullable=False)
+    public_id = Column(String, nullable=True)
     uploaded_at = Column(String, nullable=False)

@@ -59,3 +59,6 @@ class Event(Base):
     capacity = Column(Integer)
 
     image = Column(String)
+
+    # Cloudinary public ID is required to replace or delete the cover safely.
+    image_public_id = Column(String, nullable=True)

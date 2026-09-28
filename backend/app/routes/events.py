@@ -15,23 +15,16 @@ from app.schemas.event import EventReject
 
 from app.dependencies import get_db, get_optional_current_user, require_role
 from app.schemas.event import EventCreate
+from app.utils.media_storage import delete_image, MediaStorageError, upload_image
 from app.utils.permission_letter import build_permission_letter
 
 import os
-import uuid
 from io import BytesIO
 
 BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 UPLOAD_DIR = os.path.join(BACKEND_DIR, "uploads", "events")
 GALLERY_UPLOAD_DIR = os.path.join(BACKEND_DIR, "uploads", "gallery")
 PUBLIC_API_URL = os.getenv("PUBLIC_API_URL", "http://127.0.0.1:8000").rstrip("/")
-
-ALLOWED_TYPES = {
-    "image/jpeg",
-    "image/png",
-    "image/webp",
-    "image/gif"
-}
 
 MAX_SIZE = 5 * 1024 * 1024
 MAX_GALLERY_IMAGES = 20
@@ -173,6 +166,8 @@ def event_image_url(image):
 
 
 def gallery_image_url(filename: str):
+    if filename.startswith("http"):
+        return filename
     return f"{PUBLIC_API_URL}/uploads/gallery/{filename}"
 
 
@@ -184,7 +179,7 @@ def can_manage_event(event: Event, current_user: User) -> bool:
     return current_user.role == "admin" or event.created_by == current_user.id
 
 
-def validate_and_store_image(file: UploadFile, directory: str) -> str:
+def validate_image(file: UploadFile) -> bytes:
     """Validate image bytes rather than trusting only the browser MIME type."""
     contents = file.file.read(MAX_SIZE + 1)
 
@@ -206,11 +201,7 @@ def validate_and_store_image(file: UploadFile, directory: str) -> str:
     if file.content_type == "image/webp" and contents[8:12] != b"WEBP":
         raise HTTPException(status_code=400, detail="File must be a valid WebP image")
 
-    os.makedirs(directory, exist_ok=True)
-    filename = f"{uuid.uuid4().hex}.{expected[1]}"
-    with open(os.path.join(directory, filename), "wb") as output:
-        output.write(contents)
-    return filename
+    return contents
 
 
 def serialize_event(event: Event, db: Session):
@@ -896,14 +887,34 @@ def upload_event_image(
             detail="You can only upload images for your own events"
         )
 
-    filename = validate_and_store_image(file, UPLOAD_DIR)
+    contents = validate_image(file)
+    try:
+        uploaded = upload_image(contents, "nexus/events/covers")
+    except MediaStorageError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
     old_file = event.image
-    event.image = filename
-    db.commit()
-    db.refresh(event)
+    old_public_id = event.image_public_id
+    event.image = uploaded["url"]
+    event.image_public_id = uploaded["public_id"]
+    try:
+        db.commit()
+        db.refresh(event)
+    except Exception:
+        db.rollback()
+        try:
+            delete_image(uploaded["public_id"])
+        except MediaStorageError:
+            pass
+        raise
 
-    if old_file and not old_file.startswith("http"):
+    if old_public_id:
+        try:
+            delete_image(old_public_id)
+        except MediaStorageError:
+            # The new upload is valid; do not turn a cleanup failure into a 500.
+            pass
+    elif old_file and not old_file.startswith("http"):
         old_path = os.path.join(UPLOAD_DIR, old_file)
         if os.path.exists(old_path):
             os.remove(old_path)
@@ -932,16 +943,22 @@ def upload_gallery_image(
     if image_count >= MAX_GALLERY_IMAGES:
         raise HTTPException(status_code=400, detail="An event gallery can contain at most 20 images")
 
-    filename = validate_and_store_image(file, GALLERY_UPLOAD_DIR)
+    contents = validate_image(file)
+    try:
+        uploaded = upload_image(contents, "nexus/events/gallery")
+    except MediaStorageError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
     gallery_image = EventGalleryImage(
         event_id=event.id,
-        filename=filename,
+        filename=uploaded["url"],
+        public_id=uploaded["public_id"],
         uploaded_at=datetime.now(timezone.utc).isoformat(),
     )
     db.add(gallery_image)
     db.commit()
     db.refresh(gallery_image)
-    return {"id": gallery_image.id, "image": gallery_image_url(filename), "uploaded_at": gallery_image.uploaded_at}
+    return {"id": gallery_image.id, "image": gallery_image_url(gallery_image.filename), "uploaded_at": gallery_image.uploaded_at}
 
 
 @router.delete("/events/{event_id}/gallery/{image_id}")
@@ -963,10 +980,16 @@ def delete_gallery_image(
     )
     if not image:
         raise HTTPException(status_code=404, detail="Gallery image not found")
-    image_path = os.path.join(GALLERY_UPLOAD_DIR, image.filename)
+    if image.public_id:
+        try:
+            delete_image(image.public_id)
+        except MediaStorageError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+
     db.delete(image)
     db.commit()
-    if os.path.exists(image_path):
+    image_path = os.path.join(GALLERY_UPLOAD_DIR, image.filename)
+    if not image.public_id and not image.filename.startswith("http") and os.path.exists(image_path):
         os.remove(image_path)
     return {"message": "Gallery image deleted"}
 
@@ -1000,12 +1023,18 @@ def delete_event_image(
             detail="You can only delete images for your own events"
         )
 
-    if event.image and not event.image.startswith("http"):
+    if event.image_public_id:
+        try:
+            delete_image(event.image_public_id)
+        except MediaStorageError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+    elif event.image and not event.image.startswith("http"):
         old_path = os.path.join(UPLOAD_DIR, event.image)
         if os.path.exists(old_path):
             os.remove(old_path)
 
     event.image = None
+    event.image_public_id = None
     db.commit()
     db.refresh(event)
 

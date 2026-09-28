@@ -1045,24 +1045,35 @@ function CoordinatorDashboard() {
                         : 'Upload event image (optional)'}
                     </label>
 
-                    <input
-                      name="start_time"
-                      type="time"
-                      value={formData.start_time}
-                      onChange={handleFormChange}
-                      required
-                    />
+                    <label className="time-field">
+                      <span>Starts at</span>
+                      <input
+                        name="start_time"
+                        type="time"
+                        aria-label="Event start time"
+                        value={formData.start_time}
+                        onChange={handleFormChange}
+                        required
+                      />
+                    </label>
+
+                    <label className="time-field">
+                      <span>Ends at</span>
+                      <input
+                        name="end_time"
+                        type="time"
+                        aria-label="Event end time"
+                        value={formData.end_time}
+                        onChange={handleFormChange}
+                        required
+                      />
+                    </label>
 
                     <input
-                      name="end_time"
-                      type="time"
-                      value={formData.end_time}
-                      onChange={handleFormChange}
-                      required
-                    />
-
-                    <input
-                      value={`${selectedVenue} • April ${selectedDate}, 2026`}
+                      value={`${selectedVenue} • ${selectedDateObject.toLocaleDateString(
+                        'en-IN',
+                        { day: 'numeric', month: 'long', year: 'numeric' }
+                      )}`}
                       disabled
                     />
 
@@ -1237,21 +1248,29 @@ function CoordinatorDashboard() {
                         : 'Upload new image (optional)'}
                     </label>
 
-                    <input
-                      name="start_time"
-                      type="time"
-                      value={editFormData.start_time}
-                      onChange={handleEditChange}
-                      required
-                    />
+                    <label className="time-field">
+                      <span>Starts at</span>
+                      <input
+                        name="start_time"
+                        type="time"
+                        aria-label="Event start time"
+                        value={editFormData.start_time}
+                        onChange={handleEditChange}
+                        required
+                      />
+                    </label>
 
-                    <input
-                      name="end_time"
-                      type="time"
-                      value={editFormData.end_time}
-                      onChange={handleEditChange}
-                      required
-                    />
+                    <label className="time-field">
+                      <span>Ends at</span>
+                      <input
+                        name="end_time"
+                        type="time"
+                        aria-label="Event end time"
+                        value={editFormData.end_time}
+                        onChange={handleEditChange}
+                        required
+                      />
+                    </label>
 
                   </div>
 

@@ -149,7 +149,7 @@ def test_coordinator_can_create_event(client, db, coordinator, login_as,
 
 
 def test_coordinator_can_add_a_gallery_photo_after_event(
-        client, db, coordinator, login_as, sample_venue):
+        client, db, coordinator, login_as, sample_venue, monkeypatch):
     """Only an owner may upload a valid image after their event is complete."""
     from datetime import date, timedelta
 
@@ -159,6 +159,14 @@ def test_coordinator_can_add_a_gallery_photo_after_event(
         created_by=coordinator.id,
     )
     login_as(coordinator)
+    monkeypatch.setattr(
+        "app.routes.events.upload_image",
+        lambda contents, folder: {
+            "url": "https://res.cloudinary.com/nexus/image/upload/gallery-photo.png",
+            "public_id": "nexus/events/gallery/gallery-photo",
+        },
+    )
+    monkeypatch.setattr("app.routes.events.delete_image", lambda public_id: None)
 
     response = client.post(
         f"/events/{event.id}/gallery",
@@ -166,7 +174,7 @@ def test_coordinator_can_add_a_gallery_photo_after_event(
     )
 
     assert response.status_code == 200
-    assert response.json()["image"].endswith(".png")
+    assert response.json()["image"].startswith("https://res.cloudinary.com/")
 
     gallery = client.get(f"/events/{event.id}/gallery")
     assert gallery.status_code == 200
