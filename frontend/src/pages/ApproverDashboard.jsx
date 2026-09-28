@@ -6,6 +6,7 @@ import {
 import { motion } from 'framer-motion'
 import api from '../services/api'
 import { signOut } from '../services/auth'
+import NotificationBell from '../components/NotificationBell'
 import {
   ShieldCheck,
   Clock3,
@@ -174,6 +175,8 @@ const [rejectedEvents, setRejectedEvents] =
         </div>
 
         <div className="nav-right">
+
+          <NotificationBell />
 
           <button className="approver-user">
             {approverName}

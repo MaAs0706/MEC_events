@@ -6,6 +6,7 @@ import {
 } from 'react-router-dom'
 import api from '../services/api'
 import { signOut } from '../services/auth'
+import NotificationBell from '../components/NotificationBell'
 import {
   Users,
   Building2,
@@ -390,6 +391,8 @@ function AdminDashboard() {
         </div>
 
         <div className="nav-right">
+
+          <NotificationBell />
 
           <button className="admin-user">
 

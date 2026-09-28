@@ -6,6 +6,7 @@ import {
 import { motion } from 'framer-motion'
 import api from '../services/api'
 import { signOut } from '../services/auth'
+import NotificationBell from '../components/NotificationBell'
 
 import {
   Calendar,
@@ -567,6 +568,8 @@ function CoordinatorDashboard() {
           </div>
 
           <div className="nav-actions">
+
+            <NotificationBell />
 
             <button
               className="user-menu"
