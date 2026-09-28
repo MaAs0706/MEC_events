@@ -1,6 +1,7 @@
 from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import String
+from sqlalchemy import Boolean
 
 from app.database import Base
 
@@ -45,4 +46,11 @@ class User(Base):
     phone = Column(
         String,
         nullable=True
+    )
+
+    is_active = Column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default="true"
     )

@@ -10,6 +10,7 @@ from app.models.registration import Registration
 from app.models.user import User
 from app.schemas.user import UserCreate
 from app.schemas.user import UserRoleUpdate
+from app.schemas.user import UserStatusUpdate
 from app.utils.security import hash_password
 
 
@@ -37,7 +38,8 @@ def get_users(
             "id": user.id,
             "full_name": user.full_name,
             "email": user.email,
-            "role": user.role
+            "role": user.role,
+            "is_active": user.is_active
         }
         for user in users
     ]
@@ -148,6 +150,60 @@ def update_user_role(
         "full_name": user.full_name,
         "email": user.email,
         "role": user.role
+    }
+
+
+@router.patch("/{user_id}/status")
+def update_user_status(
+    user_id: int,
+    status_update: UserStatusUpdate,
+    current_user: User = Depends(
+        require_role(["admin"])
+    ),
+    db: Session = Depends(get_db)
+):
+    if user_id == current_user.id and not status_update.is_active:
+        raise HTTPException(
+            status_code=400,
+            detail="You cannot deactivate your own account"
+        )
+
+    user = (
+        db.query(User)
+        .filter(User.id == user_id)
+        .first()
+    )
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+
+    # Prevent locking out the very last active admin.
+    if (
+        user.role == "admin"
+        and not status_update.is_active
+        and db.query(User)
+        .filter(User.role == "admin", User.is_active.is_(True))
+        .count() == 1
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="At least one active admin account must remain"
+        )
+
+    user.is_active = status_update.is_active
+
+    db.commit()
+    db.refresh(user)
+
+    return {
+        "id": user.id,
+        "full_name": user.full_name,
+        "email": user.email,
+        "role": user.role,
+        "is_active": user.is_active
     }
 
 

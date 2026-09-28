@@ -16,6 +16,7 @@ from fastapi.testclient import TestClient
 from app.database import Base
 from app.models.user import User
 from app.models.event import Event
+from app.models.event_gallery_image import EventGalleryImage  # noqa: F401
 from app.models.venue import Venue
 from app.models.registration import Registration  # noqa: F401
 
@@ -137,3 +138,15 @@ def login_as(client):
         )
 
     return _login_as
+
+
+@pytest.fixture(autouse=True)
+def reset_rate_limit_state():
+    """Clear in-memory login rate limits before every test.
+
+    The rate limiter is module-level state shared across tests, so without
+    this a single burst of failed logins could poison later tests.
+    """
+    yield
+    from app.utils.rate_limit import reset_all
+    reset_all()

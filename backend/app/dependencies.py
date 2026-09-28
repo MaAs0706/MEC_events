@@ -76,6 +76,12 @@ def get_current_user(
     if not user:
         raise credentials_exception
 
+    if not user.is_active:
+        raise HTTPException(
+            status_code=401,
+            detail="Account has been deactivated"
+        )
+
     return user                
 
 
@@ -117,6 +123,9 @@ def get_optional_current_user(
     )
 
     if not user:
+        raise credentials_exception
+
+    if not user.is_active:
         raise credentials_exception
 
     return user

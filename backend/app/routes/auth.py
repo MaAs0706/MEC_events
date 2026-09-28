@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import HTTPException
+from fastapi import Request
 
 from sqlalchemy.orm import Session
 from app.utils.jwt import create_access_token
@@ -14,6 +15,9 @@ from app.utils.security import hash_password
 from app.schemas.user import UserLogin
 from app.schemas.user import ProfileUpdate
 from app.utils.security import verify_password
+from app.utils.rate_limit import check_login_allowed
+from app.utils.rate_limit import record_failed_login
+from app.utils.rate_limit import record_successful_login
 
 from app.dependencies import get_current_user
 router = APIRouter(prefix="/auth")
@@ -98,8 +102,19 @@ def get_my_registrations(
 @router.post("/login")
 def login_user(
     user: UserLogin,
+    request: Request,
     db: Session = Depends(get_db)
 ):
+
+    ip = request.client.host if request.client else "unknown"
+
+    # Reject early when this account or this IP is already rate-limited.
+    blocked = check_login_allowed(user.email, ip)
+    if blocked:
+        raise HTTPException(
+            status_code=429,
+            detail=blocked
+        )
 
     existing_user = (
         db.query(User)
@@ -108,6 +123,7 @@ def login_user(
     )
 
     if not existing_user:
+        record_failed_login(user.email, ip)
         raise HTTPException(
             status_code=401,
             detail="Invalid email or password"
@@ -117,10 +133,19 @@ def login_user(
         user.password,
         existing_user.password_hash
     ):
+        record_failed_login(user.email, ip)
         raise HTTPException(
             status_code=401,
             detail="Invalid email or password"
         )
+
+    if not existing_user.is_active:
+        raise HTTPException(
+            status_code=403,
+            detail="Your account has been deactivated. Contact the administrator."
+        )
+
+    record_successful_login(user.email, ip)
 
     access_token = create_access_token(
         {

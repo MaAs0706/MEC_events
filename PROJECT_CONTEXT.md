@@ -262,6 +262,9 @@ Constraint:
 - JWTs are decoded and the user is reloaded from the database.
 - Role checks are enforced on backend endpoints through `require_role(...)`.
 - Signup always assigns `student`; roles cannot be selected by public registration.
+- Password policy (≥8 chars, letter + digit) enforced server-side and in the signup UI.
+- Login rate limiting: 5 failed attempts per account or 10 per IP within 15 minutes returns `429` (in-memory — swap for Redis in multi-worker deployments).
+- Deactivated accounts (`is_active = False`) are refused at login and at every protected/optional-auth endpoint.
 
 ### Event Privacy
 
@@ -291,11 +294,11 @@ These are real outstanding issues and should be considered before production dep
 
 1. **No automated tests.** There are no repository-owned backend or frontend tests. Add API tests for visibility, role checks, capacity, duplicate registration, locking behavior, deletion blocks, and migration behavior. — *DONE: pytest + Vitest set up; see §15 Development Commands.*
 2. **Loose input validation.** Event date/time fields are strings. Add typed/validated date and time values, positive integer capacity constraints, text length limits, image URL validation, and rejection-reason limits. — *DONE: Pydantic validators enforce exact `YYYY-MM-DD` / `HH:MM` formats (round-trip checked), text min/max lengths, capacity bounds, rejection reason ≤ 500 chars; frontend rejection textareas capped at 500.*
-3. **No password policy or rate limiting.** Add password-strength rules, login throttling/rate limiting, and abuse protection before public exposure.
-4. **No account deactivation.** Deletion is blocked for historical users, but there is no `is_active`/archived state to disable accounts safely.
-5. **No automatic JWT-expiry handling in the frontend.** API 401 responses should clear stale tokens and redirect to login.
-6. **No production CORS configuration.** CORS is currently a fixed list of local Vite origins in `backend/app/main.py`.
-7. **Frontend API URL is hardcoded.** `frontend/src/services/api.js` uses `http://127.0.0.1:8000`; replace it with `VITE_API_URL`.
+3. **No password policy or rate limiting.** Add password-strength rules, login throttling/rate limiting, and abuse protection before public exposure. — *DONE: passwords must be ≥8 chars with letter + digit (Pydantic validator, client mirror in Login.jsx); in-memory sliding-window rate limiter blocks a login after 5 failed attempts per account or 10 per IP in 15 min.*
+4. **No account deactivation.** Deletion is blocked for historical users, but there is no `is_active`/archived state to disable accounts safely. — *DONE: `users.is_active` (alembic 20260909_0003, applied); `PATCH /users/{id}/status`; inactive users blocked at login, `get_current_user`, and `get_optional_current_user`; admin toggle in AdminDashboard; guards against self-deactivation and last-active-admin lockout.*
+5. **No automatic JWT-expiry handling in the frontend.** API 401 responses should clear stale tokens and redirect to login. — *DONE: axios response interceptor in `services/api.js` clears tokens and redirects to `/login` on 401 (login/register 401s exempt).*
+6. **No production CORS configuration.** CORS is currently a fixed list of local Vite origins in `backend/app/main.py`. — *DONE: origins come from `CORS_ORIGINS` env var (comma-separated); falls back to local dev origins when unset.*
+7. **Frontend API URL is hardcoded.** `frontend/src/services/api.js` uses `http://127.0.0.1:8000`; replace it with `VITE_API_URL`. — *DONE: `import.meta.env.VITE_API_URL` with local fallback; `frontend/.env.example` and `backend/.env.example` added.*
 
 ### Medium Priority
 

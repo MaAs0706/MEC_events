@@ -389,6 +389,15 @@ body {
   font-weight: 600;
 }
 
+.form-hint {
+  margin: 8px 0 0;
+
+  color: rgba(255, 255, 255, 0.45);
+
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 /* ANIMATION */
 
 @keyframes pulse {

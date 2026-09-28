@@ -110,8 +110,17 @@ function Login() {
 
         navigateByRole(response.data.role)
       }
-      catch {
-        setError('Invalid email or password')
+      catch (err) {
+        // Show the server's message for a rate-limit block (429);
+        // otherwise treat it as bad credentials.
+        if (err.response?.status === 429) {
+          setError(
+            err.response?.data?.detail ||
+              'Too many attempts. Please try again in a few minutes.'
+          )
+        } else {
+          setError('Invalid email or password')
+        }
       }
 
     }
@@ -130,6 +139,20 @@ function Login() {
       formData.email &&
       formData.password
     ) {
+
+      // Client-side mirror of the backend password policy.
+      const password = formData.password
+      const passwordValid =
+        password.length >= 8 &&
+        /[A-Za-z]/.test(password) &&
+        /\d/.test(password)
+
+      if (!passwordValid) {
+        setError(
+          'Password must be at least 8 characters with at least one letter and one number.'
+        )
+        return
+      }
 
       try {
         await api.post(
@@ -542,6 +565,11 @@ function Login() {
                   }
                   required
                 />
+
+                <p className="form-hint">
+                  Min 8 characters with at least one letter and one
+                  number.
+                </p>
 
               </div>
 

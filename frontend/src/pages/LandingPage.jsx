@@ -237,6 +237,8 @@ useEffect(() => {
     window.removeEventListener('touchmove', handleTouchMove)
   }
 
+// Animation controls intentionally remain stable for the lifetime of this page.
+// eslint-disable-next-line react-hooks/exhaustive-deps
 }, [gateRemoved, gateOpen])
 
 const startOfToday = new Date()
@@ -270,12 +272,6 @@ const upcomingApprovedEvents =
     .slice(0, 4)
 
     const totalEvents = events.length
-
-const approvedEvents =
-  events.filter(
-    event =>
-      event.status === 'approved'
-  )
 
 const totalCategories =
   new Set(
@@ -406,6 +402,9 @@ const totalRegistrations =
           </div>
 
           <div className="nav-right">
+            <Link to="/events/past" className="nav-signin">
+              Past events
+            </Link>
             <Link to="/login" className="nav-signin">
               Sign in
             </Link>

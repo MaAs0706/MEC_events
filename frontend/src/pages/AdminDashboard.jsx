@@ -335,6 +335,35 @@ function AdminDashboard() {
 
   }
 
+  const handleStatusToggle = async (user) => {
+
+    const nextActive = !user.is_active
+
+    try {
+      const response = await api.patch(
+        `/users/${user.id}/status`,
+        {
+          is_active: nextActive
+        }
+      )
+
+      setUsers(
+        users.map(item =>
+          item.id === user.id
+            ? response.data
+            : item
+        )
+      )
+    }
+    catch (error) {
+      setVenueError(
+        error.response?.data?.detail ||
+        'Unable to update user status'
+      )
+    }
+
+  }
+
   return (
 
     <div className="admin-dashboard">
@@ -879,7 +908,21 @@ function AdminDashboard() {
                 </div>
 
                 <div>
-                  Active
+                  <button
+                    className={[
+                      'status-toggle',
+                      user.is_active
+                        ? 'is-active'
+                        : 'is-inactive'
+                    ].join(' ')}
+                    onClick={() =>
+                      handleStatusToggle(user)
+                    }
+                  >
+                    {user.is_active
+                      ? 'Active'
+                      : 'Deactivated'}
+                  </button>
                 </div>
 
                 <button

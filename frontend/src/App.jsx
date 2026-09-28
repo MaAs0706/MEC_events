@@ -8,6 +8,7 @@ import ApproverDashboard from './pages/ApproverDashboard'
 import AdminDashboard from './pages/AdminDashboard'
 import EventDetails from './pages/EventDetails'
 import UserProfile from './pages/UserProfile'
+import PastEvents from './pages/PastEvents'
 
 import './index.css'
 
@@ -31,6 +32,7 @@ function App() {
         <Route path="/dashboard/admin" element={<WatermarkPage><AdminDashboard /></WatermarkPage>} />
         <Route path="/events/:id" element={<WatermarkPage><EventDetails /></WatermarkPage>} />
         <Route path="/profile" element={<WatermarkPage><UserProfile /></WatermarkPage>} />
+        <Route path="/events/past" element={<WatermarkPage><PastEvents /></WatermarkPage>} />
       </Routes>
     </Router>
   )

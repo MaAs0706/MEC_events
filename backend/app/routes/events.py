@@ -1,9 +1,11 @@
 from fastapi import APIRouter
 from fastapi import Depends, HTTPException, UploadFile, File
+from fastapi.responses import StreamingResponse
 from datetime import datetime
 from datetime import timezone
 from sqlalchemy.orm import Session
 from app.models.event import Event 
+from app.models.event_gallery_image import EventGalleryImage
 from app.models.registration import Registration
 from app.models.user import User 
 from app.models.venue import Venue
@@ -13,15 +15,16 @@ from app.schemas.event import EventReject
 
 from app.dependencies import get_db, get_optional_current_user, require_role
 from app.schemas.event import EventCreate
+from app.utils.permission_letter import build_permission_letter
 
 import os
 import uuid
+from io import BytesIO
 
-UPLOAD_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-    "uploads",
-    "events"
-)
+BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+UPLOAD_DIR = os.path.join(BACKEND_DIR, "uploads", "events")
+GALLERY_UPLOAD_DIR = os.path.join(BACKEND_DIR, "uploads", "gallery")
+PUBLIC_API_URL = os.getenv("PUBLIC_API_URL", "http://127.0.0.1:8000").rstrip("/")
 
 ALLOWED_TYPES = {
     "image/jpeg",
@@ -31,6 +34,7 @@ ALLOWED_TYPES = {
 }
 
 MAX_SIZE = 5 * 1024 * 1024
+MAX_GALLERY_IMAGES = 20
 router = APIRouter()
 
 VENUES = [
@@ -165,7 +169,48 @@ def event_image_url(image):
         return None
     if image.startswith("http"):
         return image
-    return f"http://127.0.0.1:8000/uploads/events/{image}"
+    return f"{PUBLIC_API_URL}/uploads/events/{image}"
+
+
+def gallery_image_url(filename: str):
+    return f"{PUBLIC_API_URL}/uploads/gallery/{filename}"
+
+
+def is_past_approved_event(event: Event) -> bool:
+    return event.status == "approved" and event.date < datetime.now().date().isoformat()
+
+
+def can_manage_event(event: Event, current_user: User) -> bool:
+    return current_user.role == "admin" or event.created_by == current_user.id
+
+
+def validate_and_store_image(file: UploadFile, directory: str) -> str:
+    """Validate image bytes rather than trusting only the browser MIME type."""
+    contents = file.file.read(MAX_SIZE + 1)
+
+    if len(contents) > MAX_SIZE:
+        raise HTTPException(status_code=400, detail="File size must be under 5MB")
+
+    signatures = {
+        "image/jpeg": (b"\xff\xd8\xff", "jpg"),
+        "image/png": (b"\x89PNG\r\n\x1a\n", "png"),
+        "image/gif": (b"GIF87a", "gif"),
+        "image/webp": (b"RIFF", "webp"),
+    }
+    expected = signatures.get(file.content_type or "")
+    if not expected or not contents.startswith(expected[0]):
+        raise HTTPException(
+            status_code=400,
+            detail="File must be a valid JPEG, PNG, WebP, or GIF image",
+        )
+    if file.content_type == "image/webp" and contents[8:12] != b"WEBP":
+        raise HTTPException(status_code=400, detail="File must be a valid WebP image")
+
+    os.makedirs(directory, exist_ok=True)
+    filename = f"{uuid.uuid4().hex}.{expected[1]}"
+    with open(os.path.join(directory, filename), "wb") as output:
+        output.write(contents)
+    return filename
 
 
 def serialize_event(event: Event, db: Session):
@@ -266,6 +311,20 @@ def get_events(db: Session = Depends(get_db)):
         serialize_event(event, db)
         for event in events
     ]
+
+
+@router.get("/events/past")
+def get_past_events(db: Session = Depends(get_db)):
+    """Public archive of approved events that have already taken place."""
+    today = datetime.now().date().isoformat()
+    events = (
+        db.query(Event)
+        .filter(Event.status == "approved")
+        .filter(Event.date < today)
+        .order_by(Event.date.desc())
+        .all()
+    )
+    return [serialize_event(event, db) for event in events]
 
 @router.get("/events/pending")
 def get_pending_events(
@@ -388,6 +447,68 @@ def get_event(
         )
 
     return serialize_event(event, db)
+
+
+@router.get("/events/{event_id}/gallery")
+def get_event_gallery(
+    event_id: int,
+    current_user: User | None = Depends(get_optional_current_user),
+    db: Session = Depends(get_db),
+):
+    event = db.query(Event).filter(Event.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    can_view = is_past_approved_event(event)
+    if current_user and (
+        current_user.role in ["admin", "approver"]
+        or (current_user.role == "coordinator" and event.created_by == current_user.id)
+    ):
+        can_view = True
+    if not can_view:
+        raise HTTPException(status_code=404, detail="Event gallery not found")
+
+    images = (
+        db.query(EventGalleryImage)
+        .filter(EventGalleryImage.event_id == event.id)
+        .order_by(EventGalleryImage.id.desc())
+        .all()
+    )
+    return [
+        {"id": image.id, "image": gallery_image_url(image.filename), "uploaded_at": image.uploaded_at}
+        for image in images
+    ]
+
+
+@router.get("/events/{event_id}/permission-letter")
+def download_permission_letter(
+    event_id: int,
+    current_user: User = Depends(require_role(["coordinator", "admin"])),
+    db: Session = Depends(get_db),
+):
+    """Download a PDF permission letter for an approved event."""
+    event = db.query(Event).filter(Event.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    if not can_manage_event(event, current_user):
+        raise HTTPException(status_code=403, detail="You can only download letters for your own events")
+    if event.status != "approved":
+        raise HTTPException(status_code=400, detail="A permission letter is available only after approval")
+
+    reviewer = db.query(User).filter(User.id == event.reviewed_by).first()
+    pdf = build_permission_letter(
+        event,
+        reviewer.full_name if reviewer else "NEXUS Administration",
+        reviewer.role if reviewer else "Approver",
+    )
+    safe_title = "".join(char if char.isalnum() else "-" for char in event.title).strip("-")
+    return StreamingResponse(
+        BytesIO(pdf),
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{safe_title or "event"}-permission-letter.pdf"'
+        },
+    )
 
 @router.put("/events/{event_id}")
 def update_event(
@@ -769,36 +890,13 @@ def upload_event_image(
             detail="Event not found"
         )
 
-    if (
-        current_user.role != "admin"
-        and event.created_by != current_user.id
-    ):
+    if not can_manage_event(event, current_user):
         raise HTTPException(
             status_code=403,
             detail="You can only upload images for your own events"
         )
 
-    if file.content_type not in ALLOWED_TYPES:
-        raise HTTPException(
-            status_code=400,
-            detail="File must be JPEG, PNG, WebP, or GIF"
-        )
-
-    contents = file.file.read()
-
-    if len(contents) > MAX_SIZE:
-        raise HTTPException(
-            status_code=400,
-            detail="File size must be under 5MB"
-        )
-
-    ext = file.filename.rsplit(".", 1)[-1] if "." in (file.filename or "") else "jpg"
-    filename = f"{uuid.uuid4().hex}.{ext}"
-
-    os.makedirs(UPLOAD_DIR, exist_ok=True)
-
-    with open(os.path.join(UPLOAD_DIR, filename), "wb") as f:
-        f.write(contents)
+    filename = validate_and_store_image(file, UPLOAD_DIR)
 
     old_file = event.image
     event.image = filename
@@ -811,6 +909,66 @@ def upload_event_image(
             os.remove(old_path)
 
     return serialize_event(event, db)
+
+
+@router.post("/events/{event_id}/gallery")
+def upload_gallery_image(
+    event_id: int,
+    file: UploadFile = File(...),
+    current_user: User = Depends(require_role(["coordinator", "admin"])),
+    db: Session = Depends(get_db),
+):
+    event = db.query(Event).filter(Event.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    if not can_manage_event(event, current_user):
+        raise HTTPException(status_code=403, detail="You can only upload photos for your own events")
+    if not is_past_approved_event(event):
+        raise HTTPException(
+            status_code=400,
+            detail="Gallery photos can only be added after an approved event has ended",
+        )
+    image_count = db.query(EventGalleryImage).filter(EventGalleryImage.event_id == event.id).count()
+    if image_count >= MAX_GALLERY_IMAGES:
+        raise HTTPException(status_code=400, detail="An event gallery can contain at most 20 images")
+
+    filename = validate_and_store_image(file, GALLERY_UPLOAD_DIR)
+    gallery_image = EventGalleryImage(
+        event_id=event.id,
+        filename=filename,
+        uploaded_at=datetime.now(timezone.utc).isoformat(),
+    )
+    db.add(gallery_image)
+    db.commit()
+    db.refresh(gallery_image)
+    return {"id": gallery_image.id, "image": gallery_image_url(filename), "uploaded_at": gallery_image.uploaded_at}
+
+
+@router.delete("/events/{event_id}/gallery/{image_id}")
+def delete_gallery_image(
+    event_id: int,
+    image_id: int,
+    current_user: User = Depends(require_role(["coordinator", "admin"])),
+    db: Session = Depends(get_db),
+):
+    event = db.query(Event).filter(Event.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    if not can_manage_event(event, current_user):
+        raise HTTPException(status_code=403, detail="You can only remove photos from your own events")
+    image = (
+        db.query(EventGalleryImage)
+        .filter(EventGalleryImage.id == image_id, EventGalleryImage.event_id == event.id)
+        .first()
+    )
+    if not image:
+        raise HTTPException(status_code=404, detail="Gallery image not found")
+    image_path = os.path.join(GALLERY_UPLOAD_DIR, image.filename)
+    db.delete(image)
+    db.commit()
+    if os.path.exists(image_path):
+        os.remove(image_path)
+    return {"message": "Gallery image deleted"}
 
 
 @router.delete("/events/{event_id}/image")

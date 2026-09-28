@@ -420,7 +420,7 @@ const [rejectedEvents, setRejectedEvents] =
     <div className="review-grid">
 
       {approvedEvents.map(
-        (event, index) => (
+        (event) => (
 
           <motion.div
             key={event.id}
@@ -475,7 +475,7 @@ const [rejectedEvents, setRejectedEvents] =
     <div className="review-grid">
 
       {rejectedEvents.map(
-        (event, index) => (
+        (event) => (
 
           <motion.div
             key={event.id}

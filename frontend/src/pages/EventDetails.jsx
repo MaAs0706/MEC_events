@@ -31,6 +31,10 @@ function EventDetails() {
   const [rejectionReason, setRejectionReason] =
     useState('')
 
+  const [gallery, setGallery] = useState([])
+  const [galleryMessage, setGalleryMessage] = useState('')
+  const [galleryUploading, setGalleryUploading] = useState(false)
+
   const role =
     localStorage.getItem('userRole')
 
@@ -59,6 +63,13 @@ function EventDetails() {
           await api.get(`/events/${id}`)
 
         setEvent(response.data)
+
+        try {
+          const galleryResponse = await api.get(`/events/${id}/gallery`)
+          setGallery(galleryResponse.data)
+        } catch {
+          setGallery([])
+        }
 
         if (role === 'student') {
           const statusResponse =
@@ -154,6 +165,57 @@ function EventDetails() {
       )
     }
 
+  }
+
+  const isPastEvent = event && new Date(`${event.date}T00:00:00`) < new Date(new Date().setHours(0, 0, 0, 0))
+  const canManageGallery = isPastEvent && ['coordinator', 'admin'].includes(role)
+
+  const handleGalleryUpload = async (file) => {
+    if (!file) return
+
+    setGalleryMessage('')
+    setGalleryUploading(true)
+    const formData = new FormData()
+    formData.append('file', file)
+
+    try {
+      const response = await api.post(`/events/${id}/gallery`, formData)
+      setGallery((images) => [response.data, ...images])
+      setGalleryMessage('Photo added to the gallery.')
+    } catch (error) {
+      setGalleryMessage(error.response?.data?.detail || 'Unable to upload this photo.')
+    } finally {
+      setGalleryUploading(false)
+    }
+  }
+
+  const handleGalleryDelete = async (imageId) => {
+    setGalleryMessage('')
+    try {
+      await api.delete(`/events/${id}/gallery/${imageId}`)
+      setGallery((images) => images.filter((image) => image.id !== imageId))
+    } catch (error) {
+      setGalleryMessage(error.response?.data?.detail || 'Unable to remove this photo.')
+    }
+  }
+
+  const handleDownloadLetter = async () => {
+    setReviewMessage('')
+    try {
+      const response = await api.get(`/events/${id}/permission-letter`, {
+        responseType: 'blob',
+      })
+      const url = URL.createObjectURL(response.data)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${event.title}-permission-letter.pdf`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      setReviewMessage(error.response?.data?.detail || 'Unable to download the permission letter.')
+    }
   }
 
   const goBackToDashboard = () => {
@@ -370,10 +432,11 @@ function EventDetails() {
           </p>
         )}
 
-        {role === 'coordinator' && (
+        {['coordinator', 'admin'].includes(role) && event.status === 'approved' && (
 
           <button
             className="hero-action-btn"
+            onClick={handleDownloadLetter}
           >
             Download Letter
           </button>
@@ -546,6 +609,55 @@ function EventDetails() {
               </div>
 
             </section>
+
+            {(isPastEvent || gallery.length > 0) && (
+              <section className="gallery-section">
+                <div className="gallery-heading">
+                  <div>
+                    <span>EVENT RECAP</span>
+                    <h2>Photo gallery</h2>
+                  </div>
+
+                  {canManageGallery && (
+                    <label className="gallery-upload-button">
+                      {galleryUploading ? 'Uploading…' : 'Add photos'}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        disabled={galleryUploading}
+                        onChange={(e) => {
+                          handleGalleryUpload(e.target.files?.[0])
+                          e.target.value = ''
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
+
+                {galleryMessage && <p className="gallery-message">{galleryMessage}</p>}
+
+                {gallery.length > 0 ? (
+                  <div className="gallery-grid">
+                    {gallery.map((image) => (
+                      <figure className="gallery-image" key={image.id}>
+                        <img src={image.image} alt={`${event.title} gallery`} />
+                        {canManageGallery && (
+                          <button
+                            type="button"
+                            aria-label="Remove gallery photo"
+                            onClick={() => handleGalleryDelete(image.id)}
+                          >
+                            ×
+                          </button>
+                        )}
+                      </figure>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="gallery-empty">No event photos have been added yet.</p>
+                )}
+              </section>
+            )}
 
             {event.requirements && (
 

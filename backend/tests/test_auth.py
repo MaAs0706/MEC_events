@@ -1,0 +1,232 @@
+"""Tests for authentication: password policy, rate limiting, and deactivation.
+
+Follows the Arrange / Act / Assert pattern. The password-hash fixtures create
+real bcrypt hashes so the /auth/login endpoint can verify them.
+"""
+import pytest
+
+from app.models.user import User
+from app.utils.security import hash_password
+from tests.conftest import make_user
+
+
+@pytest.fixture()
+def registered_user(db):
+    """A real user with a known bcrypt password that passes the policy."""
+    return make_user(
+        db,
+        "student",
+        full_name="Ada Lovelace",
+        email="ada@test.com",
+    )
+
+
+@pytest.fixture()
+def set_registered_password(db, registered_user):
+    registered_user.password_hash = hash_password("StrongPass1")
+    db.commit()
+    return registered_user
+
+
+# ---------------------------------------------------------------------------
+# Password policy
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "password",
+    [
+        "short",          # < 8 chars
+        "alllettersonly", # no digit
+        "12345678",       # no letter
+        "",               # empty
+    ],
+)
+def test_register_rejects_weak_passwords(client, password):
+    login_payload = {
+        "full_name": "New Student",
+        "email": "new@test.com",
+        "password": password,
+    }
+
+    response = client.post("/auth/register", json=login_payload)
+
+    assert response.status_code == 422
+
+
+def test_register_accepts_strong_password(client, db):
+    login_payload = {
+        "full_name": "New Student",
+        "email": "new@test.com",
+        "password": "StrongPass1",
+    }
+
+    response = client.post("/auth/register", json=login_payload)
+
+    assert response.status_code == 200
+    assert db.query(User).filter(User.email == "new@test.com").count() == 1
+
+
+def test_admin_create_user_rejects_weak_password(client, admin, login_as):
+    login_as(admin)
+
+    payload = {
+        "full_name": "Coordinator",
+        "email": "coord@test.com",
+        "password": "weak",
+        "role": "coordinator",
+    }
+
+    response = client.post("/users", json=payload)
+
+    assert response.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# Login and rate limiting
+# ---------------------------------------------------------------------------
+
+
+def test_login_success_returns_token(client, set_registered_password):
+    response = client.post(
+        "/auth/login",
+        json={"email": "ada@test.com", "password": "StrongPass1"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["access_token"]
+    assert response.json()["role"] == "student"
+
+
+def test_login_wrong_password_is_401(client, set_registered_password):
+    response = client.post(
+        "/auth/login",
+        json={"email": "ada@test.com", "password": "WrongPass9"},
+    )
+
+    assert response.status_code == 401
+
+
+def test_login_locks_account_after_five_failures(
+    client, set_registered_password
+):
+    # Arrange/Act: five wrong password attempts.
+    for _ in range(5):
+        response = client.post(
+            "/auth/login",
+            json={"email": "ada@test.com", "password": "WrongPass9"},
+        )
+        assert response.status_code == 401
+
+    # Assert: the sixth attempt, even with the correct password, is blocked.
+    response = client.post(
+        "/auth/login",
+        json={"email": "ada@test.com", "password": "WrongPass9"},
+    )
+
+    assert response.status_code == 429
+
+
+def test_correct_password_after_few_failures_still_works(
+    client, set_registered_password
+):
+    # Four failures stay under the account limit of five.
+    for _ in range(4):
+        client.post(
+            "/auth/login",
+            json={"email": "ada@test.com", "password": "WrongPass9"},
+        )
+
+    response = client.post(
+        "/auth/login",
+        json={"email": "ada@test.com", "password": "StrongPass1"},
+    )
+
+    assert response.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# Account deactivation
+# ---------------------------------------------------------------------------
+
+
+def test_deactivated_user_cannot_login(client, admin, login_as, db):
+    user = make_user(db, "coordinator", email="coord@test.com")
+    user.password_hash = hash_password("StrongPass1")
+    db.commit()
+
+    login_as(admin)
+    response = client.patch(
+        f"/users/{user.id}/status", json={"is_active": False}
+    )
+    assert response.status_code == 200
+
+    login_response = client.post(
+        "/auth/login",
+        json={"email": "coord@test.com", "password": "StrongPass1"},
+    )
+    assert login_response.status_code == 403
+
+
+def test_deactivated_user_cannot_use_existing_token(client, db):
+    from app.utils.jwt import create_access_token
+
+    admin_user = make_user(db, "admin", email="rootadmin@test.com")
+    admin_user.password_hash = hash_password("StrongPass1")
+    student = make_user(db, "student", email="stu@test.com")
+    db.commit()
+
+    # Issue a token for the student BEFORE deactivation.
+    student_token = create_access_token(
+        {"user_id": student.id, "role": student.role}
+    )
+
+    # Real admin login (login_as would override auth for every request).
+    login = client.post(
+        "/auth/login",
+        json={"email": "rootadmin@test.com", "password": "StrongPass1"},
+    )
+    admin_headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+
+    response = client.patch(
+        f"/users/{student.id}/status",
+        json={"is_active": False},
+        headers=admin_headers,
+    )
+    assert response.status_code == 200
+
+    # The pre-issued token must no longer work.
+    protected = client.get(
+        "/auth/me", headers={"Authorization": f"Bearer {student_token}"}
+    )
+    assert protected.status_code == 401
+
+
+def test_admin_cannot_deactivate_self(client, admin, login_as):
+    login_as(admin)
+
+    response = client.patch(
+        f"/users/{admin.id}/status", json={"is_active": False}
+    )
+
+    assert response.status_code == 400
+
+
+def test_cannot_deactivate_last_active_admin(client, admin, login_as, db):
+    other_admin = make_user(db, "admin", email="admin2@test.com")
+
+    # Simulate the current admin already being inactive, so other_admin is
+    # the single remaining active admin. login_as still presents `admin` as
+    # the current user even though it is inactive.
+    admin.is_active = False
+    db.commit()
+
+    login_as(admin)
+    response = client.patch(
+        f"/users/{other_admin.id}/status", json={"is_active": False}
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == (
+        "At least one active admin account must remain"
+    )

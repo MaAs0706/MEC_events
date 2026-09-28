@@ -61,6 +61,32 @@ def test_public_users_only_see_approved_events(client, db, sample_venue):
     assert events[0]["title"] == "Approved Event"
 
 
+def test_public_past_events_only_include_completed_approved_events(
+        client, db, coordinator, sample_venue):
+    """The archive must not expose upcoming or unapproved event requests."""
+    from datetime import date, timedelta
+
+    past_date = (date.today() - timedelta(days=1)).isoformat()
+    future_date = (date.today() + timedelta(days=1)).isoformat()
+    create_event(
+        db, title="Past Approved", status="approved", date=past_date,
+        created_by=coordinator.id,
+    )
+    create_event(
+        db, title="Upcoming Approved", status="approved", date=future_date,
+        created_by=coordinator.id,
+    )
+    create_event(
+        db, title="Past Pending", status="pending", date=past_date,
+        created_by=coordinator.id,
+    )
+
+    response = client.get("/events/past")
+
+    assert response.status_code == 200
+    assert [event["title"] for event in response.json()] == ["Past Approved"]
+
+
 # ---------------------------------------------------------------------------
 # AUTHENTICATED / ROLE-BASED BEHAVIOR
 # ---------------------------------------------------------------------------
@@ -122,6 +148,36 @@ def test_coordinator_can_create_event(client, db, coordinator, login_as,
     assert created["status"] == "pending"
 
 
+def test_coordinator_can_add_a_gallery_photo_after_event(
+        client, db, coordinator, login_as, sample_venue):
+    """Only an owner may upload a valid image after their event is complete."""
+    from datetime import date, timedelta
+
+    event = create_event(
+        db, title="Completed", status="approved",
+        date=(date.today() - timedelta(days=1)).isoformat(),
+        created_by=coordinator.id,
+    )
+    login_as(coordinator)
+
+    response = client.post(
+        f"/events/{event.id}/gallery",
+        files={"file": ("photo.png", b"\x89PNG\r\n\x1a\nminimal", "image/png")},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["image"].endswith(".png")
+
+    gallery = client.get(f"/events/{event.id}/gallery")
+    assert gallery.status_code == 200
+    assert len(gallery.json()) == 1
+
+    cleanup = client.delete(
+        f"/events/{event.id}/gallery/{gallery.json()[0]['id']}"
+    )
+    assert cleanup.status_code == 200
+
+
 # ---------------------------------------------------------------------------
 # APPROVER WORKFLOW
 # ---------------------------------------------------------------------------
@@ -147,6 +203,34 @@ def test_approver_can_approve_event(client, db, coordinator, approver,
     # Assert
     assert response.status_code == 200
     assert response.json()["status"] == "approved"
+
+
+def test_coordinator_can_download_an_approved_event_letter(
+        client, db, coordinator, approver, login_as, sample_venue):
+    """An approved event's owner receives a real PDF permission letter."""
+    event = create_event(
+        db, title="Approved Workshop", status="approved",
+        created_by=coordinator.id,
+    )
+    event.reviewed_by = approver.id
+    db.commit()
+    login_as(coordinator)
+
+    response = client.get(f"/events/{event.id}/permission-letter")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/pdf")
+    assert response.content.startswith(b"%PDF")
+
+
+def test_permission_letter_is_hidden_before_approval(
+        client, db, coordinator, login_as, sample_venue):
+    event = create_event(db, title="Not Approved", created_by=coordinator.id)
+    login_as(coordinator)
+
+    response = client.get(f"/events/{event.id}/permission-letter")
+
+    assert response.status_code == 400
 
 
 def test_approver_cannot_approve_twice(client, db, coordinator, approver,
