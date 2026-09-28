@@ -824,6 +824,10 @@
 
 @media (max-width: 768px) {
 
+  .admin-nav { min-height: 64px; gap: 10px; }
+  .admin-nav .nav-divider, .admin-nav .nav-left p, .admin-user { display: none; }
+  .admin-nav .nav-right { gap: 8px; }
+
   .admin-nav {
     padding: 0 20px;
   }

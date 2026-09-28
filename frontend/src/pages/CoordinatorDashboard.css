@@ -1027,6 +1027,11 @@
 
 @media (max-width: 768px) {
 
+  .nav-content { padding: 0 16px; gap: 10px; }
+  .dashboard-title { display: none; }
+  .nav-actions { gap: 8px; }
+  .user-menu { max-width: 92px; overflow: hidden; text-overflow: ellipsis; }
+
   .coordinator-content {
     grid-template-columns: 1fr;
   }

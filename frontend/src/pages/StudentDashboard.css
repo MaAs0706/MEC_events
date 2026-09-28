@@ -680,6 +680,10 @@ body {
 
 @media(max-width: 768px) {
 
+  .navbar { min-height: 64px; gap: 10px; }
+  .profile-btn { padding: 0 10px; font-size: 0; }
+  .profile-btn svg { margin: 0; }
+
   .navbar {
     padding: 0 20px;
   }
