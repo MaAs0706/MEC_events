@@ -213,6 +213,21 @@ def get_venues(db: Session):
     ]
 
 
+def month_bounds(month: str) -> tuple[str, str]:
+    """Return ISO date bounds for a YYYY-MM calendar request."""
+    try:
+        visible_month = datetime.strptime(month, "%Y-%m")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="month must use YYYY-MM format")
+
+    start = visible_month.strftime("%Y-%m-01")
+    if visible_month.month == 12:
+        end = f"{visible_month.year + 1}-01-01"
+    else:
+        end = f"{visible_month.year}-{visible_month.month + 1:02d}-01"
+    return start, end
+
+
 def event_image_url(image):
     if not image:
         return None
@@ -404,6 +419,113 @@ def get_events(db: Session = Depends(get_db)):
         serialize_event(event, db)
         for event in events
     ]
+
+
+@router.get("/events/public-calendar")
+def get_public_event_calendar(month: str, db: Session = Depends(get_db)):
+    """Approved event sessions for a public, month-sized calendar."""
+    start, end = month_bounds(month)
+    rows = (
+        db.query(EventSession, Event)
+        .join(Event, Event.id == EventSession.event_id)
+        .filter(Event.status == "approved")
+        .filter(EventSession.date >= start, EventSession.date < end)
+        .order_by(EventSession.date, EventSession.start_time, Event.title)
+        .all()
+    )
+    # Older installations may still have legacy events while a migration is
+    # being applied. Keep their public calendar visible rather than treating
+    # the hall as free.
+    legacy_events = (
+        db.query(Event)
+        .outerjoin(EventSession, EventSession.event_id == Event.id)
+        .filter(EventSession.id.is_(None))
+        .filter(Event.status == "approved")
+        .filter(Event.date >= start, Event.date < end)
+        .all()
+    )
+    # Pending requests deliberately never appear here. These details are
+    # already available through the public approved-event details page.
+    calendar_items = [
+        {
+            "event_id": event.id,
+            "title": event.title,
+            "category": event.category,
+            "date": session.date,
+            "venue": session.venue,
+            "start_time": session.start_time,
+            "end_time": session.end_time,
+        }
+        for session, event in rows
+    ]
+    calendar_items.extend(
+        {
+            "event_id": event.id,
+            "title": event.title,
+            "category": event.category,
+            "date": event.date,
+            "venue": event.venue,
+            "start_time": event.start_time,
+            "end_time": event.end_time,
+        }
+        for event in legacy_events
+    )
+    return sorted(calendar_items, key=lambda item: (item["date"], item["start_time"], item["title"]))
+
+
+@router.get("/events/public-venue-calendar")
+def get_public_venue_calendar(venue: str, month: str, db: Session = Depends(get_db)):
+    """Approved occupation data for one venue during a selected month."""
+    start, end = month_bounds(month)
+    selected_venue = db.query(Venue).filter(Venue.name == venue).first()
+    if not selected_venue:
+        raise HTTPException(status_code=404, detail="Venue not found")
+
+    rows = (
+        db.query(EventSession, Event)
+        .join(Event, Event.id == EventSession.event_id)
+        .filter(Event.status == "approved")
+        .filter(EventSession.venue == venue)
+        .filter(EventSession.date >= start, EventSession.date < end)
+        .order_by(EventSession.date, EventSession.start_time, Event.title)
+        .all()
+    )
+    legacy_events = (
+        db.query(Event)
+        .outerjoin(EventSession, EventSession.event_id == Event.id)
+        .filter(EventSession.id.is_(None))
+        .filter(Event.status == "approved", Event.venue == venue)
+        .filter(Event.date >= start, Event.date < end)
+        .all()
+    )
+    by_date: dict[str, list[tuple[EventSession, Event]]] = {}
+    for session, event in rows:
+        by_date.setdefault(session.date, []).append((session, event))
+    for event in legacy_events:
+        by_date.setdefault(event.date, []).append((event, event))
+
+    return {
+        "venue": selected_venue.name,
+        "capacity": selected_venue.capacity,
+        "month": month,
+        "days": [
+            {
+                "date": date,
+                "load": get_booking_load([session for session, _ in bookings]),
+                "bookings": [
+                    {
+                        "event_id": event.id,
+                        "title": event.title,
+                        "date": session.date,
+                        "start_time": session.start_time,
+                        "end_time": session.end_time,
+                    }
+                    for session, event in bookings
+                ],
+            }
+            for date, bookings in by_date.items()
+        ],
+    }
 
 
 @router.get("/events/past")

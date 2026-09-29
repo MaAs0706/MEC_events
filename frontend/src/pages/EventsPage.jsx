@@ -50,6 +50,7 @@ function EventsPage() {
       <nav className="public-events-nav">
         <Link to="/" className="public-events-logo">NEXUS.</Link>
         <div>
+          <Link to="/calendar" className="public-events-archive">Calendar</Link>
           <Link to="/events/past" className="public-events-archive">Past events</Link>
           <Link to="/login" className="public-events-join">Join NEXUS</Link>
         </div>

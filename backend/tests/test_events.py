@@ -87,6 +87,34 @@ def test_public_past_events_only_include_completed_approved_events(
     assert [event["title"] for event in response.json()] == ["Past Approved"]
 
 
+def test_public_calendars_show_only_approved_venue_sessions(client, db, sample_venue):
+    """The anonymous calendar exposes published schedules, never requests."""
+    from app.models.event_session import EventSession
+
+    approved = create_event(
+        db, title="Published Workshop", status="approved", date="2026-09-15",
+        start_time="10:00", end_time="12:00",
+    )
+    pending = create_event(
+        db, title="Private Request", status="pending", date="2026-09-15",
+        start_time="13:00", end_time="15:00",
+    )
+    db.add_all([
+        EventSession(event_id=approved.id, venue="Main Auditorium", date="2026-09-15", start_time="10:00", end_time="12:00"),
+        EventSession(event_id=pending.id, venue="Main Auditorium", date="2026-09-15", start_time="13:00", end_time="15:00"),
+    ])
+    db.commit()
+
+    event_calendar = client.get("/events/public-calendar?month=2026-09")
+    venue_calendar = client.get("/events/public-venue-calendar?venue=Main%20Auditorium&month=2026-09")
+
+    assert event_calendar.status_code == 200
+    assert [item["title"] for item in event_calendar.json()] == ["Published Workshop"]
+    assert venue_calendar.status_code == 200
+    bookings = venue_calendar.json()["days"][0]["bookings"]
+    assert [booking["title"] for booking in bookings] == ["Published Workshop"]
+
+
 # ---------------------------------------------------------------------------
 # AUTHENTICATED / ROLE-BASED BEHAVIOR
 # ---------------------------------------------------------------------------

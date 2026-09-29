@@ -486,6 +486,10 @@ body {
   display: none;
 }
 
+.nav-calendar-mobile {
+  display: none;
+}
+
 .nav-join {
   background: #ff3131;
   color: white;
@@ -931,6 +935,14 @@ body {
   }
 
   .nav-past-mobile {
+    display: inline;
+  }
+
+  .nav-calendar-desktop {
+    display: none;
+  }
+
+  .nav-calendar-mobile {
     display: inline;
   }
 

@@ -417,6 +417,10 @@ const totalRegistrations =
           </div>
 
           <div className="nav-right">
+            <Link to="/calendar" className="nav-signin nav-calendar-link">
+              <span className="nav-calendar-desktop">Calendar</span>
+              <span className="nav-calendar-mobile">Dates</span>
+            </Link>
             <Link to="/events/past" className="nav-signin nav-past-events">
               <span className="nav-past-desktop">Past events</span>
               <span className="nav-past-mobile">Past</span>

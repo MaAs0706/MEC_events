@@ -1,0 +1,68 @@
+.public-calendar-page { min-height: 100vh; padding: 0 4vw 80px; color: #fff; background: radial-gradient(circle at 84% 12%, rgba(255,49,49,.09), transparent 23%), #050505; }
+.public-calendar-nav { height: 88px; display: flex; align-items: center; justify-content: space-between; gap: 24px; border-bottom: 1px solid #202020; }
+.public-calendar-logo { color: #fff; font-size: 26px; font-weight: 900; letter-spacing: 2px; }
+.public-calendar-nav > div { display: flex; align-items: center; gap: 18px; }
+.public-calendar-nav-link { color: #aaa; font-size: 14px; }
+.public-calendar-join { padding: 11px 15px; border-radius: 8px; background: #ff3131; color: #fff; font-size: 13px; font-weight: 800; }
+.public-calendar-header { max-width: 720px; padding: 82px 0 32px; }
+.public-calendar-header > span, .public-calendar-section-heading > span, .public-calendar-details > span { color: #ff3131; font-size: 11px; font-weight: 800; letter-spacing: .24em; }
+.public-calendar-header h1 { margin: 14px 0 18px; font-size: clamp(3.5rem, 8vw, 6.6rem); line-height: .88; letter-spacing: -.075em; }
+.public-calendar-header p, .public-calendar-section-heading p { max-width: 570px; color: #aaa; font-size: 17px; line-height: 1.6; }
+.public-calendar-switcher { display: inline-flex; gap: 6px; padding: 5px; border: 1px solid #292929; border-radius: 11px; background: #101010; }
+.public-calendar-switcher button { padding: 10px 16px; border: 0; border-radius: 7px; color: #aaa; background: transparent; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
+.public-calendar-switcher button.active { color: #fff; background: #ff3131; }
+.public-calendar-section { margin-top: 62px; }
+.public-calendar-section-heading { margin-bottom: 24px; }
+.public-calendar-section-heading h2 { margin: 10px 0; font-size: clamp(2rem, 4.2vw, 3.4rem); letter-spacing: -.055em; line-height: .96; }
+.public-calendar-layout { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(300px, .8fr); gap: 22px; }
+.public-calendar-card, .public-calendar-details { min-height: 420px; padding: 28px; border: 1px solid #292929; border-radius: 18px; background: rgba(15,15,15,.92); }
+.public-calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 9px; }
+.public-calendar-weekday { padding-bottom: 6px; color: #777; text-align: center; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.public-calendar-empty { min-height: 60px; }
+.public-calendar-day { position: relative; min-height: 60px; padding: 8px; border: 1px solid transparent; border-radius: 11px; color: #eee; background: #151515; text-align: left; font: inherit; font-weight: 750; cursor: pointer; transition: transform .18s ease, border-color .18s ease, background .18s ease; }
+.public-calendar-day:hover { transform: translateY(-2px); border-color: #754040; }
+.public-calendar-day.today { border-color: #777; }
+.public-calendar-day.selected { border-color: #ff3131; box-shadow: 0 0 0 2px rgba(255,49,49,.16); }
+.public-calendar-day.has-events { background: linear-gradient(135deg, rgba(255,49,49,.34), #191111); }
+.public-calendar-day.occupied { background: linear-gradient(135deg, rgba(255,49,49,.3), #191111); }
+.public-calendar-day i { position: absolute; right: 8px; bottom: 7px; display: grid; min-width: 17px; height: 17px; place-items: center; border-radius: 50%; color: #fff; background: #ff3131; font-size: 9px; font-style: normal; }
+.public-calendar-day.occupied i { width: 9px; min-width: 9px; height: 9px; }
+.public-calendar-legend { margin-top: 24px; color: #999; font-size: 12px; }
+.public-calendar-legend b { display: inline-block; width: 8px; height: 8px; margin-right: 7px; border-radius: 50%; background: #ff3131; }
+.public-calendar-details { display: flex; flex-direction: column; gap: 12px; }
+.public-calendar-details h3 { margin: 2px 0 8px; font-size: clamp(1.6rem, 2.8vw, 2.35rem); letter-spacing: -.055em; line-height: 1; }
+.public-calendar-event { display: flex; flex-direction: column; gap: 5px; padding: 15px; border: 1px solid #302020; border-radius: 12px; color: #fff; background: #141111; transition: border-color .18s ease, transform .18s ease; }
+.public-calendar-event:hover { border-color: #8c3030; transform: translateY(-2px); }
+.public-calendar-event strong { font-size: 15px; }
+.public-calendar-event small { color: #bbb; font-size: 13px; }
+.public-calendar-event em { align-self: flex-start; color: #ff7b7b; font-size: 10px; font-style: normal; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
+.public-calendar-empty-copy, .public-calendar-date-label, .public-calendar-state { color: #aaa; line-height: 1.6; }
+.public-calendar-date-label { margin-top: -8px; font-size: 13px; }
+.venue-calendar-section { padding-top: 12px; border-top: 1px solid #222; }
+.venue-heading-row { display: flex; align-items: end; justify-content: space-between; gap: 24px; }
+.venue-heading-row label { display: grid; min-width: min(100%, 280px); gap: 7px; color: #888; font-size: 10px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+.venue-heading-row select { padding: 13px 14px; border: 1px solid #353535; border-radius: 9px; color: #fff; background: #111; font: inherit; font-size: 14px; }
+.venue-details h3 { color: #f7f7f7; }
+
+@media (max-width: 720px) {
+  .public-calendar-page { padding: 0 20px 56px; }
+  .public-calendar-nav { height: 68px; }
+  .public-calendar-logo { font-size: 20px; }
+  .public-calendar-nav > div { gap: 10px; }
+  .public-calendar-nav-link { display: none; }
+  .public-calendar-join { padding: 9px 11px; font-size: 11px; }
+  .public-calendar-header { padding: 52px 0 26px; }
+  .public-calendar-header h1 { font-size: 3.5rem; }
+  .public-calendar-header p { font-size: 15px; }
+  .public-calendar-section { margin-top: 46px; }
+  .public-calendar-layout { grid-template-columns: 1fr; gap: 14px; }
+  .public-calendar-card, .public-calendar-details { min-height: auto; padding: 18px; border-radius: 14px; }
+  .public-calendar-grid { gap: 5px; }
+  .public-calendar-day, .public-calendar-empty { min-height: 42px; }
+  .public-calendar-day { padding: 5px; border-radius: 8px; font-size: 13px; }
+  .public-calendar-day i { right: 4px; bottom: 4px; min-width: 14px; height: 14px; font-size: 8px; }
+  .public-calendar-weekday { font-size: 8px; }
+  .public-calendar-legend { font-size: 11px; line-height: 1.45; }
+  .venue-heading-row { display: grid; align-items: start; }
+  .venue-heading-row label { width: 100%; }
+}

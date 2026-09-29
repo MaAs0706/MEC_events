@@ -10,6 +10,7 @@ import EventDetails from './pages/EventDetails'
 import UserProfile from './pages/UserProfile'
 import PastEvents from './pages/PastEvents'
 import EventsPage from './pages/EventsPage'
+import PublicCalendar from './pages/PublicCalendar'
 import EventAttendees from './pages/EventAttendees'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
@@ -40,6 +41,7 @@ function App() {
         <Route path="/profile" element={<WatermarkPage><UserProfile /></WatermarkPage>} />
         <Route path="/events/past" element={<WatermarkPage><PastEvents /></WatermarkPage>} />
         <Route path="/events" element={<WatermarkPage><EventsPage /></WatermarkPage>} />
+        <Route path="/calendar" element={<WatermarkPage><PublicCalendar /></WatermarkPage>} />
         <Route path="/events/:id/attendees" element={<WatermarkPage><EventAttendees /></WatermarkPage>} />
       </Routes>
     </Router>
