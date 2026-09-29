@@ -7,6 +7,7 @@ from sqlalchemy import engine_from_config, pool
 
 from app.database import Base
 from app.models.event import Event
+from app.models.event_session import EventSession
 from app.models.event_gallery_image import EventGalleryImage
 from app.models.analytics_event import AnalyticsEvent
 from app.models.audit_log import AuditLog

@@ -148,6 +148,34 @@ def test_coordinator_can_create_event(client, db, coordinator, login_as,
     assert created["status"] == "pending"
 
 
+def test_coordinator_can_create_one_event_with_multiple_venue_sessions(
+        client, db, coordinator, login_as, sample_venue):
+    """One request may reserve several non-conflicting dates and venues."""
+    from app.models.venue import Venue
+
+    db.add(Venue(name="Seminar Hall", capacity=120))
+    db.commit()
+    login_as(coordinator)
+
+    response = client.post("/events", json={
+        "title": "Two Day Innovation Fest",
+        "description": "One event with workshops in two places.",
+        "category": "Tech",
+        "organizer": "Coding Club",
+        "capacity": 60,
+        "sessions": [
+            {"venue": sample_venue.name, "date": "2027-09-25", "start_time": "09:00", "end_time": "12:00"},
+            {"venue": "Seminar Hall", "date": "2027-09-26", "start_time": "10:00", "end_time": "13:00"},
+        ],
+    })
+
+    assert response.status_code == 200
+    event = response.json()
+    assert len(event["sessions"]) == 2
+    assert event["venue"] == sample_venue.name
+    assert event["sessions"][1]["venue"] == "Seminar Hall"
+
+
 def test_coordinator_can_add_a_gallery_photo_after_event(
         client, db, coordinator, login_as, sample_venue, monkeypatch):
     """Only an owner may upload a valid image after their event is complete."""

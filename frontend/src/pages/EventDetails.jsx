@@ -608,6 +608,24 @@ function EventDetails() {
 
               </div>
 
+              {(event.sessions || []).length > 1 && (
+                <div className="event-sessions-section">
+                  <div>
+                    <span>EVENT SCHEDULE</span>
+                    <h3>All dates and venues</h3>
+                  </div>
+                  <div className="event-sessions-list">
+                    {event.sessions.map((session) => (
+                      <article key={session.id || `${session.date}-${session.venue}-${session.start_time}`}>
+                        <strong>{new Date(`${session.date}T00:00:00`).toLocaleDateString()}</strong>
+                        <span>{session.start_time} – {session.end_time}</span>
+                        <em>{session.venue}</em>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              )}
+
             </section>
 
             {(isPastEvent || gallery.length > 0) && (

@@ -7,6 +7,7 @@ from app.dependencies import get_db, require_role
 from app.models.analytics_event import AnalyticsEvent
 from app.models.audit_log import AuditLog
 from app.models.event import Event
+from app.models.event_session import EventSession
 from app.models.registration import Registration
 from app.models.user import User
 from app.models.venue import Venue
@@ -122,7 +123,12 @@ def get_admin_summary(
             "total_users": db.query(User).count(),
             "total_venues": db.query(Venue).count(),
             "total_events": len(all_events),
-            "events_today": sum(event.date == today.isoformat() for event in all_events),
+            "events_today": (
+                db.query(EventSession.event_id)
+                .filter(EventSession.date == today.isoformat())
+                .distinct()
+                .count()
+            ),
             "pending_reviews": len(pending_events),
             "approved_events": len(approved_events),
             "rejected_events": len(rejected_events),

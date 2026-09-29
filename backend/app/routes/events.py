@@ -5,6 +5,7 @@ from datetime import datetime
 from datetime import timezone
 from sqlalchemy.orm import Session
 from app.models.event import Event 
+from app.models.event_session import EventSession
 from app.models.event_gallery_image import EventGalleryImage
 from app.models.registration import Registration
 from app.models.user import User
@@ -15,7 +16,7 @@ from app.schemas.event import EventUpdate
 from app.schemas.event import EventReject
 
 from app.dependencies import get_db, get_optional_current_user, require_role
-from app.schemas.event import EventCreate
+from app.schemas.event import EventCreate, EventSessionCreate
 from app.utils.media_storage import delete_image, MediaStorageError, upload_image
 from app.utils.permission_letter import build_permission_letter
 from app.utils.notifications import create_notification
@@ -46,18 +47,32 @@ def has_time_conflict(
     exclude_event_id: int | None = None
 ):
     query = (
-        db.query(Event)
-        .filter(Event.venue == venue)
-        .filter(Event.date == date)
+        db.query(EventSession)
+        .join(Event, Event.id == EventSession.event_id)
+        .filter(EventSession.venue == venue)
+        .filter(EventSession.date == date)
         .filter(Event.status.in_(["pending", "approved"]))
-        .filter(Event.start_time < end_time)
-        .filter(Event.end_time > start_time)
+        .filter(EventSession.start_time < end_time)
+        .filter(EventSession.end_time > start_time)
     )
-
     if exclude_event_id is not None:
         query = query.filter(Event.id != exclude_event_id)
+    if query.first() is not None:
+        return True
 
-    return query.first() is not None
+    # Supports the brief period before the migration backfills existing rows,
+    # and keeps in-memory legacy test fixtures conflict-safe.
+    legacy_query = (
+        db.query(Event)
+        .outerjoin(EventSession, EventSession.event_id == Event.id)
+        .filter(EventSession.id.is_(None))
+        .filter(Event.venue == venue, Event.date == date)
+        .filter(Event.status.in_(["pending", "approved"]))
+        .filter(Event.start_time < end_time, Event.end_time > start_time)
+    )
+    if exclude_event_id is not None:
+        legacy_query = legacy_query.filter(Event.id != exclude_event_id)
+    return legacy_query.first() is not None
 
 
 def validate_event_time(start_time: str, end_time: str):
@@ -129,6 +144,64 @@ def get_booking_load(bookings: list[Event]):
     return min(booked_minutes / (12 * 60), 1)
 
 
+def event_sessions(event: Event, db: Session) -> list[EventSession]:
+    sessions = (
+        db.query(EventSession)
+        .filter(EventSession.event_id == event.id)
+        .order_by(EventSession.date, EventSession.start_time, EventSession.id)
+        .all()
+    )
+    return sessions
+
+
+def requested_sessions(event: EventCreate) -> list[EventSessionCreate]:
+    if event.sessions:
+        return event.sessions
+    return [EventSessionCreate(
+        venue=event.venue, date=event.date,
+        start_time=event.start_time, end_time=event.end_time,
+    )]
+
+
+def validate_sessions(
+    db: Session,
+    sessions: list[EventSessionCreate],
+    capacity: int,
+    attendees: int = 0,
+    exclude_event_id: int | None = None,
+) -> None:
+    """Validate every requested reservation before creating any of them."""
+    for index, session in enumerate(sessions, start=1):
+        validate_event_time(session.start_time, session.end_time)
+        validate_event_capacity(db, session.venue, capacity, attendees)
+        if has_time_conflict(
+            db, session.venue, session.date, session.start_time, session.end_time,
+            exclude_event_id=exclude_event_id,
+        ):
+            raise HTTPException(400, f"Schedule item {index}: {session.venue} is already booked for this time")
+        for other in sessions[:index - 1]:
+            if (
+                other.venue == session.venue
+                and other.date == session.date
+                and other.start_time < session.end_time
+                and other.end_time > session.start_time
+            ):
+                raise HTTPException(400, f"Schedule item {index} overlaps another selected slot at {session.venue}")
+
+
+def replace_event_sessions(db: Session, event: Event, sessions: list[EventSessionCreate]) -> None:
+    db.query(EventSession).filter(EventSession.event_id == event.id).delete()
+    for session in sessions:
+        db.add(EventSession(
+            event_id=event.id, venue=session.venue, date=session.date,
+            start_time=session.start_time, end_time=session.end_time,
+        ))
+    # Legacy fields are kept as the first schedule item for existing consumers.
+    first = sessions[0]
+    event.venue, event.date = first.venue, first.date
+    event.start_time, event.end_time = first.start_time, first.end_time
+
+
 def get_venues(db: Session):
     venues = db.query(Venue).all()
     return [
@@ -154,8 +227,13 @@ def gallery_image_url(filename: str):
     return f"{PUBLIC_API_URL}/uploads/gallery/{filename}"
 
 
-def is_past_approved_event(event: Event) -> bool:
-    return event.status == "approved" and event.date < datetime.now().date().isoformat()
+def is_past_approved_event(event: Event, db: Session | None = None) -> bool:
+    if event.status != "approved":
+        return False
+    last_date = event.date
+    if db is not None:
+        last_date = max((session.date for session in event_sessions(event, db)), default=event.date)
+    return last_date < datetime.now().date().isoformat()
 
 
 def can_manage_event(event: Event, current_user: User) -> bool:
@@ -230,6 +308,17 @@ def serialize_event(event: Event, db: Session):
         )
 
     image_url = event_image_url(event.image)
+    sessions = event_sessions(event, db)
+    serialized_sessions = [
+        {
+            "id": session.id,
+            "venue": session.venue,
+            "date": session.date,
+            "start_time": session.start_time,
+            "end_time": session.end_time,
+        }
+        for session in sessions
+    ]
 
     return {
         "id": event.id,
@@ -240,6 +329,10 @@ def serialize_event(event: Event, db: Session):
         "date": event.date,
         "start_time": event.start_time,
         "end_time": event.end_time,
+        "sessions": serialized_sessions or [{
+            "venue": event.venue, "date": event.date,
+            "start_time": event.start_time, "end_time": event.end_time,
+        }],
         "status": event.status,
         "rejection_reason": event.rejection_reason,
         "reviewed_by": event.reviewed_by,
@@ -263,37 +356,18 @@ def create_event(
     ),
     db: Session = Depends(get_db)
 ):
-    validate_event_time(
-        event.start_time,
-        event.end_time
-    )
-
-    validate_event_capacity(
-        db,
-        event.venue,
-        event.capacity
-    )
-
-    if has_time_conflict(
-        db,
-        event.venue,
-        event.date,
-        event.start_time,
-        event.end_time
-    ):
-        raise HTTPException(
-            status_code=400,
-            detail="Venue is already booked for this time"
-        )
+    sessions = requested_sessions(event)
+    validate_sessions(db, sessions, event.capacity)
+    first_session = sessions[0]
 
     new_event = Event(
         title=event.title,
         description=event.description,
         category=event.category,
-        venue=event.venue,
-        date=event.date,
-        start_time=event.start_time,
-        end_time=event.end_time,
+        venue=first_session.venue,
+        date=first_session.date,
+        start_time=first_session.start_time,
+        end_time=first_session.end_time,
         status="pending",
         organizer=(current_user.club_name if current_user.role == "coordinator" and current_user.club_name else event.organizer),
         created_by=current_user.id,
@@ -304,6 +378,8 @@ def create_event(
     )
 
     db.add(new_event)
+    db.flush()
+    replace_event_sessions(db, new_event, sessions)
     db.commit()
     db.refresh(new_event)
     record_audit(
@@ -315,7 +391,7 @@ def create_event(
         create_notification(db, reviewer.id, "New event request", f"{new_event.title} needs review.", f"/events/{new_event.id}")
     db.commit()
     db.refresh(new_event)
-    return new_event
+    return serialize_event(new_event, db)
 
 @router.get("/events")
 def get_events(db: Session = Depends(get_db)):
@@ -334,14 +410,11 @@ def get_events(db: Session = Depends(get_db)):
 def get_past_events(db: Session = Depends(get_db)):
     """Public archive of approved events that have already taken place."""
     today = datetime.now().date().isoformat()
-    events = (
-        db.query(Event)
-        .filter(Event.status == "approved")
-        .filter(Event.date < today)
-        .order_by(Event.date.desc())
-        .all()
-    )
-    return [serialize_event(event, db) for event in events]
+    events = db.query(Event).filter(Event.status == "approved").order_by(Event.date.desc()).all()
+    return [
+        serialize_event(event, db) for event in events
+        if max((session.date for session in event_sessions(event, db)), default=event.date) < today
+    ]
 
 @router.get("/events/pending")
 def get_pending_events(
@@ -384,8 +457,9 @@ def get_venue_availability(
     db: Session = Depends(get_db)
 ):
     bookings = (
-        db.query(Event)
-        .filter(Event.date == date)
+        db.query(EventSession, Event)
+        .join(Event, Event.id == EventSession.event_id)
+        .filter(EventSession.date == date)
         .filter(Event.status.in_(["pending", "approved"]))
         .all()
     )
@@ -394,25 +468,25 @@ def get_venue_availability(
 
     for venue in get_venues(db):
         venue_bookings = [
-            booking
-            for booking in bookings
-            if booking.venue == venue["name"]
+            (session, event)
+            for session, event in bookings
+            if session.venue == venue["name"]
         ]
 
         availability.append(
             {
                 "venue": venue["name"],
                 "capacity": venue["capacity"],
-                "load": get_booking_load(venue_bookings),
+                "load": get_booking_load([session for session, _ in venue_bookings]),
                 "bookings": [
                     {
-                        "event_id": booking.id,
-                        "title": booking.title,
-                        "start_time": booking.start_time,
-                        "end_time": booking.end_time,
-                        "status": booking.status
+                        "event_id": event.id,
+                        "title": event.title,
+                        "start_time": session.start_time,
+                        "end_time": session.end_time,
+                        "status": event.status
                     }
-                    for booking in venue_bookings
+                    for session, event in venue_bookings
                 ]
             }
         )
@@ -476,7 +550,7 @@ def get_event_gallery(
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
 
-    can_view = is_past_approved_event(event)
+    can_view = is_past_approved_event(event, db)
     if current_user and (
         current_user.role in ["admin", "approver"]
         or (current_user.role == "coordinator" and event.created_by == current_user.id)
@@ -525,6 +599,7 @@ def download_permission_letter(
         reviewer.full_name if reviewer else "NEXUS Administration",
         reviewer.role if reviewer else "Approver",
         template=snapshot,
+        sessions=event_sessions(event, db),
     )
     safe_title = "".join(char if char.isalnum() else "-" for char in event.title).strip("-")
     return StreamingResponse(
@@ -566,38 +641,13 @@ def update_event(
             detail="You can only update your own events"
         )
 
-    validate_event_time(
-        updated_event.start_time,
-        updated_event.end_time
-    )
-
-    validate_event_capacity(
-        db,
-        updated_event.venue,
-        updated_event.capacity,
-        event.attendees
-    )
-
-    if has_time_conflict(
-        db,
-        updated_event.venue,
-        updated_event.date,
-        updated_event.start_time,
-        updated_event.end_time,
-        exclude_event_id=event.id
-    ):
-        raise HTTPException(
-            status_code=400,
-            detail="Venue is already booked for this time"
-        )
+    sessions = requested_sessions(updated_event)
+    validate_sessions(db, sessions, updated_event.capacity, event.attendees, event.id)
 
     event.title = updated_event.title
     event.description = updated_event.description
     event.category = updated_event.category
-    event.venue = updated_event.venue
-    event.date = updated_event.date
-    event.start_time = updated_event.start_time
-    event.end_time = updated_event.end_time
+    replace_event_sessions(db, event, sessions)
     event.status = "pending"
     event.organizer = updated_event.organizer
     event.capacity = updated_event.capacity
@@ -611,7 +661,7 @@ def update_event(
     db.commit()
     db.refresh(event)
 
-    return event
+    return serialize_event(event, db)
 
 
 @router.patch("/events/{event_id}")
@@ -651,40 +701,39 @@ def update_event(
     )
     update_data.pop("status",None)
     update_data.pop("attendees",None)
+    supplied_sessions = update_data.pop("sessions", None)
 
-    next_venue = update_data.get("venue", event.venue)
-    next_date = update_data.get("date", event.date)
-    next_start_time = update_data.get("start_time", event.start_time)
-    next_end_time = update_data.get("end_time", event.end_time)
+    if supplied_sessions is not None:
+        next_sessions = [EventSessionCreate(**session) for session in supplied_sessions]
+    else:
+        existing_sessions = event_sessions(event, db)
+        if existing_sessions:
+            # Legacy PATCH clients edit the primary (first) slot. Preserve all
+            # additional slots rather than silently collapsing a multi-day
+            # event back into one reservation.
+            next_sessions = [
+                EventSessionCreate(
+                    venue=(update_data.get("venue", session.venue) if index == 0 else session.venue),
+                    date=(update_data.get("date", session.date) if index == 0 else session.date),
+                    start_time=(update_data.get("start_time", session.start_time) if index == 0 else session.start_time),
+                    end_time=(update_data.get("end_time", session.end_time) if index == 0 else session.end_time),
+                )
+                for index, session in enumerate(existing_sessions)
+            ]
+        else:
+            next_sessions = [EventSessionCreate(
+                venue=update_data.get("venue", event.venue),
+                date=update_data.get("date", event.date),
+                start_time=update_data.get("start_time", event.start_time),
+                end_time=update_data.get("end_time", event.end_time),
+            )]
+
     next_capacity = update_data.get("capacity", event.capacity)
-
-    validate_event_time(
-        next_start_time,
-        next_end_time
-    )
-
-    validate_event_capacity(
-        db,
-        next_venue,
-        next_capacity,
-        event.attendees
-    )
-
-    if has_time_conflict(
-        db,
-        next_venue,
-        next_date,
-        next_start_time,
-        next_end_time,
-        exclude_event_id=event.id
-    ):
-        raise HTTPException(
-            status_code=400,
-            detail="Venue is already booked for this time"
-        )
+    validate_sessions(db, next_sessions, next_capacity, event.attendees, event.id)
 
     for key, value in update_data.items():
         setattr(event, key, value)
+    replace_event_sessions(db, event, next_sessions)
     event.status="pending"    
     record_audit(
         db, actor_user_id=current_user.id, action="event.updated",
@@ -696,7 +745,7 @@ def update_event(
 
     db.refresh(event)
 
-    return event
+    return serialize_event(event, db)
 
 @router.patch("/events/{event_id}/approve")
 def approve_event(
@@ -1008,7 +1057,7 @@ def upload_gallery_image(
         raise HTTPException(status_code=404, detail="Event not found")
     if not can_manage_event(event, current_user):
         raise HTTPException(status_code=403, detail="You can only upload photos for your own events")
-    if not is_past_approved_event(event):
+    if not is_past_approved_event(event, db):
         raise HTTPException(
             status_code=400,
             detail="Gallery photos can only be added after an approved event has ended",

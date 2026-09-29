@@ -69,8 +69,12 @@ function CoordinatorDashboard() {
   const [imagePreview, setImagePreview] =
     useState(null)
 
+  const [scheduleItems, setScheduleItems] = useState([])
+
   const [editingEvent, setEditingEvent] =
     useState(null)
+
+  const [editSessions, setEditSessions] = useState([])
 
   const [editFormData, setEditFormData] =
     useState({
@@ -316,6 +320,36 @@ function CoordinatorDashboard() {
 
   }
 
+  const openCreateForm = () => {
+    setFormError('')
+    setScheduleItems([{
+      venue: selectedVenue,
+      date: selectedDateValue,
+      start_time: '',
+      end_time: ''
+    }])
+    setShowCreateForm(true)
+  }
+
+  const updateScheduleItem = (index, field, value) => {
+    setScheduleItems(items => items.map((item, itemIndex) => (
+      itemIndex === index ? { ...item, [field]: value } : item
+    )))
+  }
+
+  const addScheduleItem = () => {
+    setScheduleItems(items => [...items, {
+      venue: selectedVenue,
+      date: selectedDateValue,
+      start_time: '',
+      end_time: ''
+    }])
+  }
+
+  const removeScheduleItem = (index) => {
+    setScheduleItems(items => items.filter((_, itemIndex) => itemIndex !== index))
+  }
+
   const handleCreateEvent = async (e) => {
 
     e.preventDefault()
@@ -328,10 +362,7 @@ function CoordinatorDashboard() {
           title: formData.title,
           description: formData.description,
           category: formData.category,
-          venue: selectedVenue,
-          date: selectedDateValue,
-          start_time: formData.start_time,
-          end_time: formData.end_time,
+          sessions: scheduleItems,
           organizer: formData.organizer,
           capacity: Number(formData.capacity)
         }
@@ -376,6 +407,7 @@ function CoordinatorDashboard() {
       })
       setImageFile(null)
       setImagePreview(null)
+      setScheduleItems([])
 
       if (uploadError) {
         setFormError(
@@ -414,6 +446,10 @@ function CoordinatorDashboard() {
 
     setEditImageFile(null)
     setEditImagePreview(event.image || null)
+    setEditSessions(event.sessions?.length ? event.sessions.map(({ venue, date, start_time, end_time }) => ({ venue, date, start_time, end_time })) : [{
+      venue: event.venue || '', date: event.date || '',
+      start_time: event.start_time || '', end_time: event.end_time || ''
+    }])
 
     setEditingEvent(event)
 
@@ -425,6 +461,7 @@ function CoordinatorDashboard() {
     setEditFormData({})
     setEditImageFile(null)
     setEditImagePreview(null)
+    setEditSessions([])
 
   }
 
@@ -439,6 +476,18 @@ function CoordinatorDashboard() {
 
   }
 
+  const updateEditSession = (index, field, value) => {
+    setEditSessions(items => items.map((item, itemIndex) => itemIndex === index ? { ...item, [field]: value } : item))
+  }
+
+  const addEditSession = () => {
+    setEditSessions(items => [...items, { venue: venues[0] || '', date: selectedDateValue, start_time: '', end_time: '' }])
+  }
+
+  const removeEditSession = (index) => {
+    setEditSessions(items => items.filter((_, itemIndex) => itemIndex !== index))
+  }
+
   const handleUpdateEvent = async (e) => {
 
     e.preventDefault()
@@ -451,10 +500,7 @@ function CoordinatorDashboard() {
           title: editFormData.title,
           description: editFormData.description,
           category: editFormData.category,
-          venue: editFormData.venue,
-          date: editFormData.date,
-          start_time: editFormData.start_time,
-          end_time: editFormData.end_time,
+          sessions: editSessions,
           organizer: editFormData.organizer,
           capacity: Number(editFormData.capacity)
         }
@@ -1004,11 +1050,7 @@ function CoordinatorDashboard() {
 
                   <button
   className="btn-create"
-  onClick={() =>
-    setShowCreateForm(
-      !showCreateForm
-    )
-  }
+  onClick={() => showCreateForm ? setShowCreateForm(false) : openCreateForm()}
 >
 
   Create Event Request
@@ -1110,39 +1152,48 @@ function CoordinatorDashboard() {
                         : 'Upload event image (optional)'}
                     </label>
 
-                    <label className="time-field">
-                      <span>Starts at</span>
-                      <input
-                        name="start_time"
-                        type="time"
-                        aria-label="Event start time"
-                        value={formData.start_time}
-                        onChange={handleFormChange}
-                        required
-                      />
-                    </label>
-
-                    <label className="time-field">
-                      <span>Ends at</span>
-                      <input
-                        name="end_time"
-                        type="time"
-                        aria-label="Event end time"
-                        value={formData.end_time}
-                        onChange={handleFormChange}
-                        required
-                      />
-                    </label>
-
-                    <input
-                      value={selectedVenue ? `${selectedVenue} • ${selectedDateObject.toLocaleDateString(
-                        'en-IN',
-                        { day: 'numeric', month: 'long', year: 'numeric' }
-                      )}` : 'Select a venue from the availability list'}
-                      disabled
-                    />
-
                   </div>
+
+                  <section className="event-schedule-builder">
+                    <div className="schedule-builder-heading">
+                      <div>
+                        <span>EVENT SCHEDULE</span>
+                        <h3>Dates, times and venues</h3>
+                        <p>Add every venue slot needed for this single event request.</p>
+                      </div>
+                      <button type="button" className="schedule-add-button" onClick={addScheduleItem}>
+                        + Add another slot
+                      </button>
+                    </div>
+
+                    {scheduleItems.map((item, index) => (
+                      <div className="schedule-item" key={`${item.date}-${item.venue}-${index}`}>
+                        <strong>Slot {index + 1}</strong>
+                        <label>
+                          <span>Date</span>
+                          <input type="date" value={item.date} required onChange={(e) => updateScheduleItem(index, 'date', e.target.value)} />
+                        </label>
+                        <label>
+                          <span>Venue</span>
+                          <select value={item.venue} required onChange={(e) => updateScheduleItem(index, 'venue', e.target.value)}>
+                            <option value="" disabled>Select venue</option>
+                            {venues.map(venue => <option key={venue} value={venue}>{venue}</option>)}
+                          </select>
+                        </label>
+                        <label>
+                          <span>Starts at</span>
+                          <input type="time" value={item.start_time} required onChange={(e) => updateScheduleItem(index, 'start_time', e.target.value)} />
+                        </label>
+                        <label>
+                          <span>Ends at</span>
+                          <input type="time" value={item.end_time} required onChange={(e) => updateScheduleItem(index, 'end_time', e.target.value)} />
+                        </label>
+                        {scheduleItems.length > 1 && (
+                          <button type="button" className="schedule-remove-button" onClick={() => removeScheduleItem(index)} aria-label={`Remove schedule slot ${index + 1}`}>×</button>
+                        )}
+                      </div>
+                    ))}
+                  </section>
 
                   <textarea
                     name="description"
@@ -1249,32 +1300,6 @@ function CoordinatorDashboard() {
                       required
                     />
 
-                    <input
-                      name="date"
-                      type="date"
-                      value={editFormData.date}
-                      onChange={handleEditChange}
-                      required
-                    />
-
-                    <select
-                      name="venue"
-                      value={editFormData.venue}
-                      onChange={handleEditChange}
-                      required
-                    >
-
-                      {venues.map(venue => (
-                        <option
-                          key={venue}
-                          value={venue}
-                        >
-                          {venue}
-                        </option>
-                      ))}
-
-                    </select>
-
                     {editImagePreview && (
                       <div className="image-upload-preview">
                         <img
@@ -1313,31 +1338,28 @@ function CoordinatorDashboard() {
                         : 'Upload new image (optional)'}
                     </label>
 
-                    <label className="time-field">
-                      <span>Starts at</span>
-                      <input
-                        name="start_time"
-                        type="time"
-                        aria-label="Event start time"
-                        value={editFormData.start_time}
-                        onChange={handleEditChange}
-                        required
-                      />
-                    </label>
-
-                    <label className="time-field">
-                      <span>Ends at</span>
-                      <input
-                        name="end_time"
-                        type="time"
-                        aria-label="Event end time"
-                        value={editFormData.end_time}
-                        onChange={handleEditChange}
-                        required
-                      />
-                    </label>
-
                   </div>
+
+                  <section className="event-schedule-builder">
+                    <div className="schedule-builder-heading">
+                      <div>
+                        <span>EVENT SCHEDULE</span>
+                        <h3>Dates, times and venues</h3>
+                        <p>Edit all venue slots under this one event request.</p>
+                      </div>
+                      <button type="button" className="schedule-add-button" onClick={addEditSession}>+ Add another slot</button>
+                    </div>
+                    {editSessions.map((item, index) => (
+                      <div className="schedule-item" key={`${item.date}-${item.venue}-${index}`}>
+                        <strong>Slot {index + 1}</strong>
+                        <label><span>Date</span><input type="date" value={item.date} required onChange={(e) => updateEditSession(index, 'date', e.target.value)} /></label>
+                        <label><span>Venue</span><select value={item.venue} required onChange={(e) => updateEditSession(index, 'venue', e.target.value)}><option value="" disabled>Select venue</option>{venues.map(venue => <option key={venue} value={venue}>{venue}</option>)}</select></label>
+                        <label><span>Starts at</span><input type="time" value={item.start_time} required onChange={(e) => updateEditSession(index, 'start_time', e.target.value)} /></label>
+                        <label><span>Ends at</span><input type="time" value={item.end_time} required onChange={(e) => updateEditSession(index, 'end_time', e.target.value)} /></label>
+                        {editSessions.length > 1 && <button type="button" className="schedule-remove-button" onClick={() => removeEditSession(index)} aria-label={`Remove schedule slot ${index + 1}`}>×</button>}
+                      </div>
+                    ))}
+                  </section>
 
                   <textarea
                     name="description"

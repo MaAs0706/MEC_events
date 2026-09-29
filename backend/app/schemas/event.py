@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from typing import Optional
 from datetime import datetime
@@ -47,15 +47,31 @@ def _validate_time(value: Optional[str]) -> Optional[str]:
 # ---------------------------------------------------------------------------
 
 
+class EventSessionCreate(BaseModel):
+    """A date, time and venue reserved as part of one event request."""
+
+    venue: str = Field(min_length=1, max_length=100)
+    date: str
+    start_time: str
+    end_time: str
+
+    validate_date = field_validator("date")(_validate_date)
+    validate_start_time = field_validator("start_time")(_validate_time)
+    validate_end_time = field_validator("end_time")(_validate_time)
+
+
 class EventCreate(BaseModel):
 
     title: str = Field(min_length=1, max_length=150)
     description: str = Field(min_length=1, max_length=5000)
     category: str = Field(min_length=1, max_length=50)
-    venue: str = Field(min_length=1, max_length=100)
-    date: str
-    start_time: str
-    end_time: str
+    # Legacy one-slot fields remain accepted so existing integrations continue
+    # to work. New clients send one or more values in `sessions`.
+    venue: Optional[str] = Field(default=None, min_length=1, max_length=100)
+    date: Optional[str] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    sessions: list[EventSessionCreate] = Field(default_factory=list, max_length=20)
     organizer: str = Field(min_length=1, max_length=100)
     capacity: int = Field(ge=1, le=10000)
     image: Optional[str] = None
@@ -63,6 +79,14 @@ class EventCreate(BaseModel):
     validate_date = field_validator("date")(_validate_date)
     validate_start_time = field_validator("start_time")(_validate_time)
     validate_end_time = field_validator("end_time")(_validate_time)
+
+    @model_validator(mode="after")
+    def require_a_schedule(self):
+        if self.sessions:
+            return self
+        if not all([self.venue, self.date, self.start_time, self.end_time]):
+            raise ValueError("Add at least one date, time, and venue for this event")
+        return self
 
 
 class EventUpdate(BaseModel):
@@ -74,6 +98,7 @@ class EventUpdate(BaseModel):
     date: Optional[str] = None
     start_time: Optional[str] = None
     end_time: Optional[str] = None
+    sessions: Optional[list[EventSessionCreate]] = Field(default=None, max_length=20)
     status: Optional[str] = None
     organizer: Optional[str] = Field(default=None, min_length=1, max_length=100)
     attendees: Optional[int] = Field(default=None, ge=0)

@@ -232,6 +232,13 @@
 .gallery-image img { width: 100%; height: 100%; object-fit: cover; }
 .gallery-image button { position: absolute; top: 8px; right: 8px; width: 29px; height: 29px; border: 0; border-radius: 50%; cursor: pointer; color: #fff; background: rgba(0, 0, 0, .7); font-size: 22px; line-height: 1; }
 
+.event-sessions-section { margin-top: 22px; padding-top: 22px; border-top: 1px solid var(--border-color); }
+.event-sessions-section > div:first-child > span { color: var(--accent); font-size: 11px; font-weight: 800; letter-spacing: 1.4px; }
+.event-sessions-section h3 { margin: 6px 0 14px; font-size: 20px; }
+.event-sessions-list { display: grid; gap: 9px; }
+.event-sessions-list article { display: grid; grid-template-columns: 1.15fr 1fr 1.2fr; gap: 12px; padding: 13px; border: 1px solid var(--border-color); border-radius: 10px; background: rgba(255,255,255,.025); }
+.event-sessions-list span, .event-sessions-list em { color: var(--text-secondary); font-style: normal; }
+
 @media (max-width: 600px) {
   .gallery-section { padding: 20px; }
   .gallery-heading { align-items: flex-start; flex-direction: column; }

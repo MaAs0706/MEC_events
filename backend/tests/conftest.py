@@ -17,6 +17,7 @@ from fastapi.testclient import TestClient
 from app.database import Base
 from app.models.user import User
 from app.models.event import Event
+from app.models.event_session import EventSession  # noqa: F401
 from app.models.event_gallery_image import EventGalleryImage  # noqa: F401
 from app.models.analytics_event import AnalyticsEvent  # noqa: F401
 from app.models.audit_log import AuditLog  # noqa: F401

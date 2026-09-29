@@ -2,10 +2,12 @@ from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 
 from app.dependencies import get_db
 from app.dependencies import require_role
 from app.models.event import Event
+from app.models.event_session import EventSession
 from app.models.venue import Venue
 from app.schemas.venue import VenueCreate
 from app.schemas.venue import VenueUpdate
@@ -83,7 +85,9 @@ def update_venue(
 
     events_using_venue = (
         db.query(Event)
-        .filter(Event.venue == existing_venue.name)
+        .outerjoin(EventSession, EventSession.event_id == Event.id)
+        .filter(or_(Event.venue == existing_venue.name, EventSession.venue == existing_venue.name))
+        .distinct()
         .all()
     )
 
@@ -149,7 +153,8 @@ def delete_venue(
 
     event_uses_venue = (
         db.query(Event)
-        .filter(Event.venue == existing_venue.name)
+        .outerjoin(EventSession, EventSession.event_id == Event.id)
+        .filter(or_(Event.venue == existing_venue.name, EventSession.venue == existing_venue.name))
         .first()
     )
 
