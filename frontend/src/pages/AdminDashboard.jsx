@@ -14,10 +14,14 @@ import {
   TrendingUp,
   Shield,
   Calendar,
-  BarChart3,
   UserCheck,
   LogOut,
-  FileText
+  FileText,
+  RefreshCw,
+  UsersRound,
+  MousePointerClick,
+  CheckCircle2,
+  AlertTriangle
 } from 'lucide-react'
 
 import './AdminDashboard.css'
@@ -75,6 +79,8 @@ function AdminDashboard() {
   })
 
   const [analyticsError, setAnalyticsError] = useState('')
+  const [analyticsRange, setAnalyticsRange] = useState(14)
+  const [analyticsLoading, setAnalyticsLoading] = useState(false)
 
   const [letterTemplate, setLetterTemplate] = useState({ college_name: '', signatory_name: '', signatory_title: '', reference_prefix: 'NEXUS', body_text: '', college_logo_url: '', club_logo_url: '', signature_url: '' })
   const [letterStatus, setLetterStatus] = useState('')
@@ -105,22 +111,42 @@ function AdminDashboard() {
           `${event.title} is ${event.status}`
       )
 
-  useEffect(() => {
-
-    const fetchAnalytics = async () => {
+  const fetchAnalytics = async () => {
+      setAnalyticsLoading(true)
       try {
-        const response = await api.get('/analytics/admin-summary')
+        const response = await api.get('/analytics/admin-summary', { params: { days: analyticsRange } })
         setAnalytics(response.data)
         setAnalyticsError('')
       }
       catch {
         setAnalyticsError('Analytics could not be loaded.')
       }
+      finally {
+        setAnalyticsLoading(false)
+      }
     }
 
+  useEffect(() => {
     fetchAnalytics()
+  }, [analyticsRange])
 
-  }, [])
+  const analyticsDaily = analytics.traffic.daily || []
+  const totalPeriodVisitors = analyticsDaily.reduce((total, day) => total + day.visitors, 0)
+  const totalPeriodRequests = analyticsDaily.reduce((total, day) => total + day.requests, 0)
+  const maxDailyVisitors = Math.max(...analyticsDaily.map(day => day.visitors), 1)
+  const peakDay = analyticsDaily.reduce(
+    (peak, day) => day.visitors > peak.visitors ? day : peak,
+    { date: '', visitors: 0, requests: 0 }
+  )
+  const chartPoints = analyticsDaily.map((day, index) => {
+    const x = analyticsDaily.length > 1 ? (index / (analyticsDaily.length - 1)) * 100 : 50
+    const y = 92 - (day.visitors / maxDailyVisitors) * 76
+    return `${x},${y}`
+  }).join(' ')
+  const chartAreaPoints = chartPoints ? `0,100 ${chartPoints} 100,100` : ''
+  const formattedAnalyticsDate = analytics.generated_at
+    ? new Date(analytics.generated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : '—'
 
   useEffect(() => {
     api.get('/letter-template').then(response => setLetterTemplate(response.data)).catch(() => setLetterStatus('Unable to load letter settings.'))
@@ -1302,104 +1328,137 @@ function AdminDashboard() {
 
         <section className="analytics-panel">
 
-          <div className="analytics-summary">
-            <p>LIVE PLATFORM INTELLIGENCE</p>
-            <h2>Traffic, operations and reliability</h2>
-            <span>Active visitors are unique browsers seen in the last five minutes.</span>
+          <header className="analytics-hero">
+            <div>
+              <p>LIVE PLATFORM INTELLIGENCE</p>
+              <h2>Command center</h2>
+              <span>Privacy-preserving traffic, event operations and system reliability in one place.</span>
+            </div>
+            <div className="analytics-controls">
+              <div className="analytics-range" aria-label="Analytics period">
+                {[7, 14, 30].map((days) => (
+                  <button
+                    type="button"
+                    className={analyticsRange === days ? 'active' : ''}
+                    key={days}
+                    onClick={() => setAnalyticsRange(days)}
+                  >
+                    {days}D
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="analytics-refresh"
+                onClick={fetchAnalytics}
+                disabled={analyticsLoading}
+              >
+                <RefreshCw size={15} className={analyticsLoading ? 'spinning' : ''} />
+                {analyticsLoading ? 'Refreshing' : 'Refresh'}
+              </button>
+            </div>
+          </header>
+
+          <div className="analytics-live-strip">
+            <span className="analytics-live-dot" />
+            <strong>Live reporting</strong>
+            <span>Last updated {formattedAnalyticsDate}</span>
+            <span className="analytics-period-label">{analytics.period_days || analyticsRange}-day view</span>
           </div>
 
           {analyticsError && (
             <p className="analytics-error">{analyticsError}</p>
           )}
 
-          <div className="traffic-chart-card">
-            <p>LAST 14 DAYS</p>
-            <h3>Daily visitor traffic</h3>
-            <div className="traffic-chart" aria-label="Daily visitor traffic chart">
-              {analytics.traffic.daily.map((day) => {
-                const maximum = Math.max(
-                  ...analytics.traffic.daily.map(item => item.visitors),
-                  1
-                )
-                const height = Math.max(8, day.visitors / maximum * 100)
-                return (
-                  <div className="traffic-day" key={day.date} title={`${day.date}: ${day.visitors} visitors, ${day.requests} requests`}>
-                    <span className="traffic-bar" style={{ height: `${height}%` }}></span>
-                    <small>{day.date.slice(5)}</small>
-                  </div>
-                )
-              })}
+          <div className="analytics-kpi-grid">
+            <article className="analytics-kpi-card traffic-kpi">
+              <div className="analytics-kpi-icon"><UsersRound size={19} /></div>
+              <p>Visitors today</p>
+              <strong>{analytics.traffic.today_visitors}</strong>
+              <span>{analytics.traffic.active_visitors} active in the last 5 minutes</span>
+            </article>
+            <article className="analytics-kpi-card request-kpi">
+              <div className="analytics-kpi-icon"><MousePointerClick size={19} /></div>
+              <p>API requests today</p>
+              <strong>{analytics.traffic.today_requests}</strong>
+              <span>{totalPeriodRequests} requests in this reporting period</span>
+            </article>
+            <article className="analytics-kpi-card approval-kpi">
+              <div className="analytics-kpi-icon"><CheckCircle2 size={19} /></div>
+              <p>Event approval rate</p>
+              <strong>{analytics.operations.approval_rate}%</strong>
+              <span>{analytics.operations.pending_reviews} request{analytics.operations.pending_reviews === 1 ? '' : 's'} waiting for review</span>
+            </article>
+            <article className="analytics-kpi-card reliability-kpi">
+              <div className="analytics-kpi-icon"><AlertTriangle size={19} /></div>
+              <p>Server errors</p>
+              <strong>{analytics.reliability.errors_last_14_days}</strong>
+              <span>Recorded in the last 14 days</span>
+            </article>
+          </div>
+
+          <article className="analytics-trend-card">
+            <div className="analytics-card-heading">
+              <div>
+                <p>VISITOR TREND</p>
+                <h3>Daily visitor activity</h3>
+              </div>
+              <div className="analytics-trend-stat">
+                <span>Period total</span>
+                <strong>{totalPeriodVisitors}</strong>
+              </div>
             </div>
-          </div>
+            <div className="analytics-line-chart" aria-label="Daily visitor traffic chart">
+              <div className="analytics-chart-grid" aria-hidden="true"><i /><i /><i /><i /></div>
+              {chartPoints ? (
+                <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label={`${analytics.period_days || analyticsRange} day visitor traffic`}>
+                  <defs>
+                    <linearGradient id="visitor-fill" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0%" stopColor="#ff4848" stopOpacity=".42" />
+                      <stop offset="100%" stopColor="#ff3131" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <polygon points={chartAreaPoints} fill="url(#visitor-fill)" />
+                  <polyline points={chartPoints} fill="none" stroke="#ff4b4b" strokeWidth="1.25" vectorEffect="non-scaling-stroke" />
+                  {analyticsDaily.map((day, index) => {
+                    const x = analyticsDaily.length > 1 ? (index / (analyticsDaily.length - 1)) * 100 : 50
+                    const y = 92 - (day.visitors / maxDailyVisitors) * 76
+                    return <circle key={day.date} cx={x} cy={y} r="1.7" fill="#fff" stroke="#ff3131" strokeWidth=".8" vectorEffect="non-scaling-stroke"><title>{`${day.date}: ${day.visitors} visitors, ${day.requests} requests`}</title></circle>
+                  })}
+                </svg>
+              ) : null}
+            </div>
+            <div className="analytics-chart-labels" style={{ '--days': analyticsDaily.length || 1 }}>
+              {analyticsDaily.map((day, index) => (
+                <span key={day.date}>{analyticsDaily.length <= 7 || index === 0 || index === analyticsDaily.length - 1 || index % Math.ceil(analyticsDaily.length / 5) === 0 ? new Date(`${day.date}T00:00:00`).toLocaleDateString([], { month: 'short', day: 'numeric' }) : ''}</span>
+              ))}
+            </div>
+          </article>
 
-          <div className="analytics-card">
+          <div className="analytics-detail-grid">
+            <article className="analytics-operations-card">
+              <div className="analytics-card-heading"><div><p>EVENT OPERATIONS</p><h3>Campus pulse</h3></div><Activity size={20} /></div>
+              <div className="operations-metrics">
+                <div><span>Registered</span><strong>{analytics.operations.total_registrations}</strong><small>across all events</small></div>
+                <div><span>Approved</span><strong>{analytics.operations.approved_events}</strong><small>events published</small></div>
+                <div><span>Venues</span><strong>{analytics.operations.total_venues}</strong><small>available to book</small></div>
+                <div><span>Accounts</span><strong>{analytics.operations.total_users}</strong><small>on the platform</small></div>
+              </div>
+              <div className="analytics-peak-note"><TrendingUp size={16} /><span>{peakDay.visitors ? `Highest visitor activity: ${peakDay.visitors} on ${new Date(`${peakDay.date}T00:00:00`).toLocaleDateString([], { month: 'short', day: 'numeric' })}.` : 'Visitor activity will appear here as people use NEXUS.'}</span></div>
+            </article>
 
-            <BarChart3
-              size={24}
-            />
-
-            <h3>
-              Approval Trend
-            </h3>
-
-            <p>
-              {analytics.operations.approval_rate}%
-              {' '}
-              approval rate across
-              submitted events.
-            </p>
-
-          </div>
-
-          <div className="analytics-card">
-
-            <TrendingUp
-              size={24}
-            />
-
-            <h3>
-              Platform accounts
-            </h3>
-
-            <p>
-              {analytics.operations.total_users}
-              {' '}
-              accounts currently exist.
-            </p>
-
-          </div>
-
-          <div className="analytics-card">
-
-            <Activity
-              size={24}
-            />
-
-            <h3>
-              Attendance
-            </h3>
-
-            <p>
-              {analytics.operations.total_registrations}
-              {' '}
-              registrations across all events.
-            </p>
-
-          </div>
-
-          <div className="analytics-card reliability-card">
-            <Shield size={24} />
-            <h3>Reliability</h3>
-            <p>{analytics.reliability.errors_last_14_days} server errors in the last 14 days.</p>
-            {analytics.reliability.top_errors.length ? (
-              <ul className="error-list">
-                {analytics.reliability.top_errors.map((error) => (
-                  <li key={`${error.path}-${error.status_code}`}>
-                    <code>{error.status_code}</code> {error.path} <strong>{error.count}</strong>
-                  </li>
-                ))}
-              </ul>
-            ) : <p className="healthy-state">No server errors recorded.</p>}
+            <article className="analytics-reliability-card">
+              <div className="analytics-card-heading"><div><p>RELIABILITY</p><h3>System health</h3></div><Shield size={20} /></div>
+              {analytics.reliability.top_errors.length ? (
+                <ul className="error-list">
+                  {analytics.reliability.top_errors.map((error) => (
+                    <li key={`${error.path}-${error.status_code}`}>
+                      <code>{error.status_code}</code><span>{error.path}</span><strong>{error.count}</strong>
+                    </li>
+                  ))}
+                </ul>
+              ) : <div className="healthy-state"><CheckCircle2 size={18} /><span>No server errors recorded in the last 14 days.</span></div>}
+            </article>
           </div>
 
         </section>

@@ -656,6 +656,17 @@
   .hero-meta { display: grid; grid-template-columns: 1fr; gap: 10px; width: 100%; }
   .gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .gallery-image { height: 130px; }
+
+  .event-details-container { overflow-x: clip; }
+  .event-hero { min-height: 0; }
+  .hero-overlay { padding: 22px 20px; }
+  .hero-left h1 { font-size: clamp(2.5rem, 12vw, 3.2rem); letter-spacing: -.065em; overflow-wrap: anywhere; }
+  .hero-status-card { padding: 18px; }
+  .event-details-grid { padding: 20px; }
+  .event-sidebar .role-card, .event-sidebar .contact-card { padding: 18px; }
+  .btn-rsvp-large { width: 100%; min-height: 52px; }
+  .approver-actions { flex-direction: column; }
+  .approver-actions button, .gallery-upload-button { width: 100%; }
 }
 
 /* ========================================

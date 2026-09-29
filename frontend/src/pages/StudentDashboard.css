@@ -718,4 +718,28 @@ body {
   .event-card { min-height: 0; }
   .dashboard-grid { gap: 20px; }
 
+  .dashboard .navbar { height: 66px; min-width: 0; padding: 0 16px; }
+  .dashboard .navbar .logo { font-size: 18px; }
+  .dashboard .nav-right { margin-left: auto; gap: 8px; }
+  .dashboard .icon-btn, .dashboard .profile-btn { width: 42px; height: 42px; }
+  .dashboard .hero { padding: 38px 20px 28px; gap: 28px; }
+  .dashboard .hero h1 { font-size: clamp(2.55rem, 12vw, 3.35rem); line-height: .96; }
+  .dashboard .hero-description { font-size: 15px; }
+  .dashboard .hero-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .dashboard .hero-buttons button { min-height: 48px; padding: 10px; }
+  .dashboard .quick-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+  .dashboard .quick-actions button { min-height: 45px; padding: 10px 8px; font-size: 12px; }
+  .dashboard .dashboard-panel { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .dashboard .panel-section { min-width: 0; padding: 14px 10px; }
+  .dashboard .panel-section h2 { font-size: 1.7rem; }
+  .dashboard .panel-section h3 { font-size: 14px; overflow-wrap: anywhere; }
+  .dashboard .panel-section p, .dashboard .panel-label { font-size: 9px; letter-spacing: .1em; }
+  .dashboard .sidebar, .dashboard .activity-card, .dashboard .schedule-card { padding: 18px; border-radius: 14px; }
+  .dashboard .filter-group input, .dashboard .filter-group select { min-height: 46px; }
+  .dashboard .event-content { padding: 18px; }
+  .dashboard .event-image { height: 180px; }
+  .dashboard .event-card h3 { font-size: 22px; line-height: 1.1; }
+  .dashboard .event-meta { display: grid; gap: 6px; }
+  .dashboard .join-btn { width: 100%; min-height: 48px; }
+
 }

@@ -624,4 +624,19 @@ body {
     overflow-x: auto;
   }
 
+  .profile-page { overflow-x: clip; }
+  .profile-nav { height: 66px; padding: 0 16px; }
+  .profile-logo { font-size: 18px; }
+  .profile-layout { padding: 20px 16px 40px; gap: 18px; }
+  .profile-header { padding: 22px; gap: 22px; margin-bottom: 20px; }
+  .avatar-ring { width: 78px; height: 78px; font-size: 1.5rem; }
+  .profile-tag { font-size: 9px; letter-spacing: .18em; }
+  .header-email { margin-bottom: 14px; overflow-wrap: anywhere; }
+  .profile-stats h4 { font-size: 1.28rem; }
+  .profile-stats span { font-size: 9px; letter-spacing: .08em; }
+  .profile-tabs { margin-inline: -2px; gap: 8px; }
+  .profile-tab { padding: 10px 13px; font-size: 12px; }
+  .content-card { padding: 18px; border-radius: 15px; }
+  .profile-form input, .profile-form textarea, .profile-form select { min-height: 46px; }
+
 }

@@ -26,8 +26,12 @@
   .attendees-back { font-size: 12px; }
   .attendees-header { padding: 54px 0 32px; }
   .attendees-header h1 { font-size: 2.8rem; }
-  .attendees-table-wrap { overflow-x: auto; }
-  .attendees-table { min-width: 680px; }
   .attendees-table-heading { padding: 19px; }
-  .attendees-row { padding: 13px 19px; }
+  .attendees-row-labels { display: none; }
+  .attendees-table { display: grid; gap: 10px; padding: 12px; }
+  .attendees-row { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 8px 12px; min-height: 0; padding: 15px; border: 1px solid #242424; border-radius: 12px; }
+  .attendee-index { grid-row: 1 / span 3; }
+  .attendee-name { font-size: 16px; }
+  .attendees-row > span:nth-child(3) { grid-column: 2; color: #aaa; font-size: 13px; }
+  .attendee-contact { grid-column: 2; }
 }

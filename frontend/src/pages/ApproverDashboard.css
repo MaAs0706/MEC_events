@@ -544,4 +544,22 @@
     grid-template-columns: 1fr;
   }
 
+  .approver-container { overflow-x: clip; }
+  .approver-nav { height: 66px; padding: 0 16px; }
+  .approver-nav .logo { font-size: 18px; }
+  .approver-nav .nav-right { margin-left: auto; }
+  .approver-nav .signout-btn { width: 42px; min-height: 42px; padding: 0; font-size: 0; }
+  .approver-nav .signout-btn svg { width: 18px; height: 18px; }
+  .approver-hero { padding: 38px 20px 26px; }
+  .approver-hero h1 { font-size: clamp(2.45rem, 11vw, 3.15rem); line-height: .96; letter-spacing: -.06em; }
+  .approver-container .hero-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .approver-container .hero-stat { min-width: 0; padding: 16px; gap: 10px; }
+  .approver-container .hero-stat h2 { font-size: 1.65rem; }
+  .approver-layout { padding: 0 20px 40px; gap: 18px; }
+  .review-sidebar { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .review-tab { min-width: 0; height: 46px; padding: 7px; font-size: 12px; }
+  .review-card, .inspection-card { padding: 18px; border-radius: 15px; }
+  .inspection-actions { flex-direction: column; gap: 10px; }
+  .approve-btn, .reject-btn { width: 100%; min-height: 50px; }
+
 }

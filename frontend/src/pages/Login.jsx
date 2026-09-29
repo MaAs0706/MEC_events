@@ -341,6 +341,7 @@ function Login() {
                 <input
                   type="email"
                   name="email"
+                  autoComplete="email"
                   placeholder="you@example.com"
                   value={formData.email}
                   onChange={
@@ -360,6 +361,7 @@ function Login() {
                 <input
                   type="password"
                   name="password"
+                  autoComplete="current-password"
                   placeholder="••••••••"
                   value={formData.password}
                   onChange={
@@ -433,6 +435,7 @@ function Login() {
                 <input
                   type="text"
                   name="name"
+                  autoComplete="name"
                   placeholder="Full name"
                   value={formData.name}
                   onChange={
@@ -452,6 +455,7 @@ function Login() {
                 <input
                   type="email"
                   name="email"
+                  autoComplete="email"
                   placeholder="you@example.com"
                   value={formData.email}
                   onChange={
@@ -471,6 +475,7 @@ function Login() {
                 <input
                   type="password"
                   name="password"
+                  autoComplete="new-password"
                   placeholder="••••••••"
                   value={formData.password}
                   onChange={
@@ -495,6 +500,7 @@ function Login() {
                 <input
                   type="text"
                   name="className"
+                  autoComplete="organization-title"
                   placeholder="e.g. CSE · 3rd year"
                   value={formData.className}
                   onChange={
@@ -513,6 +519,7 @@ function Login() {
                 <input
                   type="tel"
                   name="phone"
+                  autoComplete="tel"
                   placeholder="Contact number"
                   value={formData.phone}
                   onChange={

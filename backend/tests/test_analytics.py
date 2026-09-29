@@ -40,6 +40,11 @@ def test_admin_can_view_real_analytics(client, db, admin, login_as):
         {"path": "/events/99", "status_code": 500, "count": 1}
     ]
 
+    week_response = client.get("/analytics/admin-summary?days=7")
+    assert week_response.status_code == 200
+    assert week_response.json()["period_days"] == 7
+    assert len(week_response.json()["traffic"]["daily"]) == 7
+
 
 def test_non_admin_cannot_view_analytics(client, student, login_as):
     login_as(student)

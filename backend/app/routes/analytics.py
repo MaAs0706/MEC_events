@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_db, require_role
@@ -57,6 +57,7 @@ def get_audit_logs(
 
 @router.get("/admin-summary")
 def get_admin_summary(
+    days: int = Query(default=14, ge=7, le=30),
     current_user: User = Depends(require_role(["admin"])),
     db: Session = Depends(get_db),
 ):
@@ -64,7 +65,10 @@ def get_admin_summary(
     now = utc_now()
     today = now.date()
     active_cutoff = now - timedelta(minutes=5)
-    history_start = today - timedelta(days=13)
+    # The dashboard offers deliberate 7/14/30-day views. Keeping this bounded
+    # prevents an admin report from turning into an unbounded analytics query.
+    period_days = min(max(days, 7), 30)
+    history_start = today - timedelta(days=period_days - 1)
 
     request_rows = (
         db.query(AnalyticsEvent)
@@ -75,7 +79,7 @@ def get_admin_summary(
     active_rows = [row for row in request_rows if as_utc(row.occurred_at) >= active_cutoff]
 
     daily = []
-    for offset in range(14):
+    for offset in range(period_days):
         day = history_start + timedelta(days=offset)
         rows = [row for row in request_rows if as_utc(row.occurred_at).date() == day]
         daily.append(
@@ -107,6 +111,7 @@ def get_admin_summary(
 
     return {
         "generated_at": now.isoformat(),
+        "period_days": period_days,
         "traffic": {
             "today_requests": len(today_rows),
             "today_visitors": len({row.visitor_hash for row in today_rows if row.visitor_hash}),

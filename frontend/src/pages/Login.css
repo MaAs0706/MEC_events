@@ -510,4 +510,14 @@ body {
 
   .recovery-card { padding: 32px 24px; }
 
+  .login-container { min-height: 100svh; }
+  .login-right { min-width: 0; }
+  .login-box { width: 100%; border-radius: 16px; }
+  .login-header h2 { font-size: 2rem; }
+  .login-form .form-group { margin-bottom: 16px; }
+  .login-form input { min-height: 48px; }
+  .login-tabs { gap: 8px; }
+  .login-tab { min-height: 44px; font-size: 13px; }
+  .form-footer { flex-wrap: wrap; gap: 8px; }
+
 }

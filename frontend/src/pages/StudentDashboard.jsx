@@ -87,6 +87,11 @@ function StudentDashboard() {
         joinedEvents.includes(event.id)
     )
 
+  // The RSVP view is a registration history. It must include a student’s
+  // past registrations too; only the normal discovery view is upcoming-only.
+  const registeredEvents =
+    events.filter(event => joinedEvents.includes(event.id))
+
   const categoryOptions = [
     'All Categories',
     ...new Set(
@@ -179,7 +184,12 @@ function StudentDashboard() {
 
   /* FILTER EVENTS */
 
-  const filteredEvents = approvedUpcomingEvents.filter(
+  const eventsForCurrentView =
+    viewMode === 'rsvps'
+      ? registeredEvents
+      : approvedUpcomingEvents
+
+  const filteredEvents = eventsForCurrentView.filter(
     (event) => {
 
       const matchesCategory =
@@ -464,7 +474,7 @@ function StudentDashboard() {
               </h2>
 
               <p>
-                Upcoming events you joined
+                Events you registered for
               </p>
 
             </div>
