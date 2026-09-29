@@ -11,14 +11,18 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL is not configured")
 
-# Keep the application below Supabase Session Pooler client limits. The values
-# are intentionally conservative for an internal college app; increase only
-# after measuring production traffic and the database plan's connection budget.
+# The admin dashboard legitimately makes several independent, read-only calls
+# at once (users, venues, events, notifications and analytics). Five total
+# connections caused those calls to starve one another when using Supabase's
+# Session Pooler. These defaults leave room for a normal dashboard load while
+# still staying deliberately small for a single-process internal deployment.
+# Production operators can tune every value through environment variables.
 engine_options = {"pool_pre_ping": True}
 if not DATABASE_URL.startswith("sqlite"):
     engine_options.update(
-        pool_size=int(os.getenv("DB_POOL_SIZE", "3")),
+        pool_size=int(os.getenv("DB_POOL_SIZE", "8")),
         max_overflow=int(os.getenv("DB_MAX_OVERFLOW", "2")),
+        pool_timeout=int(os.getenv("DB_POOL_TIMEOUT_SECONDS", "5")),
         pool_recycle=int(os.getenv("DB_POOL_RECYCLE_SECONDS", "1800")),
     )
 

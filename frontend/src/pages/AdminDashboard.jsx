@@ -134,13 +134,21 @@ function AdminDashboard() {
   const totalPeriodVisitors = analyticsDaily.reduce((total, day) => total + day.visitors, 0)
   const totalPeriodRequests = analyticsDaily.reduce((total, day) => total + day.requests, 0)
   const maxDailyVisitors = Math.max(...analyticsDaily.map(day => day.visitors), 1)
+  const chartScaleMax = maxDailyVisitors
+  const chartTickValues = [...new Set([
+    chartScaleMax,
+    Math.ceil(chartScaleMax * 0.75),
+    Math.ceil(chartScaleMax * 0.5),
+    Math.ceil(chartScaleMax * 0.25),
+    0
+  ])]
   const peakDay = analyticsDaily.reduce(
     (peak, day) => day.visitors > peak.visitors ? day : peak,
     { date: '', visitors: 0, requests: 0 }
   )
   const chartPoints = analyticsDaily.map((day, index) => {
     const x = analyticsDaily.length > 1 ? (index / (analyticsDaily.length - 1)) * 100 : 50
-    const y = 92 - (day.visitors / maxDailyVisitors) * 76
+    const y = 92 - (day.visitors / chartScaleMax) * 76
     return `${x},${y}`
   }).join(' ')
   const chartAreaPoints = chartPoints ? `0,100 ${chartPoints} 100,100` : ''
@@ -1408,25 +1416,38 @@ function AdminDashboard() {
                 <strong>{totalPeriodVisitors}</strong>
               </div>
             </div>
-            <div className="analytics-line-chart" aria-label="Daily visitor traffic chart">
-              <div className="analytics-chart-grid" aria-hidden="true"><i /><i /><i /><i /></div>
-              {chartPoints ? (
-                <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label={`${analytics.period_days || analyticsRange} day visitor traffic`}>
-                  <defs>
-                    <linearGradient id="visitor-fill" x1="0" x2="0" y1="0" y2="1">
-                      <stop offset="0%" stopColor="#ff4848" stopOpacity=".42" />
-                      <stop offset="100%" stopColor="#ff3131" stopOpacity="0" />
-                    </linearGradient>
-                  </defs>
-                  <polygon points={chartAreaPoints} fill="url(#visitor-fill)" />
-                  <polyline points={chartPoints} fill="none" stroke="#ff4b4b" strokeWidth="1.25" vectorEffect="non-scaling-stroke" />
-                  {analyticsDaily.map((day, index) => {
-                    const x = analyticsDaily.length > 1 ? (index / (analyticsDaily.length - 1)) * 100 : 50
-                    const y = 92 - (day.visitors / maxDailyVisitors) * 76
-                    return <circle key={day.date} cx={x} cy={y} r="1.7" fill="#fff" stroke="#ff3131" strokeWidth=".8" vectorEffect="non-scaling-stroke"><title>{`${day.date}: ${day.visitors} visitors, ${day.requests} requests`}</title></circle>
+            <div className="analytics-chart-area" aria-label="Daily visitor traffic chart">
+              <div className="analytics-y-axis" aria-label="Visitor count scale">
+                {chartTickValues.map((value) => {
+                  const position = 92 - (value / chartScaleMax) * 76
+                  return <span key={value} style={{ top: `${position}%` }}>{value}</span>
+                })}
+              </div>
+              <div className="analytics-line-chart">
+                <div className="analytics-chart-grid" aria-hidden="true">
+                  {chartTickValues.map((value) => {
+                    const position = 92 - (value / chartScaleMax) * 76
+                    return <i key={value} style={{ top: `${position}%` }} />
                   })}
-                </svg>
-              ) : null}
+                </div>
+                {chartPoints ? (
+                  <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label={`${analytics.period_days || analyticsRange} day visitor traffic`}>
+                    <defs>
+                      <linearGradient id="visitor-fill" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor="#ff4848" stopOpacity=".42" />
+                        <stop offset="100%" stopColor="#ff3131" stopOpacity="0" />
+                      </linearGradient>
+                    </defs>
+                    <polygon points={chartAreaPoints} fill="url(#visitor-fill)" />
+                    <polyline points={chartPoints} fill="none" stroke="#ff4b4b" strokeWidth="1.25" vectorEffect="non-scaling-stroke" />
+                    {analyticsDaily.map((day, index) => {
+                      const x = analyticsDaily.length > 1 ? (index / (analyticsDaily.length - 1)) * 100 : 50
+                      const y = 92 - (day.visitors / chartScaleMax) * 76
+                      return <circle key={day.date} cx={x} cy={y} r="1.7" fill="#fff" stroke="#ff3131" strokeWidth=".8" vectorEffect="non-scaling-stroke"><title>{`${day.date}: ${day.visitors} visitors, ${day.requests} requests`}</title></circle>
+                    })}
+                  </svg>
+                ) : null}
+              </div>
             </div>
             <div className="analytics-chart-labels" style={{ '--days': analyticsDaily.length || 1 }}>
               {analyticsDaily.map((day, index) => (

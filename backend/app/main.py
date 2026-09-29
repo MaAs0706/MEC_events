@@ -92,7 +92,15 @@ async def capture_request_analytics(request, call_next):
     """Record API traffic without collecting raw IP addresses or emails."""
     path = request.url.path
     # Reading the dashboard must not inflate the traffic figures it displays.
-    if path.startswith("/analytics") or path.startswith("/docs") or path.startswith("/openapi"):
+    # Authenticated dashboard requests also fan out into several database reads.
+    # Do not add a second analytics write connection to each of those requests;
+    # public page traffic is what the visitor metric is designed to represent.
+    if (
+        path.startswith("/analytics")
+        or path.startswith("/docs")
+        or path.startswith("/openapi")
+        or request.cookies.get(ACCESS_COOKIE_NAME)
+    ):
         return await call_next(request)
 
     started_at = perf_counter()
