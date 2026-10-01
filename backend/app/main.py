@@ -35,6 +35,11 @@ fastapi_app.include_router(notification_router)
 fastapi_app.include_router(letter_template_router)
 
 UPLOADS_DIR = Path(__file__).resolve().parent.parent / "uploads"
+# Local uploads are only a development fallback; production media is stored in
+# Cloudinary. The directory still has to exist because Starlette validates a
+# StaticFiles mount during application startup. Docker images begin without
+# empty, git-ignored directories, so create it explicitly.
+UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
 fastapi_app.mount(
     "/uploads",
