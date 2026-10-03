@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="NEXUS campus gate concept">
+  <rect width="64" height="64" rx="14" fill="#090909"/>
+  <path d="M13 47V31L32 14l19 17v16" fill="none" stroke="#f5f5f5" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+  <path d="M19 47V33h26v14M14 27h36" fill="none" stroke="#ff3131" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/>
+  <path d="M27 47V38h10v9" fill="none" stroke="#f5f5f5" stroke-linejoin="round" stroke-width="4"/>
+</svg>
