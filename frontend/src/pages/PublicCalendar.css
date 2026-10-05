@@ -1,6 +1,7 @@
 .public-calendar-page { min-height: 100vh; padding: 0 4vw 80px; color: #fff; background: radial-gradient(circle at 84% 12%, rgba(255,49,49,.09), transparent 23%), #050505; }
 .public-calendar-nav { height: 88px; display: flex; align-items: center; justify-content: space-between; gap: 24px; border-bottom: 1px solid #202020; }
 .public-calendar-logo { color: #fff; font-size: 26px; font-weight: 900; letter-spacing: 2px; }
+.public-calendar-back-arrow { display: none; }
 .public-calendar-nav > div { display: flex; align-items: center; gap: 18px; }
 .public-calendar-nav-link { color: #aaa; font-size: 14px; }
 .public-calendar-join { padding: 11px 15px; border-radius: 8px; background: #ff3131; color: #fff; font-size: 13px; font-weight: 800; }
@@ -47,7 +48,8 @@
 @media (max-width: 720px) {
   .public-calendar-page { padding: 0 20px 56px; }
   .public-calendar-nav { height: 68px; }
-  .public-calendar-logo { font-size: 20px; }
+  .public-calendar-logo { align-items: center; display: inline-flex; font-size: 20px; gap: 7px; }
+  .public-calendar-back-arrow { display: inline; font-size: 22px; letter-spacing: 0; line-height: 1; }
   .public-calendar-nav > div { gap: 10px; }
   .public-calendar-nav-link { display: none; }
   .public-calendar-join { padding: 9px 11px; font-size: 11px; }

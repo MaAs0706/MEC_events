@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import EventsPage from '../pages/EventsPage'
 import api from '../services/api'
+import { clearPublicCache } from '../services/publicCache'
 
 vi.mock('../services/api', () => ({
   default: {
@@ -34,7 +35,10 @@ const events = [
 ]
 
 describe('EventsPage public search', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    clearPublicCache('events')
+  })
 
   it('filters approved public events from the landing-page search parameter', async () => {
     api.get.mockResolvedValue({ data: events })

@@ -1,18 +1,34 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
+import { isPublicCacheFresh, readPublicCache, writePublicCache } from '../services/publicCache'
 import './PastEvents.css'
 
+const PAST_EVENTS_CACHE_KEY = 'past-events'
+
 function PastEvents() {
-  const [events, setEvents] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [events, setEvents] = useState(() => readPublicCache(PAST_EVENTS_CACHE_KEY)?.data || [])
+  const [loading, setLoading] = useState(() => !readPublicCache(PAST_EVENTS_CACHE_KEY))
   const [error, setError] = useState('')
 
   useEffect(() => {
+    const cachedEvents = readPublicCache(PAST_EVENTS_CACHE_KEY)
+    if (cachedEvents) {
+      setEvents(cachedEvents.data)
+      setLoading(false)
+      if (isPublicCacheFresh(cachedEvents)) return undefined
+    }
+
+    let active = true
     api.get('/events/past')
-      .then((response) => setEvents(response.data))
-      .catch(() => setError('Past events are unavailable right now.'))
-      .finally(() => setLoading(false))
+      .then((response) => {
+        writePublicCache(PAST_EVENTS_CACHE_KEY, response.data)
+        if (active) setEvents(response.data)
+      })
+      .catch(() => !cachedEvents && active && setError('Past events are unavailable right now.'))
+      .finally(() => active && setLoading(false))
+
+    return () => { active = false }
   }, [])
 
   return (

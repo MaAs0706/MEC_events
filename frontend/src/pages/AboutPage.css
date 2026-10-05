@@ -1,0 +1,56 @@
+.about-page { min-height: 100vh; padding: 0 4vw 88px; color: #fff; background: radial-gradient(circle at 86% 8%, rgba(255,49,49,.09), transparent 22%), #050505; }
+.about-nav { height: 88px; display: flex; align-items: center; justify-content: space-between; gap: 24px; border-bottom: 1px solid #202020; }
+.about-logo { color: #fff; font-size: 26px; font-weight: 900; letter-spacing: 2px; }
+.about-nav > div { display: flex; align-items: center; gap: 18px; }
+.about-nav-link { color: #aaa; font-size: 14px; transition: color .18s ease; }
+.about-nav-link:hover { color: #fff; }
+.about-join, .about-credit-action { display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; color: #fff; background: #ff3131; font-size: 13px; font-weight: 800; }
+.about-join { padding: 11px 15px; }
+.about-header { max-width: 790px; padding: 88px 0 76px; }
+.about-header > span, .about-problem span, .about-section-heading > span, .about-credit > div > span { color: #ff3131; font-size: 11px; font-weight: 800; letter-spacing: .24em; }
+.about-header h1 { margin: 14px 0 20px; font-size: clamp(3.4rem, 8vw, 6.8rem); line-height: .88; letter-spacing: -.075em; }
+.about-header p { max-width: 640px; color: #aaa; font-size: 18px; line-height: 1.65; }
+.about-problem { display: grid; grid-template-columns: minmax(0, .95fr) minmax(310px, 1.05fr); gap: clamp(40px, 9vw, 150px); padding: 56px 0; border-top: 1px solid #292929; border-bottom: 1px solid #292929; }
+.about-problem h2, .about-section-heading h2 { margin-top: 11px; font-size: clamp(2.05rem, 4vw, 3.7rem); line-height: .97; letter-spacing: -.06em; }
+.about-problem-copy { display: grid; gap: 20px; padding-top: 7px; }
+.about-problem-copy p { color: #b1b1b1; font-size: 16px; line-height: 1.68; }
+.about-capabilities { padding: 80px 0; }
+.about-section-heading { display: flex; align-items: end; justify-content: space-between; gap: 38px; }
+.about-section-heading h2 { max-width: 660px; }
+.about-capability-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 13px; margin-top: 38px; }
+.about-capability { min-height: 235px; padding: 22px; border: 1px solid #292929; border-radius: 14px; background: #101010; transition: transform .18s ease, border-color .18s ease; }
+.about-capability:hover { border-color: #713131; transform: translateY(-3px); }
+.about-capability > span { color: #ff6565; font-size: 11px; font-weight: 850; letter-spacing: .12em; }
+.about-capability h3 { margin: 48px 0 10px; font-size: 21px; line-height: 1.05; }
+.about-capability p { color: #aaa; font-size: 14px; line-height: 1.6; }
+.about-credit { display: flex; align-items: end; justify-content: space-between; gap: 42px; padding: clamp(28px, 5vw, 62px); border: 1px solid #3a2222; border-radius: 20px; background: linear-gradient(120deg, rgba(255,49,49,.11), rgba(18,18,18,.92) 58%); }
+.about-credit h2 { max-width: 660px; margin: 10px 0 14px; font-size: clamp(2.05rem, 4vw, 4rem); line-height: .97; letter-spacing: -.06em; }
+.about-credit p { max-width: 690px; color: #aaa; font-size: 16px; line-height: 1.65; }
+.about-credit p strong { color: #fff; }
+.about-credit-action { flex: 0 0 auto; padding: 13px 17px; }
+
+@media (max-width: 900px) {
+  .about-capability-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 720px) {
+  .about-page { padding: 0 20px 56px; }
+  .about-nav { height: 68px; }
+  .about-logo { font-size: 20px; }
+  .about-nav > div { gap: 10px; }
+  .about-nav-link { display: none; }
+  .about-join { padding: 9px 11px; font-size: 11px; }
+  .about-header { padding: 55px 0 54px; }
+  .about-header h1 { font-size: 3.5rem; }
+  .about-header p { font-size: 15px; }
+  .about-problem { grid-template-columns: 1fr; gap: 24px; padding: 42px 0; }
+  .about-problem h2, .about-section-heading h2 { font-size: 2.25rem; }
+  .about-problem-copy p, .about-credit p { font-size: 15px; }
+  .about-capabilities { padding: 56px 0; }
+  .about-capability-grid { grid-template-columns: 1fr; margin-top: 28px; }
+  .about-capability { min-height: 0; }
+  .about-capability h3 { margin-top: 34px; }
+  .about-credit { display: grid; gap: 24px; border-radius: 15px; }
+  .about-credit h2 { font-size: 2.25rem; }
+  .about-credit-action { justify-self: start; }
+}

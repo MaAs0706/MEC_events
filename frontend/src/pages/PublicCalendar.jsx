@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
+import { isPublicCacheFresh, readPublicCache, writePublicCache } from '../services/publicCache'
 import './PublicCalendar.css'
 
 const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -53,11 +54,11 @@ function CalendarGrid({ monthDate, selectedDate, onSelectDate, dayContent, getDa
 function PublicCalendar() {
   const [monthOffset, setMonthOffset] = useState(0)
   const [selectedDate, setSelectedDate] = useState(localIsoDate(new Date()))
-  const [events, setEvents] = useState([])
-  const [venues, setVenues] = useState([])
+  const [events, setEvents] = useState(() => readPublicCache(`calendar-events:${monthKey(new Date())}`)?.data || [])
+  const [venues, setVenues] = useState(() => readPublicCache('venues')?.data || [])
   const [selectedVenue, setSelectedVenue] = useState('')
   const [venueCalendar, setVenueCalendar] = useState({ days: [] })
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(() => !readPublicCache(`calendar-events:${monthKey(new Date())}`))
   const [error, setError] = useState('')
 
   const visibleMonth = useMemo(() => {
@@ -70,20 +71,42 @@ function PublicCalendar() {
 
   useEffect(() => {
     let active = true
-    setLoading(true)
+    const cacheKey = `calendar-events:${visibleMonthKey}`
+    const cachedEvents = readPublicCache(cacheKey)
+
+    if (cachedEvents) {
+      setEvents(cachedEvents.data)
+      setLoading(false)
+      if (isPublicCacheFresh(cachedEvents)) return () => { active = false }
+    } else {
+      setLoading(true)
+    }
+
     setError('')
     api.get(`/events/public-calendar?month=${visibleMonthKey}`)
-      .then((response) => active && setEvents(response.data))
-      .catch(() => active && setError('The event calendar is unavailable right now. Please try again shortly.'))
+      .then((response) => {
+        writePublicCache(cacheKey, response.data)
+        if (active) setEvents(response.data)
+      })
+      .catch(() => !cachedEvents && active && setError('The event calendar is unavailable right now. Please try again shortly.'))
       .finally(() => active && setLoading(false))
     return () => { active = false }
   }, [visibleMonthKey])
 
   useEffect(() => {
     let active = true
+    const cachedVenues = readPublicCache('venues')
+
+    if (cachedVenues) {
+      setVenues(cachedVenues.data)
+      setSelectedVenue((current) => current || cachedVenues.data[0]?.name || '')
+      if (isPublicCacheFresh(cachedVenues)) return () => { active = false }
+    }
+
     api.get('/venues')
       .then((response) => {
         if (!active) return
+        writePublicCache('venues', response.data)
         setVenues(response.data)
         setSelectedVenue((current) => current || response.data[0]?.name || '')
       })
@@ -94,9 +117,20 @@ function PublicCalendar() {
   useEffect(() => {
     if (!selectedVenue) return
     let active = true
+    const cacheKey = `venue-calendar:${selectedVenue}:${visibleMonthKey}`
+    const cachedVenueCalendar = readPublicCache(cacheKey)
+
+    if (cachedVenueCalendar) {
+      setVenueCalendar(cachedVenueCalendar.data)
+      if (isPublicCacheFresh(cachedVenueCalendar)) return () => { active = false }
+    }
+
     api.get(`/events/public-venue-calendar?venue=${encodeURIComponent(selectedVenue)}&month=${visibleMonthKey}`)
-      .then((response) => active && setVenueCalendar(response.data))
-      .catch(() => active && setVenueCalendar({ days: [] }))
+      .then((response) => {
+        writePublicCache(cacheKey, response.data)
+        if (active) setVenueCalendar(response.data)
+      })
+      .catch(() => !cachedVenueCalendar && active && setVenueCalendar({ days: [] }))
     return () => { active = false }
   }, [selectedVenue, visibleMonthKey])
 
@@ -122,7 +156,14 @@ function PublicCalendar() {
   return (
     <main className="public-calendar-page">
       <nav className="public-calendar-nav">
-        <Link to="/" className="public-calendar-logo">NEXUS.</Link>
+        <Link
+          to="/"
+          className="public-calendar-logo"
+          aria-label="Back to NEXUS home"
+        >
+          <span className="public-calendar-back-arrow" aria-hidden="true">←</span>
+          NEXUS.
+        </Link>
         <div>
           <Link to="/events" className="public-calendar-nav-link">Explore events</Link>
           <Link to="/events/past" className="public-calendar-nav-link">Past events</Link>

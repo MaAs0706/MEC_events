@@ -1,11 +1,12 @@
 import React from 'react'
 import { MemoryRouter } from 'react-router-dom'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { useLocation } from 'react-router-dom'
 import { beforeEach, describe, it, expect, vi } from 'vitest'
 
 import LandingPage from '../pages/LandingPage'
 import api from '../services/api'
+import { clearPublicCache } from '../services/publicCache'
 
 // ----------------------------------------------------------------
 // Mocks: swap real dependencies with fake ones so the test is
@@ -88,6 +89,7 @@ describe('LandingPage', () => {
   // Reset mocks and any leftover session state before every test.
   beforeEach(() => {
     vi.clearAllMocks()
+    clearPublicCache('events')
     sessionStorage.setItem('nexusGateOpened', 'true') // skip the door animation
   })
 
@@ -153,5 +155,17 @@ describe('LandingPage', () => {
     fireEvent.submit(screen.getByRole('search'))
 
     expect(screen.getByTestId('location')).toHaveTextContent('/events?search=robotics%20club')
+  })
+
+  it('opens an uncluttered mobile navigation menu', async () => {
+    api.get.mockResolvedValue({ data: [] })
+    renderLandingPage()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Open navigation menu' }))
+
+    const menu = screen.getByRole('navigation', { name: 'Mobile navigation' })
+    expect(within(menu).getByRole('link', { name: 'Event calendar' })).toHaveAttribute('href', '/calendar')
+    expect(within(menu).getByRole('link', { name: 'Past events' })).toHaveAttribute('href', '/events/past')
+    expect(within(menu).getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login')
   })
 })

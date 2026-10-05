@@ -1,7 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import api from '../services/api'
+import { isPublicCacheFresh, readPublicCache, writePublicCache } from '../services/publicCache'
 import './EventsPage.css'
+
+const PUBLIC_EVENTS_CACHE_KEY = 'events'
 
 function EventCard({ event }) {
   return (
@@ -21,15 +24,28 @@ function EventCard({ event }) {
 
 function EventsPage() {
   const [searchParams] = useSearchParams()
-  const [events, setEvents] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [events, setEvents] = useState(() => readPublicCache(PUBLIC_EVENTS_CACHE_KEY)?.data || [])
+  const [loading, setLoading] = useState(() => !readPublicCache(PUBLIC_EVENTS_CACHE_KEY))
   const [error, setError] = useState('')
 
   useEffect(() => {
+    const cachedEvents = readPublicCache(PUBLIC_EVENTS_CACHE_KEY)
+    if (cachedEvents) {
+      setEvents(cachedEvents.data)
+      setLoading(false)
+      if (isPublicCacheFresh(cachedEvents)) return undefined
+    }
+
+    let active = true
     api.get('/events')
-      .then((response) => setEvents(response.data))
-      .catch(() => setError('Events are unavailable right now. Please try again shortly.'))
-      .finally(() => setLoading(false))
+      .then((response) => {
+        writePublicCache(PUBLIC_EVENTS_CACHE_KEY, response.data)
+        if (active) setEvents(response.data)
+      })
+      .catch(() => !cachedEvents && active && setError('Events are unavailable right now. Please try again shortly.'))
+      .finally(() => active && setLoading(false))
+
+    return () => { active = false }
   }, [])
 
   const searchTerm = (searchParams.get('search') || '').trim().toLocaleLowerCase()

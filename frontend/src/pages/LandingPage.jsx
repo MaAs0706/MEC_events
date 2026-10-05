@@ -7,12 +7,16 @@ import {
 import './LandingPage.css'
 import React, { useEffect, useState } from 'react'
 import api from '../services/api'
+import { isPublicCacheFresh, readPublicCache, writePublicCache } from '../services/publicCache'
+
+const PUBLIC_EVENTS_CACHE_KEY = 'events'
 
 function LandingPage() {
   const navigate = useNavigate()
-  const [events, setEvents] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [events, setEvents] = useState(() => readPublicCache(PUBLIC_EVENTS_CACHE_KEY)?.data || [])
+  const [loading, setLoading] = useState(() => !readPublicCache(PUBLIC_EVENTS_CACHE_KEY))
   const [searchQuery, setSearchQuery] = useState('')
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [gateOpen, setGateOpen] = useState(false)
   const [gateRemoved, setGateRemoved] = useState(
     () =>
@@ -32,6 +36,17 @@ function LandingPage() {
     const query = searchQuery.trim()
     navigate(query ? `/events?search=${encodeURIComponent(query)}` : '/events')
   }
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return undefined
+
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setMobileMenuOpen(false)
+    }
+
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [mobileMenuOpen])
 
   const openGate = async () => {
 
@@ -150,6 +165,15 @@ function LandingPage() {
   }
 
  useEffect(() => {
+  const cachedEvents = readPublicCache(PUBLIC_EVENTS_CACHE_KEY)
+
+  if (cachedEvents) {
+    setEvents(cachedEvents.data)
+    setLoading(false)
+    if (isPublicCacheFresh(cachedEvents)) return undefined
+  }
+
+  let active = true
 
   const fetchEvents = async () => {
 
@@ -158,7 +182,8 @@ function LandingPage() {
       const response =
         await api.get('/events')
 
-      setEvents(response.data)
+      writePublicCache(PUBLIC_EVENTS_CACHE_KEY, response.data)
+      if (active) setEvents(response.data)
 
     } catch (error) {
 
@@ -169,13 +194,15 @@ function LandingPage() {
 
     } finally {
 
-      setLoading(false)
+      if (active) setLoading(false)
 
     }
 
   }
 
   fetchEvents()
+
+  return () => { active = false }
 
 }, [])
 
@@ -411,7 +438,10 @@ const totalRegistrations =
 
           <button
             className="logo logo-button"
-            onClick={resetGate}
+            onClick={() => {
+              setMobileMenuOpen(false)
+              resetGate()
+            }}
             type="button"
           >
             NEXUS.
@@ -436,6 +466,7 @@ const totalRegistrations =
               <span className="nav-past-desktop">Past events</span>
               <span className="nav-past-mobile">Past</span>
             </Link>
+            <Link to="/faq" className="nav-signin nav-faq-link">FAQ</Link>
             <Link to="/login" className="nav-signin">
               Sign in
             </Link>
@@ -445,7 +476,41 @@ const totalRegistrations =
             </Link>
           </div>
 
+          <button
+            className="mobile-menu-toggle"
+            type="button"
+            aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-navigation"
+            onClick={() => setMobileMenuOpen((isOpen) => !isOpen)}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+
         </div>
+
+        {mobileMenuOpen && (
+          <div className="mobile-menu-backdrop" onClick={() => setMobileMenuOpen(false)}>
+            <nav
+              className="mobile-menu-panel"
+              id="mobile-navigation"
+              aria-label="Mobile navigation"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <span className="mobile-menu-label">EXPLORE NEXUS</span>
+              <Link to="/events" onClick={() => setMobileMenuOpen(false)}>Explore events</Link>
+              <Link to="/calendar" onClick={() => setMobileMenuOpen(false)}>Event calendar</Link>
+              <Link to="/events/past" onClick={() => setMobileMenuOpen(false)}>Past events</Link>
+              <Link to="/faq" onClick={() => setMobileMenuOpen(false)}>FAQ</Link>
+              <Link to="/about" onClick={() => setMobileMenuOpen(false)}>About NEXUS</Link>
+              <div className="mobile-menu-divider" />
+              <Link to="/login" onClick={() => setMobileMenuOpen(false)}>Sign in</Link>
+              <Link to="/login" className="mobile-menu-join" onClick={() => setMobileMenuOpen(false)}>Join NEXUS</Link>
+            </nav>
+          </div>
+        )}
       </nav>
 
       {/* HERO */}
