@@ -85,7 +85,7 @@ NEXUS/
 | Authentication | Signed JWT cookie sessions | Browser JWT is `HttpOnly`; explicit Bearer tokens remain supported for API clients/docs. |
 | Passwords | Passlib bcrypt | Never reversible/decryptable. |
 | Media | Cloudinary | Uploads pass through FastAPI; browser never sees Cloudinary API secret. |
-| Recovery email | Resend HTTPS API | Used for password reset only at present. |
+| Transactional email | Resend HTTPS API | Used for password reset and new-event review alerts. |
 | PDFs | ReportLab | Creates approved-event permission letters in memory. |
 | Frontend server in containers | Nginx | SPA fallback and `/api/` reverse proxy. |
 
@@ -209,6 +209,7 @@ The landing page has a deliberate door-opening NEXUS introduction. The post-door
 - The current cookie session is a single JWT with a configured expiry, rather than an access-token/refresh-token rotation design. Consider rotation and device/session revocation for a larger deployment.
 - Route components are not protected by a central React route guard. The backend authorizes requests correctly, but UI redirects/empty states should be improved.
 - In-app notifications are polling/fetch based, not real-time push/WebSockets.
+- New event requests also send a best-effort email to every active approver and admin. Email delivery is intentionally asynchronous and never blocks event creation; Resend delivery logs are the source of truth when an email is missing.
 - Search/filter UI should be verified feature-by-feature before stating it is comprehensive; do not infer backend search exists unless a route is added.
 
 ## 9. Security controls already in place

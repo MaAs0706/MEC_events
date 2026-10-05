@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import api from '../services/api'
 import './EventsPage.css'
 
@@ -20,6 +20,7 @@ function EventCard({ event }) {
 }
 
 function EventsPage() {
+  const [searchParams] = useSearchParams()
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -31,11 +32,20 @@ function EventsPage() {
       .finally(() => setLoading(false))
   }, [])
 
+  const searchTerm = (searchParams.get('search') || '').trim().toLocaleLowerCase()
+
   const { upcoming, past } = useMemo(() => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    const sortedEvents = [...events].sort(
+    const matchingEvents = events.filter((event) => {
+      if (!searchTerm) return true
+      return [event.title, event.category, event.venue, event.organizer, event.description]
+        .filter(Boolean)
+        .some((value) => value.toLocaleLowerCase().includes(searchTerm))
+    })
+
+    const sortedEvents = [...matchingEvents].sort(
       (first, second) => new Date(`${first.date}T00:00:00`) - new Date(`${second.date}T00:00:00`)
     )
 
@@ -43,7 +53,7 @@ function EventsPage() {
       upcoming: sortedEvents.filter((event) => new Date(`${event.date}T00:00:00`) >= today),
       past: sortedEvents.filter((event) => new Date(`${event.date}T00:00:00`) < today).reverse(),
     }
-  }, [events])
+  }, [events, searchTerm])
 
   return (
     <main className="public-events-page">
@@ -59,7 +69,11 @@ function EventsPage() {
       <header className="public-events-header">
         <span>EXPLORE CAMPUS</span>
         <h1>Every event.<br />One place.</h1>
-        <p>Browse what is coming up and revisit the events that brought campus together.</p>
+        <p>
+          {searchTerm
+            ? `Showing approved events matching “${searchParams.get('search').trim()}”.`
+            : 'Browse what is coming up and revisit the events that brought campus together.'}
+        </p>
       </header>
 
       {loading && <p className="public-events-state">Loading events…</p>}
@@ -73,7 +87,7 @@ function EventsPage() {
             </div>
             {upcoming.length ? (
               <div className="public-events-grid">{upcoming.map((event) => <EventCard event={event} key={event.id} />)}</div>
-            ) : <p className="public-events-state">No upcoming events have been published yet.</p>}
+            ) : <p className="public-events-state">{searchTerm ? 'No upcoming events match your search.' : 'No upcoming events have been published yet.'}</p>}
           </section>
 
           <section className="public-events-section public-events-archive-section">
@@ -83,7 +97,7 @@ function EventsPage() {
             </div>
             {past.length ? (
               <div className="public-events-grid">{past.map((event) => <EventCard event={event} key={event.id} />)}</div>
-            ) : <p className="public-events-state">No past events have been published yet.</p>}
+            ) : <p className="public-events-state">{searchTerm ? 'No past events match your search.' : 'No past events have been published yet.'}</p>}
           </section>
         </>
       )}

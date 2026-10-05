@@ -1,6 +1,7 @@
 import React from 'react'
 import { MemoryRouter } from 'react-router-dom'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { useLocation } from 'react-router-dom'
 import { beforeEach, describe, it, expect, vi } from 'vitest'
 
 import LandingPage from '../pages/LandingPage'
@@ -65,10 +66,16 @@ const sampleEvents = [
 // renderWithRouter wraps the component in a MemoryRouter because
 // LandingPage uses <Link> from react-router-dom, which needs to be
 // inside a router to know its current location.
+function LocationDisplay() {
+  const location = useLocation()
+  return <output data-testid="location">{location.pathname}{location.search}</output>
+}
+
 function renderLandingPage() {
   return render(
     <MemoryRouter>
       <LandingPage />
+      <LocationDisplay />
     </MemoryRouter>
   )
 }
@@ -134,5 +141,17 @@ describe('LandingPage', () => {
     // Assert: the component requested /events from the API.
     expect(api.get).toHaveBeenCalledTimes(1)
     expect(api.get).toHaveBeenCalledWith('/events')
+  })
+
+  it('sends a landing-page search to the public events page', async () => {
+    api.get.mockResolvedValue({ data: [] })
+    renderLandingPage()
+
+    fireEvent.change(await screen.findByRole('textbox', { name: 'Search public events' }), {
+      target: { value: 'robotics club' },
+    })
+    fireEvent.submit(screen.getByRole('search'))
+
+    expect(screen.getByTestId('location')).toHaveTextContent('/events?search=robotics%20club')
   })
 })

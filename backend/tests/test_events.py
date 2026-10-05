@@ -176,6 +176,36 @@ def test_coordinator_can_create_event(client, db, coordinator, login_as,
     assert created["status"] == "pending"
 
 
+def test_event_submission_notifies_reviewers_by_email(
+        client, db, coordinator, approver, admin, login_as, sample_venue, monkeypatch):
+    """Each active approver/admin gets both an in-app and Resend review notice."""
+    from app.models.notification import Notification
+
+    sent = []
+    monkeypatch.setattr(
+        "app.routes.events.send_event_review_email",
+        lambda **kwargs: sent.append(kwargs) or True,
+    )
+    login_as(coordinator)
+
+    response = client.post("/events", json={
+        "title": "Email Review Test",
+        "description": "A request that should reach the reviewers.",
+        "category": "Tech",
+        "venue": sample_venue.name,
+        "date": "2027-09-25",
+        "start_time": "09:00",
+        "end_time": "12:00",
+        "organizer": "Coding Club",
+        "capacity": 60,
+    })
+
+    assert response.status_code == 200
+    assert {email["recipient"] for email in sent} == {approver.email, admin.email}
+    assert all(email["event_title"] == "Email Review Test" for email in sent)
+    assert db.query(Notification).filter(Notification.title == "New event request").count() == 2
+
+
 def test_coordinator_can_create_one_event_with_multiple_venue_sessions(
         client, db, coordinator, login_as, sample_venue):
     """One request may reserve several non-conflicting dates and venues."""

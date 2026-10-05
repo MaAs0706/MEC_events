@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, BackgroundTasks
 from fastapi import Depends, HTTPException, UploadFile, File
 from fastapi.responses import StreamingResponse
 from datetime import datetime
@@ -20,6 +20,7 @@ from app.schemas.event import EventCreate, EventSessionCreate
 from app.utils.media_storage import delete_image, MediaStorageError, upload_image
 from app.utils.permission_letter import build_permission_letter
 from app.utils.notifications import create_notification
+from app.utils.email import send_event_review_email
 from app.utils.audit import record_audit
 from app.utils.rate_limit import allow_upload, record_upload
 
@@ -364,8 +365,8 @@ def serialize_event(event: Event, db: Session):
 
 @router.post("/events")
 def create_event(
-    
     event: EventCreate,
+    background_tasks: BackgroundTasks,
     current_user = Depends(
         require_role(["coordinator", "admin"])
     ),
@@ -402,9 +403,28 @@ def create_event(
         target_type="event", target_id=new_event.id,
         summary=f"{current_user.role.title()} created event request {new_event.title}.",
     )
-    for reviewer in db.query(User).filter(User.role.in_(["approver", "admin"]), User.is_active.is_(True)).all():
+    reviewers = (
+        db.query(User)
+        .filter(User.role.in_(["approver", "admin"]), User.is_active.is_(True))
+        .all()
+    )
+    for reviewer in reviewers:
         create_notification(db, reviewer.id, "New event request", f"{new_event.title} needs review.", f"/events/{new_event.id}")
     db.commit()
+    schedule_summary = "; ".join(
+        f"{session.date} · {session.start_time}–{session.end_time} · {session.venue}"
+        for session in sessions
+    )
+    for reviewer in reviewers:
+        background_tasks.add_task(
+            send_event_review_email,
+            recipient=reviewer.email,
+            reviewer_name=reviewer.full_name,
+            event_title=new_event.title,
+            organizer=new_event.organizer,
+            schedule_summary=schedule_summary,
+            event_id=new_event.id,
+        )
     db.refresh(new_event)
     return serialize_event(new_event, db)
 

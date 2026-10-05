@@ -1,5 +1,5 @@
 
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   motion,
   useAnimation
@@ -9,8 +9,10 @@ import React, { useEffect, useState } from 'react'
 import api from '../services/api'
 
 function LandingPage() {
+  const navigate = useNavigate()
   const [events, setEvents] = useState([])
- const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
   const [gateOpen, setGateOpen] = useState(false)
   const [gateRemoved, setGateRemoved] = useState(
     () =>
@@ -24,6 +26,12 @@ function LandingPage() {
   const logoControls = useAnimation()
   const doorDetailControls = useAnimation()
   const contentControls = useAnimation()
+
+  const submitSearch = (submission) => {
+    submission.preventDefault()
+    const query = searchQuery.trim()
+    navigate(query ? `/events?search=${encodeURIComponent(query)}` : '/events')
+  }
 
   const openGate = async () => {
 
@@ -409,12 +417,15 @@ const totalRegistrations =
             NEXUS.
           </button>
 
-          <div className="nav-search">
+          <form className="nav-search" onSubmit={submitSearch} role="search">
             <input
               type="text"
               placeholder="Search hackathons, clubs, concerts..."
+              aria-label="Search public events"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
             />
-          </div>
+          </form>
 
           <div className="nav-right">
             <Link to="/calendar" className="nav-signin nav-calendar-link">

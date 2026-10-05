@@ -48,7 +48,7 @@ Implemented highlights:
 - Capacity-safe registrations with duplicate-registration protection.
 - Venue management and daily availability/load visualization.
 - Cloudinary-backed cover-image, gallery-image, club-logo, and letter-template asset uploads.
-- In-app notifications for requests, reviews, and registrations.
+- In-app notifications for requests, reviews, and registrations, plus Resend email alerts to active reviewers for new event requests.
 - PDF permission letters generated after approval, using the configured college template and the submitting club’s identity.
 - Admin request analytics that do not retain raw IP addresses.
 - Append-only audit records for security-relevant user, venue, event, media, and letter-template actions.
@@ -149,7 +149,7 @@ Copy [backend/.env.example](backend/.env.example) and keep the real `.env` file 
 | `CORS_ORIGINS` | Comma-separated browser origins allowed to call the backend. |
 | `PUBLIC_API_URL` | Public backend URL used when returning media URLs. |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Server-side media storage credentials. |
-| `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `FRONTEND_URL` | Password-recovery email configuration. |
+| `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `FRONTEND_URL` | Resend configuration for password recovery and reviewer email alerts. |
 | `REDIS_URL`, `REQUIRE_REDIS` | Shared production rate limiting; set `REQUIRE_REDIS=true` when Redis is provisioned. |
 | `APP_ENV`, `SESSION_COOKIE_*` | Secure browser-session cookie settings; production requires HTTPS. |
 | `VITE_API_URL` | Frontend-only API base URL. This is safe to expose because it is just a URL. |
